@@ -27,8 +27,8 @@ class CWCTests(CWCBaseTest):
         super(CWCTests, self).tearDown()
 
     def test_start_collect_log(self):
-        rest = RestConnection(self.master)
-        shell = RemoteMachineShellConnection(self.master)
+        rest = RestConnection(self.main)
+        shell = RemoteMachineShellConnection(self.main)
         """ add service nodes to cluster.  Test will add with or without data service in """
         if self.add_services:
             self.add_services = [x.replace(":", ",")  or  x for x in self.add_services]
@@ -194,19 +194,19 @@ class CWCTests(CWCBaseTest):
 
     def test_cli_start_collect_log(self):
         command = "couchbase-cli collect-logs-start"
-        rest = RestConnection(self.master)
-        shell = RemoteMachineShellConnection(self.master)
+        rest = RestConnection(self.main)
+        shell = RemoteMachineShellConnection(self.main)
         num_node_collect = self.cli_collect_nodes
         if "--all-nodes" not in str(self.cli_collect_nodes) and self.nodes_init > 1:
             self.cli_collect_nodes = self._cli_generate_random_collecting_node(rest)
             num_node_collect = '--nodes="{0}"'.format(self.cli_collect_nodes)
         if not self.cli_upload:
             o, e = shell.execute_command("{0}{1} -c {2}:8091 -u Administrator -p password {3} " \
-                             .format(self.bin_path, command, self.master.ip, num_node_collect))
+                             .format(self.bin_path, command, self.main.ip, num_node_collect))
         else:
             o, e = shell.execute_command("{0}{1} -c {2}:8091 -u Administrator -p password {3} --upload \
                            --upload-host='{4}' --customer='{5}' --ticket='{6}' " .format(self.bin_path, \
-                           command, self.master.ip, num_node_collect, self.uploadHost, self.customer, \
+                           command, self.main.ip, num_node_collect, self.uploadHost, self.customer, \
                            self.ticket))
         self.log.info("Command output is {0} {1}".format(o,e) )
         shell.log_command_output(o, e)

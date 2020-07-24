@@ -22,9 +22,9 @@ from membase.helper.cluster_helper import ClusterOperationHelper
 
 """
 *** IMPORTANT! NEED TO READ BEFORE RUN UI TEST ***
-- Server that is used as host UI slave must be in uiconf session (ask IT to get it)
+- Server that is used as host UI subordinate must be in uiconf session (ask IT to get it)
 ini file format must follow format below [uiconf]
-- Jenkins slave must install python selenium as we import selenium above
+- Jenkins subordinate must install python selenium as we import selenium above
 
 #### ini file start here
 [global]
@@ -45,10 +45,10 @@ rest_password:xxxxxxx
 browser:chrome
 chrome_path:path_to_chrome_driver
 selenium_path:path_to_selenium_standalone_server
-selenium_ip:UI_slave_IP
+selenium_ip:UI_subordinate_IP
 selenium_port:4444
-selenium_user:username_used_to_login_to_UI_slave
-selenium_password:password_used_to_login_to_UI_slave
+selenium_user:username_used_to_login_to_UI_subordinate
+selenium_password:password_used_to_login_to_UI_subordinate
 screenshots:logs/screens
 
 ### ini file end here
@@ -125,7 +125,7 @@ class BaseUITestCase(unittest.TestCase):
                cbadminbucket
            Default added user is cbadminbucket with admin role
         """
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         versions = rest.get_nodes_versions()
         for version in versions:
             if "5" > version:
@@ -140,7 +140,7 @@ class BaseUITestCase(unittest.TestCase):
             rolelist = [{'id': 'cbadminbucket', 'name': 'cbadminbucket',
                                                       'roles': 'admin'}]
         if node is None:
-            node = self.master
+            node = self.main
 
         self.log.info("**** add built-in '%s' user to node %s ****" % (testuser[0]["name"],
                                                                        node.ip))

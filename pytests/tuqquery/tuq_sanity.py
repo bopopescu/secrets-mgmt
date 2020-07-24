@@ -396,19 +396,19 @@ class QuerySanityTests(QueryTests):
             self.prepared_common_body()
 
     def test_leak_goroutine(self):
-     shell = RemoteMachineShellConnection(self.master)
+     shell = RemoteMachineShellConnection(self.main)
      for i in xrange(20):
-         cmd = 'curl http://%s:6060/debug/pprof/goroutine?debug=2 | grep NewLexer' %(self.master.ip)
+         cmd = 'curl http://%s:6060/debug/pprof/goroutine?debug=2 | grep NewLexer' %(self.main.ip)
          o =shell.execute_command(cmd)
          new_curl = json.dumps(o)
          string_curl = json.loads(new_curl)
          self.assertTrue("curl: (7) couldn't connect to host"== str(string_curl[1][1]))
-         cmd = "curl http://%s:8093/query/service -d 'statement=select * from 1+2+3'"%(self.master.ip)
+         cmd = "curl http://%s:8093/query/service -d 'statement=select * from 1+2+3'"%(self.main.ip)
          o =shell.execute_command(cmd)
          new_curl = json.dumps(o)
          string_curl = json.loads(new_curl)
          self.assertTrue(len(string_curl)==2)
-         cmd = 'curl http://%s:6060/debug/pprof/goroutine?debug=2 | grep NewLexer'%(self.master.ip)
+         cmd = 'curl http://%s:6060/debug/pprof/goroutine?debug=2 | grep NewLexer'%(self.main.ip)
          o =shell.execute_command(cmd)
          new_curl = json.dumps(o)
          string_curl = json.loads(new_curl)
@@ -895,10 +895,10 @@ class QuerySanityTests(QueryTests):
             self.query = 'insert into %s values("k041", { "id":9223372036854775808 } )'%(bucket.name)
             self.run_cbq_query()
             scheme = "couchbase"
-            host=self.master.ip
-            if self.master.ip == "127.0.0.1":
+            host=self.main.ip
+            if self.main.ip == "127.0.0.1":
                 scheme = "http"
-                host="{0}:{1}".format(self.master.ip,self.master.port)
+                host="{0}:{1}".format(self.main.ip,self.main.port)
             self.query = 'select * from '+bucket.name+' where meta().id = "{0}"'.format("k051")
             actual_result = self.run_cbq_query()
             print "k051 results is {0}".format(actual_result['results'][0][bucket.name])

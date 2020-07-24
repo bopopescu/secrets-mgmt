@@ -21,10 +21,10 @@ class VBucketToolTests(CliBaseTest):
 
     def test_vbuckets_ids(self):
         self._load_by_vbuckets(self.buckets[0])
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         try:
             prefix = 'curl -g http://localhost:%s/pools/default/buckets/%s |' % (
-                      self.master.port or '8091', self.buckets[0].name)
+                      self.main.port or '8091', self.buckets[0].name)
             for vb, items in self.keys_per_vbuckets_dict.iteritems():
                 o, _ = shell.execute_vbuckettool(items, prefix)
                 result = self._parse_vbuckets(o)
@@ -35,32 +35,32 @@ class VBucketToolTests(CliBaseTest):
         finally:
             shell.disconnect()
 
-    def test_vbuckets_master_replicas(self):
+    def test_vbuckets_main_replicas(self):
         self.assertTrue(self.num_servers >= self.num_replicas + 1,
                         'This test requires more servers')
         self._load_by_vbuckets(self.buckets[0])
-        bucket = RestConnection(self.master).get_bucket(self.buckets[0])
-        shell = RemoteMachineShellConnection(self.master)
+        bucket = RestConnection(self.main).get_bucket(self.buckets[0])
+        shell = RemoteMachineShellConnection(self.main)
         try:
             prefix = 'curl -g http://localhost:%s/pools/default/buckets/%s |' % (
-                      self.master.port or '8091', bucket.name)
+                      self.main.port or '8091', bucket.name)
             for vb, items in self.keys_per_vbuckets_dict.iteritems():
                 o, _ = shell.execute_vbuckettool(items, prefix)
                 result = self._parse_vbuckets(o)
                 for item in items:
-                    self.assertTrue(result[item][1].startswith(bucket.vbuckets[vb].master),
-                                    'Key: %s. Vbucket master expected is %s. Actual: %s' % (
-                                     item, bucket.vbuckets[vb].master, result[item]))
+                    self.assertTrue(result[item][1].startswith(bucket.vbuckets[vb].main),
+                                    'Key: %s. Vbucket main expected is %s. Actual: %s' % (
+                                     item, bucket.vbuckets[vb].main, result[item]))
                     self.assertFalse(set([replica[:replica.index(':')]
                                           for replica in result[item][2]]) -
                                      set(bucket.vbuckets[vb].replica),
-                                    'Key: %s. Vbucket master expected is %s. Actual: %s' % (
+                                    'Key: %s. Vbucket main expected is %s. Actual: %s' % (
                                      item, bucket.vbuckets[vb].replica, result[item]))
         finally:
             shell.disconnect()
 
     def _load_by_vbuckets(self, bucket):
-        bucket = RestConnection(self.master).get_bucket(bucket)
+        bucket = RestConnection(self.main).get_bucket(bucket)
         self.num_items = self.num_items - (self.num_items % len(bucket.vbuckets))
         num_items_per_vb = self.num_items/len(bucket.vbuckets)
         template = '{{ "mutated" : 0, "age": {0}, "first_name": "{1}" }}'
@@ -72,7 +72,7 @@ class VBucketToolTests(CliBaseTest):
         for i in xrange(gen_load.end):
             key, value = gen_load.next()
             vb_id = self._get_vBucket_id(key)
-            self.clients[vb.master].set(key, 0, 0, value, vb_id)
+            self.clients[vb.main].set(key, 0, 0, value, vb_id)
             self.keys_per_vbuckets_dict[vb_id].append(key)
 
     def _get_vBucket_id(self, key):
@@ -80,20 +80,20 @@ class VBucketToolTests(CliBaseTest):
 
     def _get_clients(self, bucket):
         for vbucket in bucket.vbuckets:
-            if vbucket.master not in self.clients:
-                ip, port = vbucket.master.split(':')
+            if vbucket.main not in self.clients:
+                ip, port = vbucket.main.split(':')
                 if bucket.port:
                     port = bucket.port
-                self.clients[vbucket.master] = MemcachedClient(ip, int(port))
+                self.clients[vbucket.main] = MemcachedClient(ip, int(port))
 
     def _parse_vbuckets(self, output):
         """ Returns dict with keys as key and value as
-            tuple of vb_id, master, replicas"""
+            tuple of vb_id, main, replicas"""
         result = {}
         output = [line for line in output if line.startswith('key')]
         for line in output:
             key = line.split()[line.split().index('key:') + 1]
             result[key] = (line.split()[line.split().index('vBucketId:') + 1],
-                           line.split()[line.split().index('master:') + 1],
+                           line.split()[line.split().index('main:') + 1],
                            line[line.index('replicas:') + 9:].strip().split())
         return result

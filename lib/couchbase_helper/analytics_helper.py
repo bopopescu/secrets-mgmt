@@ -15,7 +15,7 @@ from membase.api.exception import CBQError, ReadDocumentException
 from membase.api.rest_client import RestConnection
 
 class AnalyticsHelper():
-    def __init__(self, version = None, master = None, shell = None, use_rest = None, max_verify = 0, buckets = [],
+    def __init__(self, version = None, main = None, shell = None, use_rest = None, max_verify = 0, buckets = [],
         item_flag = 0,  analytics_port = 8095, n1ql_port = 8093, full_docs_list = [], log = None, input = None,database = None):
         self.version = version
         self.shell = shell
@@ -28,7 +28,7 @@ class AnalyticsHelper():
         self.log = log
         self.use_rest = True
         self.full_docs_list = full_docs_list
-        self.master = master
+        self.main = main
         self.database = database
         if self.full_docs_list and len(self.full_docs_list) > 0:
             self.gen_results = TuqGenerators(self.log, self.full_docs_list)
@@ -49,7 +49,7 @@ class AnalyticsHelper():
         if query is None:
             query = self.query
         if server is None:
-           server = self.master
+           server = self.main
            if server.ip == "127.0.0.1":
             self.analytics_port = server.analytics_port
         else:
@@ -405,12 +405,12 @@ class AnalyticsHelper():
         max_proc = self.input.param("gomaxprocs", None)
         cmd = "export GOMAXPROCS=%s" % max_proc
         for server in self.servers:
-            shell_connection = RemoteMachineShellConnection(self.master)
+            shell_connection = RemoteMachineShellConnection(self.main)
             shell_connection.execute_command(cmd)
 
     def drop_primary_index(self, using_gsi = True, server = None):
         if server == None:
-            server = self.master
+            server = self.main
         self.log.info("CHECK FOR PRIMARY INDEXES")
         for bucket in self.buckets:
             self.query = "DROP PRIMARY INDEX ON {0}".format(bucket.name)
@@ -428,7 +428,7 @@ class AnalyticsHelper():
 
     def create_primary_index(self, using_gsi = True, server = None):
         if server == None:
-            server = self.master
+            server = self.main
         for bucket in self.buckets:
             self.query = "CREATE PRIMARY INDEX ON %s " % (bucket.name)
             if using_gsi:
@@ -488,7 +488,7 @@ class AnalyticsHelper():
         if query is None:
             query = self.query
         if server is None:
-           server = self.master
+           server = self.main
            if server.ip == "127.0.0.1":
             self.n1ql_port = server.n1ql_port
         else:
@@ -559,7 +559,7 @@ class AnalyticsHelper():
     # def is_index_ready_and_in_list(self, bucket, index_name, server=None, timeout=600.0):
     #     query = "SELECT * FROM system:indexes where name = \'{0}\'".format(index_name)
     #     if server == None:
-    #         server = self.master
+    #         server = self.main
     #     init_time = time.time()
     #     check = False
     #     while not check:
@@ -600,7 +600,7 @@ class AnalyticsHelper():
     # def _is_index_in_list(self, bucket, index_name, server = None, index_state = ["pending", "building", "deferred"]):
     #     query = "SELECT * FROM system:indexes where name = \'{0}\'".format(index_name)
     #     if server == None:
-    #         server = self.master
+    #         server = self.main
     #     res = self.run_cbq_query(query = query, server = server)
     #     for item in res['results']:
     #         if 'keyspace_id' not in item['indexes']:
@@ -612,7 +612,7 @@ class AnalyticsHelper():
     # def _is_index_in_list_bulk(self, bucket, index_names = [], server = None, index_state = ["pending","building"]):
     #     query = "SELECT * FROM system:indexes"
     #     if server == None:
-    #         server = self.master
+    #         server = self.main
     #     res = self.run_cbq_query(query = query, server = server)
     #     index_count=0
     #     found_index_list = []
@@ -629,7 +629,7 @@ class AnalyticsHelper():
     # def gen_index_map(self, server = None):
     #     query = "SELECT * FROM system:indexes"
     #     if server == None:
-    #         server = self.master
+    #         server = self.main
     #     res = self.run_cbq_query(query = query, server = server)
     #     index_map = {}
     #     for item in res['results']:
@@ -645,7 +645,7 @@ class AnalyticsHelper():
     #     query = "SELECT COUNT(*) FROM {0}"
     #     map= {}
     #     if server == None:
-    #         server = self.master
+    #         server = self.main
     #     for bucket in buckets:
     #         res = self.run_cbq_query(query = query.format(bucket.name), server = server)
     #         map[bucket.name] = int(res["results"][0]["$1"])
@@ -654,7 +654,7 @@ class AnalyticsHelper():
     # def get_index_count_using_index(self, bucket, index_name,server=None):
     #     query = 'SELECT COUNT(*) FROM {0} USE INDEX ({1})'.format(bucket.name, index_name)
     #     if not server:
-    #         server = self.master
+    #         server = self.main
     #     res = self.run_cbq_query(query=query, server=server)
     #     return int(res['results'][0]['$1'])
 

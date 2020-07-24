@@ -60,7 +60,7 @@ class ViewQueryTests(BaseTestCase):
             self.retries = self.input.param('retries', 100)
             self.timeout = self.input.param('timeout', None)
             self.error = None
-            self.master = self.servers[0]
+            self.main = self.servers[0]
             self.thread_crashed = Event()
             self.thread_stopped = Event()
             self.server = None
@@ -86,7 +86,7 @@ class ViewQueryTests(BaseTestCase):
                of stale at the same time
         '''
         # init dataset for test
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs)
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs)
         data_set.add_stale_queries(limit=self.limit)
         self._query_test_init(data_set)
 
@@ -103,7 +103,7 @@ class ViewQueryTests(BaseTestCase):
             6. Verify that only non-deleted keys appeared
         '''
         # init dataset for test
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs)
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs)
         data_set.add_stale_queries(stale_param="false", limit=self.limit)
         #  generate items
         generator_load = data_set.generate_docs(data_set.views[0], start=0,
@@ -134,7 +134,7 @@ class ViewQueryTests(BaseTestCase):
             2. Simultaneously start querying(different combinations of
                stratkey. endkey, descending, inclusive_end, parameters)
         '''
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs)
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs)
         data_set.add_startkey_endkey_queries(limit=self.limit)
         self._query_test_init(data_set)
 
@@ -149,14 +149,14 @@ class ViewQueryTests(BaseTestCase):
             3. Change cluster password
             4.Perform same queries
         '''
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs)
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs)
         data_set.add_startkey_endkey_queries(limit=self.limit)
         generator_load = data_set.generate_docs(data_set.views[0], start=0,
                                                 end=self.num_docs)
         self.load(data_set, generator_load)
         self._query_all_views(data_set.views, generator_load,
                               verify_expected_keys=True)
-        old_pass = self.master.rest_password
+        old_pass = self.main.rest_password
         self.change_password(new_password=self.input.param("new_password", "new_pass"))
         try:
             self._query_all_views(data_set.views, generator_load,
@@ -175,7 +175,7 @@ class ViewQueryTests(BaseTestCase):
             3. Change cluster port
             4.Perform same queries
         '''
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs)
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs)
         data_set.add_startkey_endkey_queries(limit=self.limit)
         generator_load = data_set.generate_docs(data_set.views[0], start=0,
                                                 end=self.num_docs)
@@ -198,7 +198,7 @@ class ViewQueryTests(BaseTestCase):
         Based on MB-7193
         '''
         ddoc_name = 'ddoc/test'
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs,
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs,
                                  name_ddoc=ddoc_name)
         data_set.add_startkey_endkey_queries(limit=self.limit)
         generator_load = data_set.generate_docs(data_set.views[0])
@@ -217,7 +217,7 @@ class ViewQueryTests(BaseTestCase):
         '''
         symbols = [u"\xf1", u"\xe1", u"\xfc", u"\xbf", u"\xf1", u"\xe1", u"\xfc",
                    u"\xbf"]
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs,
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs,
                                  json_case=True)
         generator_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, generator_load)
@@ -234,7 +234,7 @@ class ViewQueryTests(BaseTestCase):
             1. Start load data
             2. Simultaneously start querying(include stale and startkey endkey queries)
         '''
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs)
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs)
         data_set.add_all_query_sets(limit=self.limit)
         self._query_test_init(data_set)
 
@@ -251,7 +251,7 @@ class ViewQueryTests(BaseTestCase):
         query_params = self.input.param("query_params", None)
         error = self.input.param("error", None)
 
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs)
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs)
         data_set.add_negative_query(query_params, error)
         self._query_test_init(data_set)
 
@@ -268,7 +268,7 @@ class ViewQueryTests(BaseTestCase):
         # init dataset for test
         stale = str(self.input.param("stale_param", "update_after"))
         num_docs_to_add = self.input.param("num_docs_to_add", 10)
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs)
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs)
         generator_load = data_set.generate_docs(data_set.views[0])
         generator_extra = data_set.generate_docs(data_set.views[0],
                                                  start=self.num_docs,
@@ -312,7 +312,7 @@ class ViewQueryTests(BaseTestCase):
             inclusive_end combinations)
         '''
 
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
         data_set.add_startkey_endkey_queries(limit=self.limit)
         self._query_test_init(data_set)
 
@@ -336,7 +336,7 @@ class ViewQueryTests(BaseTestCase):
         '''
         options = {"updateMinChanges" : self.docs_per_day,
                    "replicaUpdateMinChanges" : self.docs_per_day}
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day,
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day,
                                    ddoc_options=options)
         gen_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, gen_load)
@@ -385,7 +385,7 @@ class ViewQueryTests(BaseTestCase):
         point_2 = point_1 + (max(min_changes, min_changes_r) - min(min_changes, min_changes_r)) / 2
         point_3 = max(min_changes, min_changes_r) + 200
         index_types = (('main', 'replica'), ('replica', 'main'))[min_changes > min_changes_r]
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs,
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs,
                                  ddoc_options=options)
         gen_load_1 = data_set.generate_docs(data_set.views[0], start=0,
                                             end=point_1)
@@ -444,7 +444,7 @@ class ViewQueryTests(BaseTestCase):
             1. Start load data
             2. Simultaneously start key queries
         '''
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
         data_set.add_key_queries(limit=self.limit)
         self._query_test_init(data_set)
 
@@ -468,7 +468,7 @@ class ViewQueryTests(BaseTestCase):
         query_params = self.input.param("query_params", None)
         error = self.input.param("error", None)
 
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
         data_set.add_negative_query(query_params, error)
         self._query_test_init(data_set)
 
@@ -482,7 +482,7 @@ class ViewQueryTests(BaseTestCase):
         '''
         error = self.input.param('error', 'too large')
         self.value_size = 34603008
-        data_set = BigDataSet(self.master, self.cluster, self.num_docs, self.value_size)
+        data_set = BigDataSet(self.main, self.cluster, self.num_docs, self.value_size)
         data_set.add_stale_queries(error)
         self._query_test_init(data_set)
 
@@ -505,7 +505,7 @@ class ViewQueryTests(BaseTestCase):
         valid_params = self.input.param("valid_params", None)
         invalid_params = self.input.param("invalid_params", None)
 
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
         data_set.add_query_invalid_startkey_endkey_docid(valid_params, invalid_params)
         self._query_test_init(data_set)
 
@@ -525,7 +525,7 @@ class ViewQueryTests(BaseTestCase):
             2. simultaneously run queries (staartkey endkey startkey_docid endkey_docid
             inclusive_end, descending combinations)
             '''
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
 
         data_set.add_startkey_endkey_docid_queries(limit=self.limit)
         self._query_test_init(data_set)
@@ -545,7 +545,7 @@ class ViewQueryTests(BaseTestCase):
             1. Start load data
             2. simultaneously start queries with group and group_level params
         '''
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
 
         data_set.add_group_count_queries(limit=self.limit)
         self._query_test_init(data_set)
@@ -568,7 +568,7 @@ class ViewQueryTests(BaseTestCase):
             4. Start querying
         '''
         num_nodes_to_add = self.input.param('num_nodes_to_add', 1)
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
 
         data_set.add_startkey_endkey_queries(limit=self.limit)
         gen_load = data_set.generate_docs(data_set.views[0])
@@ -600,7 +600,7 @@ class ViewQueryTests(BaseTestCase):
         '''
 
         num_nodes_to_rem = self.input.param('num_nodes_to_rem', 1)
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
 
         data_set.add_startkey_endkey_queries(limit=self.limit)
         gen_load = data_set.generate_docs(data_set.views[0])
@@ -634,7 +634,7 @@ class ViewQueryTests(BaseTestCase):
         self.retries += 50
         failover_factor = self.input.param("failover-factor", 1)
         failover_nodes = self.servers[1 : failover_factor + 1]
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
         data_set.add_startkey_endkey_queries(limit=self.limit)
         gen_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, gen_load)
@@ -679,7 +679,7 @@ class ViewQueryTests(BaseTestCase):
         '''
         failover_nodes = []
         failover_factor = self.input.param("failover-factor", 1)
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
         data_set.add_startkey_endkey_queries(limit=self.limit)
         gen_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, gen_load)
@@ -694,7 +694,7 @@ class ViewQueryTests(BaseTestCase):
                 self.log.info("10 seconds sleep after failover before invoking rebalance...")
                 time.sleep(10)
                 servers = self.servers[i:]
-                self.master = self.servers[i + 1]
+                self.main = self.servers[i + 1]
 
                 rebalance = self.cluster.async_rebalance(servers,
                                                          [], failover_nodes)
@@ -731,7 +731,7 @@ class ViewQueryTests(BaseTestCase):
             4. stop rebalance
             5. Start querying
         '''
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
 
         data_set.add_startkey_endkey_queries(limit=self.limit)
         gen_load = data_set.generate_docs(data_set.views[0])
@@ -744,7 +744,7 @@ class ViewQueryTests(BaseTestCase):
             nodes = rest.node_statuses()
             self.log.info("current nodes : {0}".format([node.id for node in rest.node_statuses()]))
             self.log.info("adding node {0}:{1} to cluster".format(server.ip, server.port))
-            otpNode = rest.add_node(self.master.rest_username, self.master.rest_password, server.ip, server.port)
+            otpNode = rest.add_node(self.main.rest_username, self.main.rest_password, server.ip, server.port)
             msg = "unable to add node {0}:{1} to the cluster"
             self.assertTrue(otpNode, msg.format(server.ip, server.port))
 
@@ -781,7 +781,7 @@ class ViewQueryTests(BaseTestCase):
             4. stop rebalance
             5. Start querying
         '''
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
 
         data_set.add_startkey_endkey_queries(limit=self.limit)
         gen_load = data_set.generate_docs(data_set.views[0])
@@ -842,7 +842,7 @@ class ViewQueryTests(BaseTestCase):
             1. Start load data
             2. start stale queries(ok, update_after, false)
         '''
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
 
         data_set.add_stale_queries()
         self._query_test_init(data_set)
@@ -862,7 +862,7 @@ class ViewQueryTests(BaseTestCase):
             1. Start load data
             2. start queries: stale, group, starkey/endkey, stratkey_docid
         '''
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
         data_set.add_all_query_sets()
         if self.wait_persistence:
             gen_load = data_set.generate_docs(data_set.views[0])
@@ -889,7 +889,7 @@ class ViewQueryTests(BaseTestCase):
             2. start queries with skip
         '''
         skip = self.input.param('skip', 200)
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
 
         data_set.add_skip_queries(skip)
         self._query_test_init(data_set)
@@ -911,7 +911,7 @@ class ViewQueryTests(BaseTestCase):
         '''
         skip = 0
         max_skip = self.limit * 10
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
         gen_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, gen_load)
 
@@ -941,8 +941,8 @@ class ViewQueryTests(BaseTestCase):
             1. Start load data
             2. start all possible combinations of querying
         '''
-        ds1 = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
-        ds2 = SimpleDataSet(self.master, self.cluster, self.num_docs)
+        ds1 = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
+        ds2 = SimpleDataSet(self.main, self.cluster, self.num_docs)
         data_sets = [ds1, ds2]
 
         # load and query all views and datasets
@@ -972,7 +972,7 @@ class ViewQueryTests(BaseTestCase):
             1. Start load data
             2. start querying all nodes
         '''
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
         data_set.add_startkey_endkey_queries(limit=self.limit)
         gen_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, gen_load)
@@ -1016,7 +1016,7 @@ class ViewQueryTests(BaseTestCase):
             4. start queriyng again
         '''
         try:
-            data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+            data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
 
             data_set.add_startkey_endkey_queries(limit=self.limit)
             gen_load = data_set.generate_docs(data_set.views[0])
@@ -1055,7 +1055,7 @@ class ViewQueryTests(BaseTestCase):
         '''
         how_many_add = self.input.param('how_many_add', 0)
 
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
         data_set.add_startkey_endkey_queries(limit=self.limit)
         gen_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, gen_load)
@@ -1088,7 +1088,7 @@ class ViewQueryTests(BaseTestCase):
             2. start querying
             3. rebalance incrementally
         '''
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
 
         data_set.add_startkey_endkey_queries(limit=self.limit)
         gen_load = data_set.generate_docs(data_set.views[0])
@@ -1114,7 +1114,7 @@ class ViewQueryTests(BaseTestCase):
         views_num = self.input.param('num-views-to-modify', 1)
         action = self.input.param('action', 'create')
         ddoc_name = "view_ddoc"
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
         data_set.add_startkey_endkey_queries()
         gen_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, gen_load)
@@ -1163,7 +1163,7 @@ class ViewQueryTests(BaseTestCase):
             3. start compaction
         '''
         percent_compaction = self.input.param('percent_compaction', 10)
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
         data_set.add_startkey_endkey_queries()
 
         self.disable_compaction()
@@ -1173,7 +1173,7 @@ class ViewQueryTests(BaseTestCase):
         self._query_all_views(data_set.views, gen_load)
 
         for view in data_set.views:
-            fragmentation_monitor = self.cluster.async_monitor_view_fragmentation(self.master,
+            fragmentation_monitor = self.cluster.async_monitor_view_fragmentation(self.main,
                                                                                   view.name,
                                                                                   percent_compaction,
                                                                                   view.bucket)
@@ -1183,7 +1183,7 @@ class ViewQueryTests(BaseTestCase):
                 self.load(data_set, gen_load, op_type="update")
             fragmentation_monitor.result()
 
-            compaction_task = self.cluster.async_compact_view(self.master, view.name, view.bucket)
+            compaction_task = self.cluster.async_compact_view(self.main, view.name, view.bucket)
             self._query_all_views(data_set.views, gen_load)
             compaction_task.result()
 
@@ -1206,7 +1206,7 @@ class ViewQueryTests(BaseTestCase):
         failover_factor = self.input.param("failover-factor", 1)
         failover_nodes = self.servers[1 : failover_factor + 1]
         try:
-            data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+            data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
 
             data_set.add_startkey_endkey_queries(limit=self.limit)
             gen_load = data_set.generate_docs(data_set.views[0])
@@ -1242,7 +1242,7 @@ class ViewQueryTests(BaseTestCase):
             2. start querying one node - in different threads
         '''
         num_threads = self.input.param('num_threads', 2)
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
         data_set.add_startkey_endkey_queries()
         gen_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, gen_load)
@@ -1275,7 +1275,7 @@ class ViewQueryTests(BaseTestCase):
     def test_simple_dataset_query_during_modifying_its_view(self):
         action = self.input.param('action', 'update')
         error = self.input.param('error', None)
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs)
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs)
         data_set.add_startkey_endkey_queries()
         generator_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, generator_load)
@@ -1319,7 +1319,7 @@ class ViewQueryTests(BaseTestCase):
         '''
         skip = 0
         action = self.input.param('action', 'recreate')
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs)
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs)
 
         data_set.add_skip_queries(skip, limit=self.limit)
         generator_load = data_set.generate_docs(data_set.views[0], start=0,
@@ -1342,7 +1342,7 @@ class ViewQueryTests(BaseTestCase):
             self._query_all_views(data_set.views, generator_load)
 
 
-    def test_employee_dataset_query_stop_master(self):
+    def test_employee_dataset_query_stop_main(self):
         '''
         Test uses employee data set:
             -documents are structured as {"name": name<string>,
@@ -1356,18 +1356,18 @@ class ViewQueryTests(BaseTestCase):
         Steps to repro:
             1. Start load data
             2. start querying
-            3. stop master
+            3. stop main
         '''
         try:
             error = self.input.param('error', None)
-            data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+            data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
             data_set.add_startkey_endkey_queries()
             generator_load = data_set.generate_docs(data_set.views[0])
             self.load(data_set, generator_load)
             self._query_all_views(data_set.views, generator_load)
 
-            shell = RemoteMachineShellConnection(self.master)
-            self.log.info("Master Node is being stopped")
+            shell = RemoteMachineShellConnection(self.main)
+            self.log.info("Main Node is being stopped")
             shell.stop_couchbase()
             #error should be returned in results
             for view in data_set.views:
@@ -1376,7 +1376,7 @@ class ViewQueryTests(BaseTestCase):
             time.sleep(20)
             self._query_all_views(data_set.views, generator_load, server_to_query=1)
         finally:
-            shell = RemoteMachineShellConnection(self.master)
+            shell = RemoteMachineShellConnection(self.main)
             shell.start_couchbase()
             time.sleep(10)
             shell.disconnect()
@@ -1397,7 +1397,7 @@ class ViewQueryTests(BaseTestCase):
             2. start querying (startkey/endkey with stale, skip, limit)
         '''
         extra_params = self.input.param('extra_params', None)
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
         data_set.add_stale_queries()
         generator_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, generator_load)
@@ -1412,7 +1412,7 @@ class ViewQueryTests(BaseTestCase):
     '''
     def test_employee_dataset_skip_bidirection_queries(self):
         skip = self.input.param('skip', 200)
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day)
 
         data_set.add_skip_queries(skip, limit=self.limit)
         data_set.add_skip_queries(skip)
@@ -1443,7 +1443,7 @@ class ViewQueryTests(BaseTestCase):
         data_sets = []
         generators = []
         for bucket in self.buckets:
-            data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day, bucket=bucket)
+            data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day, bucket=bucket)
             data_sets.append(data_set)
             generators.append(data_set.generate_docs(data_set.views[0]))
         iterator = 0
@@ -1484,7 +1484,7 @@ class ViewQueryTests(BaseTestCase):
     def test_simple_dataset_query_during_modifying_other_ddoc(self):
         ddoc_num = self.input.param('num-ddocs-to-modify', 1)
         action = self.input.param('action', 'create')
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs)
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs)
         data_set.add_startkey_endkey_queries()
         generator_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, generator_load)
@@ -1529,7 +1529,7 @@ class ViewQueryTests(BaseTestCase):
     def test_simple_dataset_query_during_modifying_its_ddoc(self):
         action = self.input.param('action', 'update')
         error = self.input.param('error', None)
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs)
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs)
         data_set.add_startkey_endkey_queries()
         generator_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, generator_load)
@@ -1568,7 +1568,7 @@ class ViewQueryTests(BaseTestCase):
         '''
         params = self.input.param('query_params', {})
         use_custom_reduce = self.input.param('use_custom_reduce', False)
-        data_set = SalesDataSet(self.master, self.cluster, self.docs_per_day, custom_reduce=use_custom_reduce)
+        data_set = SalesDataSet(self.main, self.cluster, self.docs_per_day, custom_reduce=use_custom_reduce)
         data_set.add_reduce_queries(params, limit=self.limit)
         self._query_test_init(data_set)
 
@@ -1589,7 +1589,7 @@ class ViewQueryTests(BaseTestCase):
             2. start querying for views with reduce
         '''
         skip = self.input.param('skip', 2000)
-        data_set = SalesDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = SalesDataSet(self.main, self.cluster, self.docs_per_day)
         data_set.add_skip_queries(skip=skip, limit=self.limit)
         generator_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, generator_load)
@@ -1614,7 +1614,7 @@ class ViewQueryTests(BaseTestCase):
             1. Start load data
             2. start querying for views
         '''
-        data_set = SalesDataSet(self.master, self.cluster, self.docs_per_day, test_datatype=True)
+        data_set = SalesDataSet(self.main, self.cluster, self.docs_per_day, test_datatype=True)
         data_set.add_startkey_endkey_queries(limit=self.limit)
         generator_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, generator_load)
@@ -1638,7 +1638,7 @@ class ViewQueryTests(BaseTestCase):
         '''
         skip = self.input.param('skip', 2000)
         num_items = self.input.param('num_items', 55)
-        data_set = SalesDataSet(self.master, self.cluster, self.docs_per_day, template_items_num=num_items)
+        data_set = SalesDataSet(self.main, self.cluster, self.docs_per_day, template_items_num=num_items)
         data_set.add_skip_queries(skip=skip, limit=self.limit)
         generator_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, generator_load)
@@ -1650,7 +1650,7 @@ class ViewQueryTests(BaseTestCase):
             1. Start load data
             2. simultaneously start queries with group and group_level params
         '''
-        data_set = SalesDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = SalesDataSet(self.main, self.cluster, self.docs_per_day)
 
         data_set.add_group_queries(limit=self.limit)
         self._query_test_init(data_set)
@@ -1662,7 +1662,7 @@ class ViewQueryTests(BaseTestCase):
             2. simultaneously run queries (staartkey endkey startkey_docid endkey_docid
             inclusive_end, descending combinations)
             '''
-        data_set = SalesDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = SalesDataSet(self.main, self.cluster, self.docs_per_day)
 
         data_set.add_startkey_endkey_docid_queries(limit=self.limit)
         self._query_test_init(data_set)
@@ -1673,7 +1673,7 @@ class ViewQueryTests(BaseTestCase):
             1. Start load data
             2. start stale queries(ok, update_after, false)
         '''
-        data_set = SalesDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = SalesDataSet(self.main, self.cluster, self.docs_per_day)
 
         data_set.add_stale_queries()
         self._query_test_init(data_set)
@@ -1684,7 +1684,7 @@ class ViewQueryTests(BaseTestCase):
             1. Start load data
             2. start queries: stale, group, starkey/endkey, stratkey_docid
         '''
-        data_set = SalesDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = SalesDataSet(self.main, self.cluster, self.docs_per_day)
         data_set.add_all_query_sets()
         if self.wait_persistence:
             gen_load = data_set.generate_docs(data_set.views[0])
@@ -1702,14 +1702,14 @@ class ViewQueryTests(BaseTestCase):
             2. start queries with skip
         '''
         skip = self.input.param('skip', 200)
-        data_set = SalesDataSet(self.master, self.cluster, self.docs_per_day)
+        data_set = SalesDataSet(self.main, self.cluster, self.docs_per_day)
 
         data_set.add_skip_queries(skip)
         self._query_test_init(data_set)
 
 
     def test_expiration_docs_queries(self):
-        data_set = ExpirationDataSet(self.master, self.cluster, self.num_docs)
+        data_set = ExpirationDataSet(self.main, self.cluster, self.num_docs)
         generator_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, generator_load, exp=data_set.expire)
         for server in self.servers:
@@ -1718,7 +1718,7 @@ class ViewQueryTests(BaseTestCase):
         data_set.query_verify_value(self)
 
     def test_flags_docs_queries(self):
-        data_set = FlagsDataSet(self.master, self.cluster, self.num_docs)
+        data_set = FlagsDataSet(self.main, self.cluster, self.num_docs)
         generator_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, generator_load, flag=data_set.item_flag)
         print data_set.item_flag
@@ -1738,28 +1738,28 @@ class ViewQueryTests(BaseTestCase):
             Add to cluster 2 nodes and start rebalance
             Run queries with startkey/endkey for views without reduce and group/group_level for views with reduce fn
         '''
-        views = [QueryView(self.master, self.cluster,
+        views = [QueryView(self.main, self.cluster,
                            fn_str='function (doc) {if(doc.age !== undefined) { emit(doc.age, [doc.name,doc.age]);}}'),
-                 QueryView(self.master, self.cluster,
+                 QueryView(self.main, self.cluster,
                            fn_str='function (doc) {if(doc.age !== undefined) { emit(doc.name, doc.age);}}'),
-                 QueryView(self.master, self.cluster,
+                 QueryView(self.main, self.cluster,
                            fn_str='function (doc) {if(doc.age !== undefined) { emit(doc.name, "value");}}'),
-                 QueryView(self.master, self.cluster,
+                 QueryView(self.main, self.cluster,
                            fn_str='function (doc) {if(doc.age !== undefined) { emit(doc.name, 100);}}'),
-                 QueryView(self.master, self.cluster,
+                 QueryView(self.main, self.cluster,
                            fn_str='function (doc) {if(doc.age !== undefined) { emit(doc.age, "value");}}'),
-                 QueryView(self.master, self.cluster,
+                 QueryView(self.main, self.cluster,
                            fn_str='function (doc) {if(doc.age !== undefined) { emit(doc.age, 100);}}'),
-                 QueryView(self.master, self.cluster,
+                 QueryView(self.main, self.cluster,
                            fn_str='function (doc) {if(doc.age !== undefined) { emit(doc.name, doc.age);}}',
                           reduce_fn='_stats'),
-                 QueryView(self.master, self.cluster,
+                 QueryView(self.main, self.cluster,
                            fn_str='function (doc) {if(doc.age !== undefined) { emit(doc.name, doc.age);}}',
                           reduce_fn='_sum'),
-                 QueryView(self.master, self.cluster,
+                 QueryView(self.main, self.cluster,
                            fn_str='function (doc) {if(doc.age !== undefined) { emit(doc.name, doc.age);}}',
                           reduce_fn='_count')]
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs)
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs)
         data_set.views.extend(views)
         generator_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, generator_load)
@@ -1784,24 +1784,24 @@ class ViewQueryTests(BaseTestCase):
         '''
         options = {"updateMinChanges" : self.docs_per_day * 1009,
                    "replicaUpdateMinChanges" : self.docs_per_day * 1009}
-        views = [QueryView(self.master, self.cluster,
+        views = [QueryView(self.main, self.cluster,
                            fn_str='function (doc) { if(doc.job_title !== undefined) emit([doc.join_yr, doc.join_mo, doc.join_day], [doc.name, 100] ); }'),
-                 QueryView(self.master, self.cluster,
+                 QueryView(self.main, self.cluster,
                            fn_str='function (doc) { if(doc.job_title !== undefined) emit([doc.join_yr, doc.join_mo, doc.join_day], ["name", doc.name] ); }'),
-                 QueryView(self.master, self.cluster,
+                 QueryView(self.main, self.cluster,
                            fn_str='function (doc) { if(doc.job_title !== undefined) emit([doc.join_yr, doc.join_mo, doc.join_day], ["email", doc.email] ); }'),
-                 QueryView(self.master, self.cluster,
+                 QueryView(self.main, self.cluster,
                            fn_str='function (doc) { if(doc.job_title !== undefined) emit([doc.join_yr, doc.join_mo, doc.join_day], doc.join_day); }',
                           reduce_fn='_stats'),
-                 QueryView(self.master, self.cluster,
+                 QueryView(self.main, self.cluster,
                            fn_str='function (doc) { if(doc.job_title !== undefined) emit([doc.join_yr, doc.join_mo, doc.join_day], doc.join_day); }',
                           reduce_fn='_sum'),
-                 QueryView(self.master, self.cluster,
+                 QueryView(self.main, self.cluster,
                            fn_str='function (doc) { if(doc.job_title !== undefined) emit([doc.join_yr, doc.join_mo, doc.join_day], doc.join_day); }',
                           reduce_fn='_count')]
         failover_factor = self.input.param("failover-factor", 1)
         failover_nodes = self.servers[1 : failover_factor + 1]
-        data_set = EmployeeDataSet(self.master, self.cluster, self.docs_per_day, ddoc_options=options)
+        data_set = EmployeeDataSet(self.main, self.cluster, self.docs_per_day, ddoc_options=options)
         data_set.views.extend(views)
         generator_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, generator_load)
@@ -1830,28 +1830,28 @@ class ViewQueryTests(BaseTestCase):
             1. load data
             2. start querying with stale=false
         '''
-        new_views = [QueryView(self.master, self.cluster,
+        new_views = [QueryView(self.main, self.cluster,
                                fn_str='function (doc) {if(doc.age !== undefined) { emit(doc.name, doc.age);}}',
                                reduce_fn='_count',
                                name='test_view_0', ddoc_name='test_ddoc'),
-                     QueryView(self.master, self.cluster,
+                     QueryView(self.main, self.cluster,
                                fn_str='function (doc) {if(doc.age !== undefined) { emit(doc.name, doc.age);}}',
                                reduce_fn='function(key, values, rereduce) { if (rereduce) {var s = 0;for (var i = 0; i < values.length; ++i) {s += Number(values[i]);} return String(s);} return String(values.length);}',
                                name='test_view_1', ddoc_name='test_ddoc'),
-                     QueryView(self.master, self.cluster,
+                     QueryView(self.main, self.cluster,
                                fn_str='function (doc) {if(doc.age !== undefined) { emit([doc.name, doc.age], doc.age);}}',
                                reduce_fn='_sum',
                                name='test_view_2', ddoc_name='test_ddoc'),
-                     QueryView(self.master, self.cluster,
+                     QueryView(self.main, self.cluster,
                                fn_str='function (doc) {if(doc.age !== undefined) { emit([doc.name, doc.age], doc.age);}}',
                                reduce_fn='function(key, values, rereduce) { if (rereduce) return sum(values); return -values.length;}',
                                name='test_view_3', ddoc_name='test_ddoc'),
-                     QueryView(self.master, self.cluster,
+                     QueryView(self.main, self.cluster,
                                fn_str='function (doc) {if(doc.age !== undefined) { emit([doc.name, doc.age], doc.age);}}',
                                reduce_fn='_count',
                                name='test_view_4', ddoc_name='test_ddoc')]
         # init dataset for test
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs)
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs)
         data_set.views.extend(new_views)
         data_set.add_stale_queries(stale_param="false", limit=self.limit)
         #  generate items
@@ -1863,7 +1863,7 @@ class ViewQueryTests(BaseTestCase):
                               verify_expected_keys=True)
 
     def test_add_MB_7764_reproducer(self):
-        data_set = SalesDataSet(self.master, self.cluster, self.docs_per_day, custom_reduce=True)
+        data_set = SalesDataSet(self.main, self.cluster, self.docs_per_day, custom_reduce=True)
         data_set.add_reduce_queries({'reduce' :'true'})
         generator_load = data_set.generate_docs(data_set.views[0])
         self.load(data_set, generator_load)
@@ -1874,12 +1874,12 @@ class ViewQueryTests(BaseTestCase):
         #threads per view
         num_threads = self.input.param("threads", 11)
 
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs)
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs)
         generator_load = data_set.generate_docs(data_set.views[0], start=0,
                                                 end=self.num_docs)
         for ddoc_index in xrange(num_ddocs):
             view_fn = 'function (doc) {if(doc.age !== undefined) { emit(doc.age, "value_%s");}}' % ddoc_index
-            data_set.views.append(QueryView(self.master, self.cluster, fn_str=view_fn))
+            data_set.views.append(QueryView(self.main, self.cluster, fn_str=view_fn))
         data_set.add_stale_queries(stale_param="false", limit=self.limit)
         self.load(data_set, generator_load)
 
@@ -1909,19 +1909,19 @@ class ViewQueryTests(BaseTestCase):
     http://www.couchbase.com/issues/browse/CBQE-1649
     '''
     def test_index_in_with_cluster_ramquota_change(self):
-        data_set = SimpleDataSet(self.master, self.cluster, self.num_docs)
+        data_set = SimpleDataSet(self.main, self.cluster, self.num_docs)
         data_set.add_stale_queries(stale_param="false", limit=self.limit)
         generator_load = data_set.generate_docs(data_set.views[0], end=self.num_docs)
         self.load(data_set, generator_load)
 
         for view in data_set.views:
-            self.cluster.query_view(self.master, view.name, view.name,
+            self.cluster.query_view(self.main, view.name, view.name,
                                     {'stale' : 'false', 'limit' : 1000})
-        remote = RemoteMachineShellConnection(self.master)
+        remote = RemoteMachineShellConnection(self.main)
         cli_command = "setting-cluster"
         options = "--cluster-ramsize=%s" % (self.quota + 10)
         output, error = remote.execute_couchbase_cli(cli_command=cli_command, options=options, cluster_host="localhost",
-                                                     user=self.master.rest_username, password=self.master.rest_password)
+                                                     user=self.main.rest_username, password=self.main.rest_password)
         self.assertTrue('\n'.join(output).find('SUCCESS') != -1, 'ram wasn\'t changed')
         self.log.info('Quota changed')
         gen_query = copy.deepcopy(generator_load)
@@ -2073,10 +2073,10 @@ class ViewQueryTests(BaseTestCase):
             report += msg
         return report
 
-    # retrieve default rest connection associated with the master server
+    # retrieve default rest connection associated with the main server
     def _rconn(self, server=None):
         if not server:
-            server = self.master
+            server = self.main
         return RestConnection(server)
 
     @staticmethod

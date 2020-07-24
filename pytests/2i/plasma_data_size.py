@@ -87,7 +87,7 @@ class SecondaryIndexDatasizeTests(BaseSecondaryIndexingTests):
                 for character in interval:
                     if doc_gen["name"].lower().startswith(character):
                         for bucket in buckets:
-                            url = "couchbase://{0}/{1}".format(self.master.ip,
+                            url = "couchbase://{0}/{1}".format(self.main.ip,
                                                                bucket.name)
                             cb = Bucket(url, username=bucket.name, password="password")
                             cb.remove(doc_gen["_id"])
@@ -127,7 +127,7 @@ class SecondaryIndexDatasizeTests(BaseSecondaryIndexingTests):
                 for character in interval:
                     if doc_gen["name"].lower().startswith(character):
                         for bucket in buckets:
-                            url = "couchbase://{0}/{1}".format(self.master.ip,
+                            url = "couchbase://{0}/{1}".format(self.main.ip,
                                                                bucket.name)
                             cb = Bucket(url, username=bucket.name, password="password")
                             cb.remove(doc_gen["_id"])
@@ -152,7 +152,7 @@ class SecondaryIndexDatasizeTests(BaseSecondaryIndexingTests):
         array_size = random.choice(range(10, 15))
         item_size = random.choice(range(10, 15))
         self.upload_documents(num_items=1000, item_size=item_size, array_size=array_size, buckets=buckets)
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         index_map = rest.get_index_id_map()
         for j in range(self.iterations):
             log.info("Iteration: {0}".format(j))
@@ -298,7 +298,7 @@ class SecondaryIndexDatasizeTests(BaseSecondaryIndexingTests):
             buckets.append(name)
         bucket_size = self._get_bucket_size(self.quota,
                                             len(self.buckets)+len(buckets))
-        self._create_buckets(server=self.master, bucket_list=buckets,
+        self._create_buckets(server=self.main, bucket_list=buckets,
                              bucket_size=bucket_size)
         testuser = []
         rolelist = []
@@ -313,7 +313,7 @@ class SecondaryIndexDatasizeTests(BaseSecondaryIndexingTests):
         return buckets
 
     def _update_document(self, bucket_name, key, document):
-        url = 'couchbase://{ip}/{name}'.format(ip=self.master.ip, name=bucket_name)
+        url = 'couchbase://{ip}/{name}'.format(ip=self.main.ip, name=bucket_name)
         bucket = Bucket(url, username=bucket_name, password="password")
         bucket.upsert(key, document)
 

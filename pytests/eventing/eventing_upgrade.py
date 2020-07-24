@@ -27,8 +27,8 @@ log = logging.getLogger()
 class EventingUpgrade(NewUpgradeBaseTest, BaseTestCase):
     def setUp(self):
         super(EventingUpgrade, self).setUp()
-        self.rest = RestConnection(self.master)
-        self.server = self.master
+        self.rest = RestConnection(self.main)
+        self.server = self.main
         self.queue = Queue.Queue()
         self.src_bucket_name = self.input.param('src_bucket_name', 'src_bucket')
         self.eventing_log_level = self.input.param('eventing_log_level', 'INFO')
@@ -49,14 +49,14 @@ class EventingUpgrade(NewUpgradeBaseTest, BaseTestCase):
                                                    replicas=self.num_replicas)
         self.cluster.create_standard_bucket(name=self.src_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                             bucket_params=bucket_params)
-        self.src_bucket = RestConnection(self.master).get_buckets()
+        self.src_bucket = RestConnection(self.main).get_buckets()
         self.sleep(60)
         self.cluster.create_standard_bucket(name=self.dst_bucket_name, port=STANDARD_BUCKET_PORT + 2,
                                             bucket_params=bucket_params)
         self.sleep(60)
         self.cluster.create_standard_bucket(name=self.metadata_bucket_name, port=STANDARD_BUCKET_PORT + 3,
                                             bucket_params=bucket_params)
-        self.buckets = RestConnection(self.master).get_buckets()
+        self.buckets = RestConnection(self.main).get_buckets()
         # Load the data in older version
         self.load(self.gens_load, buckets=self.src_bucket, verify_data=False)
         # upgrade all the nodes

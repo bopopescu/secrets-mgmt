@@ -25,15 +25,15 @@ class EventingLogging(EventingBaseTest, LogRedactionBase):
                                                        replicas=self.num_replicas)
             self.cluster.create_standard_bucket(name=self.src_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
-            self.src_bucket = RestConnection(self.master).get_buckets()
+            self.src_bucket = RestConnection(self.main).get_buckets()
             self.cluster.create_standard_bucket(name=self.dst_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
             self.cluster.create_standard_bucket(name=self.metadata_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
-            self.buckets = RestConnection(self.master).get_buckets()
+            self.buckets = RestConnection(self.main).get_buckets()
         self.gens_load = self.generate_docs(self.docs_per_day)
         self.expiry = 3
-        auditing = audit(host=self.master)
+        auditing = audit(host=self.main)
         log.info("Enabling Audit")
         auditing.setAuditEnable('true')
         self.sleep(30)

@@ -8,9 +8,9 @@ class Rebalance(XDCRNewBaseTest):
     def setUp(self):
         super(Rebalance, self).setUp()
         self.src_cluster = self.get_cb_cluster_by_name('C1')
-        self.src_master = self.src_cluster.get_master_node()
+        self.src_main = self.src_cluster.get_main_node()
         self.dest_cluster = self.get_cb_cluster_by_name('C2')
-        self.dest_master = self.dest_cluster.get_master_node()
+        self.dest_main = self.dest_cluster.get_main_node()
         self.__rebalance = self._input.param("rebalance", "").split('-')
         self.__failover = self._input.param("failover","").split('-')
         self.__num_rebalance = self._input.param("num_rebalance", 1)
@@ -42,7 +42,7 @@ class Rebalance(XDCRNewBaseTest):
             pass
 
     """Load data only at source for unidirectional, and at both source/destination for bidirection replication.
-     Async Rebalance-Out Non-master node at Source/Destination while
+     Async Rebalance-Out Non-main node at Source/Destination while
     Create/Update/Delete are performed in parallel based on doc-ops specified by the user.
     Verifying whether XDCR replication is successful on subsequent destination clusters. """
 
@@ -96,19 +96,19 @@ class Rebalance(XDCRNewBaseTest):
         finally:
             pass
 
-    """Loading only at source cluster. Async Rebalance-Out Master node at Source/Destination while
+    """Loading only at source cluster. Async Rebalance-Out Main node at Source/Destination while
     Create/Update/Delete are performed in parallel based on doc-ops specified by the user.
     Verifying whether XDCR replication is successful on subsequent destination clusters. """
 
-    def async_rebalance_out_master(self):
+    def async_rebalance_out_main(self):
         try:
             self.setup_xdcr_and_load()
 
             # Rebalance-IN
             if "C1" in self.__rebalance:
-                self.src_cluster.rebalance_out_master()
+                self.src_cluster.rebalance_out_main()
             if "C2" in self.__rebalance:
-                self.dest_cluster.rebalance_out_master()
+                self.dest_cluster.rebalance_out_main()
 
             self.perform_update_delete()
 
@@ -118,7 +118,7 @@ class Rebalance(XDCRNewBaseTest):
             pass
 
     """Load data only at source for unidirectional, and at both source/destination for bidirection replication.
-    Swap Rebalance-Out Non-master node at Source/Destination while
+    Swap Rebalance-Out Non-main node at Source/Destination while
     Create/Update/Delete are performed in parallel based on doc-ops specified by the user.
     Verifying whether XDCR replication is successful on subsequent destination clusters. """
 
@@ -141,19 +141,19 @@ class Rebalance(XDCRNewBaseTest):
             pass
 
     """Load data only at source for unidirectional, and at both source/destination for bidirection replication.
-    Swap Rebalance-Out Master node at Source/Destination while
+    Swap Rebalance-Out Main node at Source/Destination while
     Create/Update/Delete are performed in parallel based on doc-ops specified by the user.
     Verifying whether XDCR replication is successful on subsequent destination clusters. """
 
-    def swap_rebalance_out_master(self):
+    def swap_rebalance_out_main(self):
         try:
             self.setup_xdcr_and_load()
 
             # Swap-Rebalance
             if "C1" in self.__rebalance:
-                self.src_cluster.swap_rebalance_master()
+                self.src_cluster.swap_rebalance_main()
             if "C2" in self.__rebalance:
-                self.dest_cluster.swap_rebalance_master()
+                self.dest_cluster.swap_rebalance_main()
 
             self.perform_update_delete()
 

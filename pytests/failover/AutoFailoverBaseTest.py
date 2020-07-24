@@ -424,10 +424,10 @@ class AutoFailoverBaseTest(BaseTestCase):
         """
         BucketOperationHelper.delete_all_buckets_or_assert(self.servers, self)
         for node in self.servers:
-            master = node
+            main = node
             try:
                 ClusterOperationHelper.cleanup_cluster(self.servers,
-                                                       master=master)
+                                                       main=main)
             except:
                 continue
 

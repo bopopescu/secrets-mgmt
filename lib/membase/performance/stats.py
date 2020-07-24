@@ -743,10 +743,10 @@ class StatsCollector(object):
             }
 
     def xdcr_lag_stats(self, interval=5):
-        master = self.clusters[0][0]
-        slave = self.clusters[1][0]
-        src_client = VBucketAwareMemcached(RestConnection(master), self.bucket)
-        dst_client = VBucketAwareMemcached(RestConnection(slave), self.bucket)
+        main = self.clusters[0][0]
+        subordinate = self.clusters[1][0]
+        src_client = VBucketAwareMemcached(RestConnection(main), self.bucket)
+        dst_client = VBucketAwareMemcached(RestConnection(subordinate), self.bucket)
 
         log.info("started xdcr lag measurements")
         self._task["xdcr_lag"] = list()

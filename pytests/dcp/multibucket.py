@@ -12,7 +12,7 @@ class DCPMultiBucket(DCPBase):
     def test_stream_all_buckets(self):
         doc_gen = BlobGenerator(
             'dcpdata', 'dcpdata-', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, doc_gen, "create", 0)
+        self._load_all_buckets(self.main, doc_gen, "create", 0)
 
         user_name = self.input.param("user_name",None)
         password = self.input.param("password",None)
@@ -27,7 +27,7 @@ class DCPMultiBucket(DCPBase):
         for bucket in buckets:
             if user_name is not None:
                 self.add_built_in_server_user([{'id': user_name, 'name': user_name, 'password': password}], \
-                                              [{'id': user_name, 'name': user_name, 'roles': 'data_dcp_reader[default]'}], self.master)
+                                              [{'id': user_name, 'name': user_name, 'roles': 'data_dcp_reader[default]'}], self.main)
                 dcp_client = self.dcp_client(nodeA, PRODUCER, bucket_name=bucket, auth_user=user_name, auth_password=password)
             else:
                 dcp_client = self.dcp_client(nodeA, PRODUCER, bucket_name=bucket)
@@ -49,7 +49,7 @@ class DCPMultiBucket(DCPBase):
         # load all buckets
         doc_gen = BlobGenerator(
             'dcpdata', 'dcpdata-', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, doc_gen, "create", 0)
+        self._load_all_buckets(self.main, doc_gen, "create", 0)
         self._wait_for_stats_all_buckets([nodeA])
 
         # store expected vb seqnos

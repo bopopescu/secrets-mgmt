@@ -47,7 +47,7 @@ class ConnectionTests(BaseTestCase):
 
     def create_connections_test(self):
 
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         os_type = shell.extract_remote_info()
         if os_type.type != 'Linux':
             return
@@ -57,16 +57,16 @@ class ConnectionTests(BaseTestCase):
         servers_in = self.input.param('servers_in', 0)
         process = self.input.param('process', 'beam.smp')
 
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         initial_rate = shell.get_mem_usage_by_process(process)
         self.log.info("Usage of memory is %s" % initial_rate)
         if servers_in:
             servs_in = self.servers[1:servers_in + 1]
-            rebalance = self.cluster.async_rebalance([self.master], servs_in, [])
+            rebalance = self.cluster.async_rebalance([self.main], servs_in, [])
         try:
             self.log.info("**** Start opening sasl streaming connection ***")
             for i in xrange(num_connections):
-                rest = RestConnection(self.master)
+                rest = RestConnection(self.main)
                 t = rest.open_sasl_streaming_connection(self.buckets[0])
                 if t is None:
                     self.log.error("Can open only %s threads" % i)
@@ -90,28 +90,28 @@ class ConnectionTests(BaseTestCase):
             except:
                 pass
 
-    """ this test need to install autoconf and automake on master vm """
+    """ this test need to install autoconf and automake on main vm """
     def multiple_connections_using_memcachetest (self):
         """ server side moxi is removed in spock as in MB-16661 """
         if self.cb_version[:5] in COUCHBASE_FROM_SPOCK:
             self.log.info("From spock, server side moxi is removed."
                           " More information could be found in MB-16661 ")
             return
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         os_type = shell.extract_remote_info()
         if os_type.type != 'Linux':
             return
         mcsoda_items = self.input.param('mcsoda_items', 1000000)
         memcachetest_items = self.input.param('memcachetest_items', 100000)
         moxi_port = self.input.param('moxi_port', 51500)
-        self._stop_moxi(self.master, moxi_port)
+        self._stop_moxi(self.main, moxi_port)
         self._stop_mcsoda_localy(moxi_port)
         try:
-            self._run_moxi(self.master, moxi_port, self.master.ip, "default")
-            self._run_mcsoda_localy(self.master.ip, moxi_port, "default",
+            self._run_moxi(self.main, moxi_port, self.main.ip, "default")
+            self._run_mcsoda_localy(self.main.ip, moxi_port, "default",
                                                     mcsoda_items=mcsoda_items)
             self.sleep(30)
-            sd = MemcachetestRunner(self.master, num_items=memcachetest_items, \
+            sd = MemcachetestRunner(self.main, num_items=memcachetest_items, \
                                      extra_params="-W 16 -t 16 -c 0 -M 2")  # MB-8083
             status = sd.start_memcachetest()
             if not status:
@@ -126,7 +126,7 @@ class ConnectionTests(BaseTestCase):
         servs_init = self.servers[:self.nodes_init]
         servs_in = [self.servers[i + self.nodes_init] for i in range(self.nodes_in)]
         servs_out = [self.servers[self.nodes_init - i - 1] for i in range(self.nodes_out)]
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         buckets_stats_before = {}
         for bucket in self.buckets:
             _, result = rest.get_bucket_stats_json(bucket)
@@ -137,7 +137,7 @@ class ConnectionTests(BaseTestCase):
         result_nodes = set(servs_init + servs_in) - set(servs_out)
         self.cluster.rebalance(servs_init[:self.nodes_init], servs_in, servs_out)
         gen = BlobGenerator('mike2', 'mike2-', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.verify_cluster_stats(result_nodes)
         buckets_stats_after = {}
         for bucket in self.buckets:
@@ -166,10 +166,10 @@ class ConnectionTests(BaseTestCase):
             shell.disconnect()
 
     def test_memcahed_t_option(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         rest.change_memcached_t_option(8)
         self.sleep(5, 'wait some time before restart')
-        remote = RemoteMachineShellConnection(self.master)
+        remote = RemoteMachineShellConnection(self.main)
         o, _ = remote.execute_command('ls /tmp | grep dump')
         remote.stop_server()
         remote.start_couchbase()

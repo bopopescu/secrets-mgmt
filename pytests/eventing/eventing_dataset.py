@@ -25,12 +25,12 @@ class EventingDataset(EventingBaseTest):
                                                        replicas=self.num_replicas)
             self.cluster.create_standard_bucket(name=self.src_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
-            self.src_bucket = RestConnection(self.master).get_buckets()
+            self.src_bucket = RestConnection(self.main).get_buckets()
             self.cluster.create_standard_bucket(name=self.dst_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
             self.cluster.create_standard_bucket(name=self.metadata_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
-            self.buckets = RestConnection(self.master).get_buckets()
+            self.buckets = RestConnection(self.main).get_buckets()
         self.gens_load = self.generate_docs(self.docs_per_day)
         self.expiry = 3
         self.n1ql_node = self.get_nodes_from_services_map(service_type="n1ql")
@@ -41,7 +41,7 @@ class EventingDataset(EventingBaseTest):
                                       n1ql_port=self.n1ql_port,
                                       full_docs_list=self.full_docs_list,
                                       log=self.log, input=self.input,
-                                      master=self.master,
+                                      main=self.main,
                                       use_rest=True
                                       )
         handler_code = self.input.param('handler_code', 'bucket_op')
@@ -63,7 +63,7 @@ class EventingDataset(EventingBaseTest):
     def test_functions_where_dataset_has_binary_and_json_data(self):
         gen_load = BlobGenerator('binary', 'binary-', self.value_size, end=2016 * self.docs_per_day)
         # load binary and json data
-        self.cluster.load_gen_docs(self.master, self.src_bucket_name, gen_load, self.buckets[0].kvs[1], 'create',
+        self.cluster.load_gen_docs(self.main, self.src_bucket_name, gen_load, self.buckets[0].kvs[1], 'create',
                                    exp=0, flag=0, batch_size=1000, compression=self.sdk_compression)
         self.load(self.gens_load, buckets=self.src_bucket, flag=self.item_flag, verify_data=False,
                   batch_size=self.batch_size)
@@ -72,7 +72,7 @@ class EventingDataset(EventingBaseTest):
         # Wait for eventing to catch up with all the update mutations and verify results
         self.verify_eventing_results(self.function_name, self.docs_per_day * 2016, skip_stats_validation=True)
         # delete both binary and json documents
-        self.cluster.load_gen_docs(self.master, self.src_bucket_name, gen_load, self.buckets[0].kvs[1], 'delete',
+        self.cluster.load_gen_docs(self.main, self.src_bucket_name, gen_load, self.buckets[0].kvs[1], 'delete',
                                    exp=0, flag=0, batch_size=1000, compression=self.sdk_compression)
         self.load(self.gens_load, buckets=self.src_bucket, flag=self.item_flag, verify_data=False,
                   batch_size=self.batch_size, op_type='delete')
@@ -87,20 +87,20 @@ class EventingDataset(EventingBaseTest):
         gen_load_binary_del = copy.deepcopy(gen_load_binary)
         gen_load_json_del = copy.deepcopy(gen_load_json)
         # load binary data
-        self.cluster.load_gen_docs(self.master, self.src_bucket_name, gen_load_binary, self.buckets[0].kvs[1], "create",
+        self.cluster.load_gen_docs(self.main, self.src_bucket_name, gen_load_binary, self.buckets[0].kvs[1], "create",
                                    exp=0, flag=0, batch_size=1000, compression=self.sdk_compression)
         body = self.create_save_function_body(self.function_name, self.handler_code)
         self.deploy_function(body)
         # convert data from binary to json
         # use the same doc-id's as binary to update from binary to json
-        self.cluster.load_gen_docs(self.master, self.src_bucket_name, gen_load_binary_del, self.buckets[0].kvs[1],
+        self.cluster.load_gen_docs(self.main, self.src_bucket_name, gen_load_binary_del, self.buckets[0].kvs[1],
                                    'delete', batch_size=1000, compression=self.sdk_compression)
-        self.cluster.load_gen_docs(self.master, self.src_bucket_name, gen_load_json, self.buckets[0].kvs[1], 'create',
+        self.cluster.load_gen_docs(self.main, self.src_bucket_name, gen_load_json, self.buckets[0].kvs[1], 'create',
                                    batch_size=1000, compression=self.sdk_compression)
         # Wait for eventing to catch up with all the update mutations and verify results
         self.verify_eventing_results(self.function_name, self.docs_per_day * 2016, skip_stats_validation=True)
         # delete all json docs
-        self.cluster.load_gen_docs(self.master, self.src_bucket_name, gen_load_json_del, self.buckets[0].kvs[1],
+        self.cluster.load_gen_docs(self.main, self.src_bucket_name, gen_load_json_del, self.buckets[0].kvs[1],
                                    'delete', batch_size=1000, compression=self.sdk_compression)
         # Wait for eventing to catch up with all the delete mutations and verify results
         self.verify_eventing_results(self.function_name, 0, skip_stats_validation=True)
@@ -112,16 +112,16 @@ class EventingDataset(EventingBaseTest):
         gen_load_non_json = JSONNonDocGenerator('non_json_docs', values, start=0, end=2016 * self.docs_per_day)
         gen_load_non_json_del = copy.deepcopy(gen_load_non_json)
         # load binary and non json data
-        self.cluster.load_gen_docs(self.master, self.src_bucket_name, gen_load_binary, self.buckets[0].kvs[1], 'create',
+        self.cluster.load_gen_docs(self.main, self.src_bucket_name, gen_load_binary, self.buckets[0].kvs[1], 'create',
                                    compression=self.sdk_compression)
-        self.cluster.load_gen_docs(self.master, self.src_bucket_name, gen_load_non_json, self.buckets[0].kvs[1],
+        self.cluster.load_gen_docs(self.main, self.src_bucket_name, gen_load_non_json, self.buckets[0].kvs[1],
                                    'create', compression=self.sdk_compression)
         body = self.create_save_function_body(self.function_name, self.handler_code)
         self.deploy_function(body)
         # Wait for eventing to catch up with all the update mutations and verify results
         self.verify_eventing_results(self.function_name, self.docs_per_day * 2016, skip_stats_validation=True)
         # delete non json documents
-        self.cluster.load_gen_docs(self.master, self.src_bucket_name, gen_load_non_json_del, self.buckets[0].kvs[1],
+        self.cluster.load_gen_docs(self.main, self.src_bucket_name, gen_load_non_json_del, self.buckets[0].kvs[1],
                                    'delete', compression=self.sdk_compression)
         # Wait for eventing to catch up with all the delete mutations and verify results
         self.verify_eventing_results(self.function_name, 0, skip_stats_validation=True)
@@ -168,7 +168,7 @@ class EventingDataset(EventingBaseTest):
             "Promise",
             "Proxy"
         ]
-        url = 'couchbase://{ip}/{name}'.format(ip=self.master.ip, name=self.src_bucket_name)
+        url = 'couchbase://{ip}/{name}'.format(ip=self.main.ip, name=self.src_bucket_name)
         bucket = Bucket(url, username="cbadminbucket", password="password")
         for key in keys:
             bucket.upsert(key, "Test with different key values")
@@ -193,8 +193,8 @@ class EventingDataset(EventingBaseTest):
 
     def test_eventing_processes_mutations_when_mutated_through_subdoc_api_and_set_expiry_through_sdk(self):
         # set expiry pager interval
-        ClusterOperationHelper.flushctl_set(self.master, "exp_pager_stime", 1, bucket=self.src_bucket_name)
-        url = 'couchbase://{ip}/{name}'.format(ip=self.master.ip, name=self.src_bucket_name)
+        ClusterOperationHelper.flushctl_set(self.main, "exp_pager_stime", 1, bucket=self.src_bucket_name)
+        url = 'couchbase://{ip}/{name}'.format(ip=self.main.ip, name=self.src_bucket_name)
         bucket = Bucket(url, username="cbadminbucket", password="password")
         for docid in ['customer123', 'customer1234', 'customer12345']:
             bucket.insert(docid, {'some': 'value'})
@@ -218,7 +218,7 @@ class EventingDataset(EventingBaseTest):
         self.undeploy_and_delete_function(body)
 
     def test_eventing_processes_mutation_when_xattrs_is_updated(self):
-        url = 'couchbase://{ip}/{name}'.format(ip=self.master.ip, name=self.src_bucket_name)
+        url = 'couchbase://{ip}/{name}'.format(ip=self.main.ip, name=self.src_bucket_name)
         bucket = Bucket(url, username="cbadminbucket", password="password")
         for docid in ['customer123', 'customer1234', 'customer12345']:
             bucket.upsert(docid, {})

@@ -13,23 +13,23 @@ class ROUserTests(BaseTestCase):
         super(ROUserTests, self).setUp()
         self.username = self.input.param('username', 'myrouser')
         self.password = self.input.param('password', 'myropass')
-        self.admin_user = self.master.rest_username
-        self.admin_pass = self.master.rest_password
+        self.admin_user = self.main.rest_username
+        self.admin_pass = self.main.rest_password
 
     def tearDown(self):
         if hasattr(self, 'admin_user'):
-            self.master.rest_username = self.admin_user
-            self.master.rest_password = self.admin_pass
+            self.main.rest_username = self.admin_user
+            self.main.rest_password = self.admin_pass
         super(ROUserTests, self).tearDown()
-        RestConnection(self.master).delete_ro_user()
+        RestConnection(self.main).delete_ro_user()
 
     def create_user_test_bucket_check(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
 
         rest.create_ro_user(username=self.username, password=self.password)
-        self.master.rest_username = self.username
-        self.master.rest_password = self.password
-        rest = RestConnection(self.master)
+        self.main.rest_username = self.username
+        self.main.rest_password = self.password
+        rest = RestConnection(self.main)
 
         self.log.info("Try to edit bucket")
         try:
@@ -45,16 +45,16 @@ class ROUserTests(BaseTestCase):
         self.log.info("Unable to delete bucket. Expected")
 
     def create_user_test_ddoc_check(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         ddoc = DesignDocument("ddoc_ro_0", [View("ro_view",
                             "function (doc) {\n  emit(doc._id, doc);\n}",
                             dev_view=False)])
         rest.create_design_document(self.buckets[0], ddoc)
 
         rest.create_ro_user(username=self.username, password=self.password)
-        self.master.rest_username = self.username
-        self.master.rest_password = self.password
-        rest = RestConnection(self.master)
+        self.main.rest_username = self.username
+        self.main.rest_password = self.password
+        rest = RestConnection(self.main)
 
         self.log.info("Try to delete ddoc")
         self.buckets[0].authType = ""
@@ -69,7 +69,7 @@ class ROUserTests(BaseTestCase):
 
     def negative_create_user_test(self):
         self.log.info("try to create user %s, pass %s" % (self.username, self.password))
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         self.assertFalse(rest.create_ro_user(username=self.username, password=self.password),
                          "No error appeared")
         self.log.info("Error appears as expected")

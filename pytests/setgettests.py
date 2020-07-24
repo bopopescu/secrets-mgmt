@@ -23,14 +23,14 @@ class SimpleSetGetTestBase(object):
         self.input = TestInputSingleton.input
         unittest.assertTrue(self.input, msg="input parameters missing...")
         self.test = unittest
-        self.master = self.input.servers[0]
-        rest = RestConnection(self.master)
-        rest.init_cluster(username=self.master.rest_username, password=self.master.rest_password)
+        self.main = self.input.servers[0]
+        rest = RestConnection(self.main)
+        rest.init_cluster(username=self.main.rest_username, password=self.main.rest_password)
         rest.init_cluster_memoryQuota(memoryQuota=rest.get_nodes_self().mcdMemoryReserved)
-        ClusterOperationHelper.cleanup_cluster([self.master])
-        BucketOperationHelper.delete_all_buckets_or_assert([self.master], self.test)
+        ClusterOperationHelper.cleanup_cluster([self.main])
+        BucketOperationHelper.delete_all_buckets_or_assert([self.main], self.test)
 
-        serverInfo = self.master
+        serverInfo = self.main
         rest = RestConnection(serverInfo)
         info = rest.get_nodes_self()
         rest.init_cluster(username=serverInfo.rest_username,
@@ -39,12 +39,12 @@ class SimpleSetGetTestBase(object):
 
         # Add built-in user
         testuser = [{'id': 'cbadminbucket', 'name': 'cbadminbucket', 'password': 'password'}]
-        RbacBase().create_user_source(testuser, 'builtin', self.master)
+        RbacBase().create_user_source(testuser, 'builtin', self.main)
         time.sleep(10)
 
         # Assign user to role
         role_list = [{'id': 'cbadminbucket', 'name': 'cbadminbucket', 'roles': 'admin'}]
-        RbacBase().add_user_role(role_list, RestConnection(self.master), 'builtin')
+        RbacBase().add_user_role(role_list, RestConnection(self.main), 'builtin')
         time.sleep(10)
 
     def set_get_test(self, value_size, number_of_items):
@@ -53,7 +53,7 @@ class SimpleSetGetTestBase(object):
                 ("set-get-bucket-replica-1", 1),
                 ("set-get-bucket-replica-2", 2),
                 ("set-get-bucket-replica-3", 3)]
-        serverInfo = self.master
+        serverInfo = self.main
         rest = RestConnection(serverInfo)
         bucket_ram = int(rest.get_nodes_self().memoryQuota / 4)
 
@@ -107,11 +107,11 @@ class SimpleSetGetTestBase(object):
 
 
     def tearDown_bucket(self):
-        BucketOperationHelper.delete_all_buckets_or_assert([self.master], self.test)
+        BucketOperationHelper.delete_all_buckets_or_assert([self.main], self.test)
 
         # Remove rbac user in teardown
         role_del = ['cbadminbucket']
-        temp = RbacBase().remove_user_role(role_del, RestConnection(self.master))
+        temp = RbacBase().remove_user_role(role_del, RestConnection(self.main))
 
 
 

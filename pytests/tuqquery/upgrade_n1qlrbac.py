@@ -17,13 +17,13 @@ class UpgradeN1QLRBAC(RbacN1QL, NewUpgradeBaseTest):
             use_rest=self.use_rest, max_verify=self.max_verify,
             buckets=self.buckets, item_flag=self.item_flag,
             n1ql_port=self.n1ql_port, full_docs_list=[],
-            log=self.log, input=self.input, master=self.master)
+            log=self.log, input=self.input, main=self.main)
         self.n1ql_node = self.get_nodes_from_services_map(service_type="n1ql")
         log.info(self.n1ql_node)
         if self.ddocs_num:
             self.create_ddocs_and_views()
             gen_load = BlobGenerator('pre-upgrade', 'preupgrade-', self.value_size, end=self.num_items)
-            self._load_all_buckets(self.master, gen_load, "create", self.expire_time, flag=self.item_flag)
+            self._load_all_buckets(self.main, gen_load, "create", self.expire_time, flag=self.item_flag)
 
     def tearDown(self):
         super(UpgradeN1QLRBAC, self).tearDown()
@@ -73,11 +73,11 @@ class UpgradeN1QLRBAC(RbacN1QL, NewUpgradeBaseTest):
         self.query = "GRANT {0} on {2} to {1}".format("bucket_admin",'standard_bucket0','standard_bucket0')
         actual_result = self.run_cbq_query(query = self.query)
         self.assertTrue(actual_result['status'] == 'success')
-        self.shell = RemoteMachineShellConnection(self.master)
+        self.shell = RemoteMachineShellConnection(self.main)
         for bucket in self.buckets:
             cmd = "{4} -u {0}:{1} http://{2}:8093/query/service -d 'statement=SELECT * from {3} use index(idx) where meta().id > 0 " \
                   "LIMIT 10'".\
-                format('johnClusterAdmin','password', self.master.ip, bucket.name,self.curl_path)
+                format('johnClusterAdmin','password', self.main.ip, bucket.name,self.curl_path)
             self.sleep(10)
             output, error = self.shell.execute_command(cmd)
             self.shell.log_command_output(output, error)
@@ -86,14 +86,14 @@ class UpgradeN1QLRBAC(RbacN1QL, NewUpgradeBaseTest):
             # use pre-upgrade users
             cmd = "{4} -u {0}:{1} http://{2}:8093/query/service -d 'statement=SELECT * from {3} use index(idx) where meta().id > 0 " \
                   "LIMIT 10'".\
-                format('john','password', self.master.ip, bucket.name,self.curl_path)
+                format('john','password', self.main.ip, bucket.name,self.curl_path)
             output, error = self.shell.execute_command(cmd)
             self.shell.log_command_output(output, error)
             self.assertTrue(any("success" in line for line in output), "Unable to select from {0} as user {1}".
                           format(bucket.name, 'john_admin'))
             cmd = "{4} -u {0}:{1} http://{2}:8093/query/service -d 'statement=SELECT * from {3} use index(idx) where meta().id > 0 " \
                   "LIMIT 10'".\
-                format('standard_bucket0','password', self.master.ip, bucket.name,self.curl_path)
+                format('standard_bucket0','password', self.main.ip, bucket.name,self.curl_path)
             output, error = self.shell.execute_command(cmd)
             self.shell.log_command_output(output, error)
             self.assertTrue(any("success" in line for line in output), "Unable to select from {0} as user {1}".
@@ -131,12 +131,12 @@ class UpgradeN1QLRBAC(RbacN1QL, NewUpgradeBaseTest):
         self.assertTrue(actual_result['status'] == 'success')
         cmd = "{4} -u {0}:{1} http://{2}:8093/query/service -d 'statement=SELECT * from {3} use index(idx) where meta().id > 0 " \
                   "LIMIT 10'".\
-                format('johnClusterAdmin','password', self.master.ip, 'standard_bucket0',self.curl_path)
+                format('johnClusterAdmin','password', self.main.ip, 'standard_bucket0',self.curl_path)
         output, error = self.shell.execute_command(cmd)
         self.shell.log_command_output(output, error)
         self.assertTrue(any("success" in line for line in output), "Unable to select from {0} as user {1}".
                         format('standard_bucket0', 'johnClusterAdmin'))
-        cmd = "{3} -u {0}:{1} http://{2}:8093/query/service -d 'statement=SELECT * from system:my_user_info'".format('johnClusterAdmin','password', self.master.ip, self.curl_path)
+        cmd = "{3} -u {0}:{1} http://{2}:8093/query/service -d 'statement=SELECT * from system:my_user_info'".format('johnClusterAdmin','password', self.main.ip, self.curl_path)
         output, error = self.shell.execute_command(cmd)
         self.shell.log_command_output(output, error)
         self.assertTrue(any("success" in line for line in output), "Unable to select from {0} as user {1}".
@@ -202,7 +202,7 @@ class UpgradeN1QLRBAC(RbacN1QL, NewUpgradeBaseTest):
         self.log.error(actual_result['metrics']['resultCount'])
         #verify number of users after upgrade
         self.assertTrue(actual_result['metrics']['resultCount'] == 20)
-        self.shell = RemoteMachineShellConnection(self.master)
+        self.shell = RemoteMachineShellConnection(self.main)
         self.create_users(users=[{'id': 'johnClusterAdmin',
                                            'name': 'john',
                                            'password':'password'}])
@@ -218,7 +218,7 @@ class UpgradeN1QLRBAC(RbacN1QL, NewUpgradeBaseTest):
         for bucket in self.buckets:
             cmd = "{4} -u {0}:{1} http://{2}:8093/query/service -d 'statement=SELECT * from {3} use index(idx) where meta().id > 0 " \
                   "LIMIT 10'".\
-                format('johnClusterAdmin','password', self.master.ip, bucket.name,self.curl_path)
+                format('johnClusterAdmin','password', self.main.ip, bucket.name,self.curl_path)
             self.sleep(10)
             output, error = self.shell.execute_command(cmd)
             self.shell.log_command_output(output, error)
@@ -227,7 +227,7 @@ class UpgradeN1QLRBAC(RbacN1QL, NewUpgradeBaseTest):
             # use pre-upgrade users
             cmd = "{4} -u {0}:{1} http://{2}:8093/query/service -d 'statement=SELECT * from {3} use index(idx) where meta().id > 0 " \
                   "LIMIT 10'".\
-                format('john_admin','password', self.master.ip, bucket.name,self.curl_path)
+                format('john_admin','password', self.main.ip, bucket.name,self.curl_path)
             output, error = self.shell.execute_command(cmd)
             self.shell.log_command_output(output, error)
             self.assertTrue(any("success" in line for line in output), "Unable to select from {0} as user {1}".

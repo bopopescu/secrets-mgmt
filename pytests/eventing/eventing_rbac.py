@@ -19,12 +19,12 @@ class EventingRBAC(EventingBaseTest):
                                                        replicas=self.num_replicas)
             self.cluster.create_standard_bucket(name=self.src_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
-            self.src_bucket = RestConnection(self.master).get_buckets()
+            self.src_bucket = RestConnection(self.main).get_buckets()
             self.cluster.create_standard_bucket(name=self.dst_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
             self.cluster.create_standard_bucket(name=self.metadata_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
-            self.buckets = RestConnection(self.master).get_buckets()
+            self.buckets = RestConnection(self.main).get_buckets()
         self.gens_load = self.generate_docs(self.docs_per_day)
         self.expiry = 3
         handler_code = self.input.param('handler_code', 'bucket_op')
@@ -44,7 +44,7 @@ class EventingRBAC(EventingBaseTest):
                                           n1ql_port=self.n1ql_port,
                                           full_docs_list=self.full_docs_list,
                                           log=self.log, input=self.input,
-                                          master=self.master,
+                                          main=self.main,
                                           use_rest=True
                                           )
             self.n1ql_helper.create_primary_index(using_gsi=True, server=self.n1ql_node)
@@ -58,7 +58,7 @@ class EventingRBAC(EventingBaseTest):
     def test_eventing_with_read_only_user(self):
         # create a read only admin user
         user = [{'id': 'ro_admin', 'password': 'password', 'name': 'Read Only Admin'}]
-        RbacBase().create_user_source(user, 'builtin', self.master)
+        RbacBase().create_user_source(user, 'builtin', self.main)
         user_role_list = [{'id': 'ro_admin', 'name': 'Read Only Admin', 'roles': 'ro_admin'}]
         RbacBase().add_user_role(user_role_list, self.rest, 'builtin')
         body = self.create_save_function_body(self.function_name, self.handler_code)
@@ -75,7 +75,7 @@ class EventingRBAC(EventingBaseTest):
     def test_eventing_with_cluster_admin_user(self):
         # create a cluster admin user
         user = [{'id': 'cluster_admin', 'password': 'password', 'name': 'Cluster Admin'}]
-        RbacBase().create_user_source(user, 'builtin', self.master)
+        RbacBase().create_user_source(user, 'builtin', self.main)
         user_role_list = [{'id': 'cluster_admin', 'name': 'Cluster Admin', 'roles': 'cluster_admin'}]
         RbacBase().add_user_role(user_role_list, self.rest, 'builtin')
         body = self.create_save_function_body(self.function_name, self.handler_code)

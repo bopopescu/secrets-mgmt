@@ -20,7 +20,7 @@ class NonRootTests(unittest.TestCase):
         self.build = self.input.param("build", "couchbase-server-enterprise_2.2.0-817-rel_x86_64.rpm")
         self.num_items = self.input.param("items", 100000)
         self.servers = self.input.servers
-        self.master = self.servers[0]
+        self.main = self.servers[0]
         self.clean_up()
         self.log.info("Begin setting up the couchbase on all server nodes...")
         self.non_root_install()
@@ -117,20 +117,20 @@ class NonRootTests(unittest.TestCase):
     """
         Method that initializes cluster, rebalances in nodes, and creates a standard bucket
     """
-    def init_rebalance_cluster_create_testbucket(self, master, servers):
-        shell = RemoteMachineShellConnection(master)
+    def init_rebalance_cluster_create_testbucket(self, main, servers):
+        shell = RemoteMachineShellConnection(main)
         if self._os == "centos" or self._os == "ubuntu":
-            _1 = "cd /home/{0}/opt/couchbase &&".format(master.ssh_username)
+            _1 = "cd /home/{0}/opt/couchbase &&".format(main.ssh_username)
             _2 = " ./bin/couchbase-cli cluster-init -c localhost:8091"
-            _3 = " --cluster-username={0} --cluster-password={1}".format(master.rest_username, master.rest_password)
+            _3 = " --cluster-username={0} --cluster-password={1}".format(main.rest_username, main.rest_password)
             _4 = " --cluster-port=8091 --cluster-ramsize=1000"
             command_to_init = _1 + _2 + _3 + _4
             o, e = shell.execute_non_sudo_command(command_to_init)
             shell.log_command_output(o, e)
             time.sleep(10)
             for i in range(1, len(servers)):
-                _1 = "cd /home/{0}/opt/couchbase &&".format(master.ssh_username)
-                _2 = " ./bin/couchbase-cli rebalance -c {0}:8091".format(master.ip)
+                _1 = "cd /home/{0}/opt/couchbase &&".format(main.ssh_username)
+                _2 = " ./bin/couchbase-cli rebalance -c {0}:8091".format(main.ip)
                 _3 = " --server-add={0}:8091".format(servers[i].ip)
                 _4 = " --server-add-username={0}".format(servers[i].rest_username)
                 _5 = " --server-add-password={0}".format(servers[i].rest_password)
@@ -144,11 +144,11 @@ class NonRootTests(unittest.TestCase):
             else:
                 rep_count = 1
             self.log.info("Cluster set up, now creating a bucket ..")
-            _1 = "cd /home/{0}/opt/couchbase &&".format(master.ssh_username)
+            _1 = "cd /home/{0}/opt/couchbase &&".format(main.ssh_username)
             _2 = " ./bin/couchbase-cli bucket-create -c localhost:8091"
             _3 = " --bucket=testbucket --bucket-type=couchbase --bucket-port=11211"
             _4 = " --bucket-ramsize=500 --bucket-replica={0} --wait".format(rep_count)
-            _5 = " -u {0} -p {1}".format(master.rest_username, master.rest_password)
+            _5 = " -u {0} -p {1}".format(main.rest_username, main.rest_password)
             command_to_create_bucket = _1 + _2 + _3 + _4 + _5
             o, e = shell.execute_non_sudo_command(command_to_create_bucket)
             shell.log_command_output(o, e)
@@ -164,29 +164,29 @@ class NonRootTests(unittest.TestCase):
         using couchbase-cli and later verifies if the number matches what's expected.
     """
     def test_create_bucket_test_load(self):
-        shell = RemoteMachineShellConnection(self.master)
-        self.init_rebalance_cluster_create_testbucket(self.master, self.servers)
+        shell = RemoteMachineShellConnection(self.main)
+        self.init_rebalance_cluster_create_testbucket(self.main, self.servers)
         if self._os == "centos" or self._os == "ubuntu":
             self.log.info("Load {0} through cbworkloadgen ..".format(self.num_items))
-            _1 = "cd /home/{0}/opt/couchbase &&".format(self.master.ssh_username)
+            _1 = "cd /home/{0}/opt/couchbase &&".format(self.main.ssh_username)
             _2 = " ./bin/cbworkloadgen -n localhost:8091"
             _3 = " -r .8 -i {0} -s 256 -b testbucket -t 1".format(self.num_items)
-            _4 = " -u {0} -p {1}".format(self.master.rest_username, self.master.rest_password)
+            _4 = " -u {0} -p {1}".format(self.main.rest_username, self.main.rest_password)
             command_to_load = _1 + _2 + _3 + _4
             o, e = shell.execute_non_sudo_command(command_to_load)
             shell.log_command_output(o, e)
             time.sleep(20)
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             item_count = rest.fetch_bucket_stats(bucket="testbucket")["op"]["samples"]["curr_items"][-1]
             if (item_count == self.num_items):
                 self.log.info("Item count matched, {0}={1}".format(item_count, self.num_items))
             else:
                 self.fail("Item count: Not what's expected, {0}!={1}".format(item_count, self.num_items))
             self.log.info("Deleting testbucket ..");
-            _1 = "cd /home/{0}/opt/couchbase &&".format(self.master.ssh_username)
+            _1 = "cd /home/{0}/opt/couchbase &&".format(self.main.ssh_username)
             _2 = " ./bin/couchbase-cli bucket-delete -c localhost:8091"
             _3 = " --bucket=testbucket"
-            _4 = " -u {0} -p {1}".format(self.master.rest_username, self.master.rest_password)
+            _4 = " -u {0} -p {1}".format(self.main.rest_username, self.main.rest_password)
             command_to_delete_bucket = _1 + _2 + _3 + _4
             o, e = shell.execute_non_sudo_command(command_to_delete_bucket)
             shell.log_command_output(o, e)
@@ -204,34 +204,34 @@ class NonRootTests(unittest.TestCase):
         recreates bucket, restores, and verifies if count matched.
     """
     def test_bucket_backup_restore(self):
-        shell = RemoteMachineShellConnection(self.master)
-        self.init_rebalance_cluster_create_testbucket(self.master, self.servers)
+        shell = RemoteMachineShellConnection(self.main)
+        self.init_rebalance_cluster_create_testbucket(self.main, self.servers)
         if self._os == "centos" or self._os == "ubuntu":
             self.log.info("Load {0} through cbworkloadgen ..".format(self.num_items))
-            _1 = "cd /home/{0}/opt/couchbase &&".format(self.master.ssh_username)
+            _1 = "cd /home/{0}/opt/couchbase &&".format(self.main.ssh_username)
             _2 = " ./bin/cbworkloadgen -n localhost:8091"
             _3 = " -r .8 -i {0} -s 256 -b testbucket -t 1".format(self.num_items)
-            _4 = " -u {0} -p {1}".format(self.master.rest_username, self.master.rest_password)
+            _4 = " -u {0} -p {1}".format(self.main.rest_username, self.main.rest_password)
             command_to_load = _1 + _2 + _3 + _4
             o, e = shell.execute_non_sudo_command(command_to_load)
             shell.log_command_output(o, e)
             time.sleep(20)
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             ini_item_count = rest.fetch_bucket_stats(bucket="testbucket")["op"]["samples"]["curr_items"][-1]
             self.log.info("Backing up bucket 'testbucket' ..")
-            _1 = "cd /home/{0}/opt/couchbase &&".format(self.master.ssh_username)
+            _1 = "cd /home/{0}/opt/couchbase &&".format(self.main.ssh_username)
             _2 = " ./bin/cbbackup http://localhost:8091"
-            _3 = " /home/{0}/backup".format(self.master.ssh_username)
-            _4 = " -u {0} -p {1}".format(self.master.rest_username, self.master.rest_password)
+            _3 = " /home/{0}/backup".format(self.main.ssh_username)
+            _4 = " -u {0} -p {1}".format(self.main.rest_username, self.main.rest_password)
             command_to_backup = _1 + _2 + _3 + _4
             o, e = shell.execute_non_sudo_command(command_to_backup)
             shell.log_command_output(o, e)
             time.sleep(10)
             self.log.info("Deleting bucket ..")
-            _1 = "cd /home/{0}/opt/couchbase &&".format(self.master.ssh_username)
+            _1 = "cd /home/{0}/opt/couchbase &&".format(self.main.ssh_username)
             _2 = " ./bin/couchbase-cli bucket-delete -c localhost:8091"
             _3 = " --bucket=testbucket"
-            _4 = " -u {0} -p {1}".format(self.master.rest_username, self.master.rest_password)
+            _4 = " -u {0} -p {1}".format(self.main.rest_username, self.main.rest_password)
             command_to_delete_bucket = _1 + _2 + _3 + _4
             o, e = shell.execute_non_sudo_command(command_to_delete_bucket)
             shell.log_command_output(o, e)
@@ -241,28 +241,28 @@ class NonRootTests(unittest.TestCase):
             else:
                 rep_count = 1
             self.log.info("Recreating bucket ..")
-            _1 = "cd /home/{0}/opt/couchbase &&".format(self.master.ssh_username)
+            _1 = "cd /home/{0}/opt/couchbase &&".format(self.main.ssh_username)
             _2 = " ./bin/couchbase-cli bucket-create -c localhost:8091"
             _3 = " --bucket=testbucket --bucket-type=couchbase --bucket-port=11211"
             _4 = " --bucket-ramsize=500 --bucket-replica={0} --wait".format(rep_count)
-            _5 = " -u {0} -p {1}".format(self.master.rest_username, self.master.rest_password)
+            _5 = " -u {0} -p {1}".format(self.main.rest_username, self.main.rest_password)
             command_to_create_bucket = _1 + _2 + _3 + _4 + _5
             o, e = shell.execute_non_sudo_command(command_to_create_bucket)
             shell.log_command_output(o, e)
             time.sleep(20)
             self.log.info("Restoring bucket 'testbucket' ..")
-            _1 = "cd /home/{0}/opt/couchbase &&".format(self.master.ssh_username)
-            _2 = " ./bin/cbrestore /home/{0}/backup http://localhost:8091".format(self.master.ssh_username)
+            _1 = "cd /home/{0}/opt/couchbase &&".format(self.main.ssh_username)
+            _2 = " ./bin/cbrestore /home/{0}/backup http://localhost:8091".format(self.main.ssh_username)
             _3 = " -b testbucket -B testbucket"
-            _4 = " -u {0} -p {1}".format(self.master.rest_username, self.master.rest_password)
+            _4 = " -u {0} -p {1}".format(self.main.rest_username, self.main.rest_password)
             command_to_restore = _1 + _2 + _3 + _4
             o, e = shell.execute_non_sudo_command(command_to_restore)
             shell.log_command_output(o, e)
             time.sleep(10)
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             fin_item_count = rest.fetch_bucket_stats(bucket="testbucket")["op"]["samples"]["curr_items"][-1]
             self.log.info("Removing backed-up folder ..")
-            command_to_remove_folder = "rm -rf /home/{0}/backup".format(self.master.ssh_username)
+            command_to_remove_folder = "rm -rf /home/{0}/backup".format(self.main.ssh_username)
             o, e = shell.execute_non_sudo_command(command_to_remove_folder)
             shell.log_command_output(o, e)
             if (fin_item_count == ini_item_count):
@@ -271,10 +271,10 @@ class NonRootTests(unittest.TestCase):
             else:
                 self.fail("Item count didnt match - backup/restore, {0}!={1}".format(fin_item_count, ini_item_count))
             self.log.info("Deleting testbucket ..");
-            _1 = "cd /home/{0}/opt/couchbase &&".format(self.master.ssh_username)
+            _1 = "cd /home/{0}/opt/couchbase &&".format(self.main.ssh_username)
             _2 = " ./bin/couchbase-cli bucket-delete -c localhost:8091"
             _3 = " --bucket=testbucket"
-            _4 = " -u {0} -p {1}".format(self.master.rest_username, self.master.rest_password)
+            _4 = " -u {0} -p {1}".format(self.main.rest_username, self.main.rest_password)
             command_to_delete_bucket = _1 + _2 + _3 + _4
             o, e = shell.execute_non_sudo_command(command_to_delete_bucket)
             shell.log_command_output(o, e)
@@ -370,52 +370,52 @@ class NonRootTests(unittest.TestCase):
         _bixdcr = self.input.param("bidirectional", "false")
         _clusters_dic = self.input.clusters
         _src_nodes = copy.copy(_clusters_dic[0])
-        _src_master = _src_nodes[0]
+        _src_main = _src_nodes[0]
         _dest_nodes = copy.copy(_clusters_dic[1])
-        _dest_master = _dest_nodes[0]
+        _dest_main = _dest_nodes[0]
 
         # Build source cluster
-        self.init_rebalance_cluster_create_testbucket(_src_master, _src_nodes)
+        self.init_rebalance_cluster_create_testbucket(_src_main, _src_nodes)
         # Build destination cluster
-        self.init_rebalance_cluster_create_testbucket(_dest_master, _dest_nodes)
+        self.init_rebalance_cluster_create_testbucket(_dest_main, _dest_nodes)
 
         # Setting up XDCR
-        self.setup_xdcr_start_replication(_src_master, _dest_master, _rep_type, _bixdcr)
+        self.setup_xdcr_start_replication(_src_main, _dest_main, _rep_type, _bixdcr)
 
-        shell1 = RemoteMachineShellConnection(_src_master)
-        shell2 = RemoteMachineShellConnection(_dest_master)
+        shell1 = RemoteMachineShellConnection(_src_main)
+        shell2 = RemoteMachineShellConnection(_dest_main)
         src_item_count = 0
         dest_item_count = 0
         if self._os == "centos" or self._os == "ubuntu":
             self.log.info("Load {0} through cbworkloadgen at src..".format(self.num_items))
-            _1 = "cd /home/{0}/opt/couchbase &&".format(_src_master.ssh_username)
+            _1 = "cd /home/{0}/opt/couchbase &&".format(_src_main.ssh_username)
             _2 = " ./bin/cbworkloadgen -n localhost:8091 --prefix=s_"
             _3 = " -r .8 -i {0} -s 256 -b testbucket -t 1".format(self.num_items)
-            _4 = " -u {0} -p {1}".format(_src_master.rest_username, _src_master.rest_password)
+            _4 = " -u {0} -p {1}".format(_src_main.rest_username, _src_main.rest_password)
             command_to_load = _1 + _2 + _3 + _4
             o, e = shell1.execute_non_sudo_command(command_to_load)
             shell1.log_command_output(o, e)
             time.sleep(20)
-            rest = RestConnection(_src_master)
+            rest = RestConnection(_src_main)
             src_item_count = rest.fetch_bucket_stats(bucket="testbucket")["op"]["samples"]["curr_items"][-1]
             if _bixdcr:
                 self.log.info("Load {0} through cbworkloadgen at src..".format(self.num_items))
-                _1 = "cd /home/{0}/opt/couchbase &&".format(_dest_master.ssh_username)
+                _1 = "cd /home/{0}/opt/couchbase &&".format(_dest_main.ssh_username)
                 _2 = " ./bin/cbworkloadgen -n localhost:8091 --prefix=d_"
                 _3 = " -r .8 -i {0} -s 256 -b testbucket -t 1".format(self.num_items)
-                _4 = " -u {0} -p {1}".format(_dest_master.rest_username, _dest_master.rest_password)
+                _4 = " -u {0} -p {1}".format(_dest_main.rest_username, _dest_main.rest_password)
                 command_to_load = _1 + _2 + _3 + _4
                 o, e = shell2.execute_non_sudo_command(command_to_load)
                 shell2.log_command_output(o, e)
                 time.sleep(20)
-                rest = RestConnection(_dest_master)
+                rest = RestConnection(_dest_main)
                 dest_item_count = rest.fetch_bucket_stats(bucket="testbucket")["op"]["samples"]["curr_items"][-1]
-            self.wait_for_replication_to_catchup(_src_master, _dest_master, 1200, "destination")
+            self.wait_for_replication_to_catchup(_src_main, _dest_main, 1200, "destination")
             if _bixdcr:
-                self.wait_for_replication_to_catchup(_dest_master, _src_master, 1200, "source")
+                self.wait_for_replication_to_catchup(_dest_main, _src_main, 1200, "source")
             self.log.info("XDC REPLICATION caught up")
-            rest1 = RestConnection(_src_master)
-            rest2 = RestConnection(_dest_master)
+            rest1 = RestConnection(_src_main)
+            rest2 = RestConnection(_dest_main)
             curr_count_on_src = rest1.fetch_bucket_stats(bucket="testbucket")["op"]["samples"]["curr_items"][-1]
             curr_count_on_dest = rest2.fetch_bucket_stats(bucket="testbucket")["op"]["samples"]["curr_items"][-1]
             assert(curr_count_on_src==(src_item_count + dest_item_count), "ItemCount on source not what's expected")

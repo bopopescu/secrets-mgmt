@@ -117,7 +117,7 @@ class DocLoaderCouchbase(DocLoader):
     def __init__(self, servers, cluster):
         super(DocLoaderCouchbase, self).__init__()
         self.servers = servers
-        self.master = self.servers[0]
+        self.main = self.servers[0]
         self.cluster = cluster
 
     def load(self, generators_load, bucket, exp=0, flag=0,
@@ -132,7 +132,7 @@ class DocLoaderCouchbase(DocLoader):
                 items += (gen_load.end - gen_load.start)
 
         self.log.info("%s %s to %s documents..." % (op_type, items, bucket.name))
-        tasks.append(self.cluster.async_load_gen_docs(self.master, bucket.name,
+        tasks.append(self.cluster.async_load_gen_docs(self.main, bucket.name,
                                              gens_load,
                                              bucket.kvs[kv_store], op_type, exp, flag,
                                              only_store_hash, batch_size, pause_secs,

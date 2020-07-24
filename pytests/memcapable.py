@@ -33,20 +33,20 @@ class MemcapableTestBase(object):
         self.input = TestInputSingleton.input
         unittest.assertTrue(self.input, msg="input parameters missing...")
         self.test = unittest
-        self.master = self.input.servers[0]
+        self.main = self.input.servers[0]
         self.bucket_port = port
         self.bucket_name = bucket_name
-        ClusterOperationHelper.cleanup_cluster([self.master])
-        BucketOperationHelper.delete_all_buckets_or_assert([self.master], self.test)
+        ClusterOperationHelper.cleanup_cluster([self.main])
+        BucketOperationHelper.delete_all_buckets_or_assert([self.main], self.test)
 
         # Add built-in user
         testuser = [{'id': 'cbadminbucket', 'name': 'cbadminbucket', 'password': 'password'}]
-        RbacBase().create_user_source(testuser, 'builtin', self.master)
+        RbacBase().create_user_source(testuser, 'builtin', self.main)
         time.sleep(10)
 
         # Assign user to role
         role_list = [{'id': 'cbadminbucket', 'name': 'cbadminbucket', 'roles': 'admin'}]
-        RbacBase().add_user_role(role_list, RestConnection(self.master), 'builtin')
+        RbacBase().add_user_role(role_list, RestConnection(self.main), 'builtin')
         time.sleep(10)
 
         self._create_default_bucket(unittest)
@@ -54,23 +54,23 @@ class MemcapableTestBase(object):
 
     def _create_default_bucket(self, unittest):
         name = "default"
-        master = self.master
-        rest = RestConnection(master)
-        helper = RestHelper(RestConnection(master))
+        main = self.main
+        rest = RestConnection(main)
+        helper = RestHelper(RestConnection(main))
         if not helper.bucket_exists(name):
             node_ram_ratio = BucketOperationHelper.base_bucket_ratio(TestInputSingleton.input.servers)
             info = rest.get_nodes_self()
             available_ram = info.memoryQuota * node_ram_ratio
             rest.create_bucket(bucket=name, ramQuotaMB=int(available_ram))
-            ready = BucketOperationHelper.wait_for_memcached(master, name)
-            BucketOperationHelper.wait_for_vbuckets_ready_state(master, name)
+            ready = BucketOperationHelper.wait_for_memcached(main, name)
+            BucketOperationHelper.wait_for_vbuckets_ready_state(main, name)
             unittest.assertTrue(ready, msg="wait_for_memcached failed")
         unittest.assertTrue(helper.bucket_exists(name),
                             msg="unable to create {0} bucket".format(name))
 
 
     def set_test(self, key, exp, flags, values):
-        serverInfo = self.master
+        serverInfo = self.main
         client = MemcachedClientHelper.proxy_client(serverInfo, self.bucket_name,)
         #            self.log.info('Waitting 15 seconds for memcached started')
         #            time.sleep(15)
@@ -93,7 +93,7 @@ class MemcapableTestBase(object):
     def incr_test(self, key, exp, flags, value, incr_amt, decr_amt, incr_time):
         global update_value
 
-        serverInfo = self.master
+        serverInfo = self.main
         client = MemcachedClientHelper.proxy_client(serverInfo, self.bucket_name)
         #            self.log.info('Waitting 15 seconds for memcached started')
         #            time.sleep(15)
@@ -119,7 +119,7 @@ class MemcapableTestBase(object):
 
     def decr_test(self, key, exp, flags, value, incr_amt, decr_amt, decr_time):
         global update_value
-        serverInfo = self.master
+        serverInfo = self.main
         client = MemcachedClientHelper.proxy_client(serverInfo, self.bucket_name)
         if key != 'no_key':
             client.set(key, exp, flags, value)
@@ -137,8 +137,8 @@ class MemcapableTestBase(object):
         return update_value
 
     def tearDown(self):
-        ClusterOperationHelper.cleanup_cluster([self.master])
-        BucketOperationHelper.delete_all_buckets_or_assert([self.master], self)
+        ClusterOperationHelper.cleanup_cluster([self.main])
+        BucketOperationHelper.delete_all_buckets_or_assert([self.main], self)
 
 class SimpleSetMembaseBucketDefaultPort(unittest.TestCase):
     memcapableTestBase = None
@@ -266,7 +266,7 @@ class GetlTests(unittest.TestCase):
     #getl for 15 seconds and verify that setting the item again
     #throes Data exists
     def _getl_body(self, prefix, getl_timeout, expiration):
-        node = self.memcapableTestBase.master
+        node = self.memcapableTestBase.main
         mc = MemcachedClientHelper.direct_client(node, "default")
         key = "{0}_{1}".format(prefix, str(uuid.uuid4()))
         self.log.info("setting key {0} with expiration {1}".format(key, expiration))
@@ -336,7 +336,7 @@ class GetlTests(unittest.TestCase):
         prefix = "getl_expired_item"
         expiration = 5
         getl_timeout = 15
-        node = self.memcapableTestBase.master
+        node = self.memcapableTestBase.main
 
         # Add built-in user
         testuser = [{'id': 'cbadminbucket', 'name': 'cbadminbucket', 'password': 'password'}]
@@ -391,7 +391,7 @@ class GetrTests(BaseTestCase):
     def setUp(self):
         super(GetrTests, self).setUp()
         self.memcapableTestBase = MemcapableTestBase()
-        self.rest = RestConnection(self.master)
+        self.rest = RestConnection(self.main)
         descr = self.input.param("descr", "")
         if descr:
             self.log.info("Test:{0}".format(descr))
@@ -421,24 +421,24 @@ class GetrTests(BaseTestCase):
 
         prefix = str(uuid.uuid4())[:7]
 
-        BucketOperationHelper.delete_all_buckets_or_assert([self.master], self)
-        BucketOperationHelper.create_bucket(self.master, name=self.default_bucket_name, replica=replica_count, port=11210, test_case=self, bucket_ram=-1, password="")
+        BucketOperationHelper.delete_all_buckets_or_assert([self.main], self)
+        BucketOperationHelper.create_bucket(self.main, name=self.default_bucket_name, replica=replica_count, port=11210, test_case=self, bucket_ram=-1, password="")
 
         if rebalance == GetrTests.DURING_REBALANCE or rebalance == GetrTests.AFTER_REBALANCE:
             # leave 1 node unclustered for rebalance in
-            ClusterOperationHelper.begin_rebalance_out(self.master, self.servers[-1:])
-            ClusterOperationHelper.end_rebalance(self.master)
-            ClusterOperationHelper.begin_rebalance_in(self.master, self.servers[:-1])
-            ClusterOperationHelper.end_rebalance(self.master)
+            ClusterOperationHelper.begin_rebalance_out(self.main, self.servers[-1:])
+            ClusterOperationHelper.end_rebalance(self.main)
+            ClusterOperationHelper.begin_rebalance_in(self.main, self.servers[:-1])
+            ClusterOperationHelper.end_rebalance(self.main)
         else:
-            ClusterOperationHelper.begin_rebalance_in(self.master, self.servers)
-            ClusterOperationHelper.end_rebalance(self.master)
+            ClusterOperationHelper.begin_rebalance_in(self.main, self.servers)
+            ClusterOperationHelper.end_rebalance(self.main)
 
         vprefix = ""
         if not skipload:
             self._load_items(item_count=item_count, expiration=expiration, prefix=prefix, vprefix=vprefix)
             if not expiration:
-                RebalanceHelper.wait_for_stats_int_value(self.master, self.default_bucket_name, "curr_items_tot", item_count * (replica_count + 1), "<=", 600, True)
+                RebalanceHelper.wait_for_stats_int_value(self.main, self.default_bucket_name, "curr_items_tot", item_count * (replica_count + 1), "<=", 600, True)
 
         if delete:
             self._delete_items(item_count=item_count, prefix=prefix)
@@ -457,16 +457,16 @@ class GetrTests(BaseTestCase):
             self.sleep(delay)
 
         if rebalance == GetrTests.DURING_REBALANCE:
-            ClusterOperationHelper.begin_rebalance_in(self.master, self.servers)
+            ClusterOperationHelper.begin_rebalance_in(self.main, self.servers)
         if rebalance == GetrTests.AFTER_REBALANCE:
-            ClusterOperationHelper.end_rebalance(self.master)
+            ClusterOperationHelper.end_rebalance(self.main)
         if warmup:
             self.log.info("restarting memcached")
             command = "rpc:multicall(erlang, apply, [fun () -> try ns_server_testrunner_api:restart_memcached(20000) catch _:_ -> ns_port_sup:restart_port_by_name(memcached) end end, []], 20000)."
             memcached_restarted, content = self.rest.diag_eval(command)
             #wait until memcached starts
             self.assertTrue(memcached_restarted, "unable to restart memcached process through diag/eval")
-            RebalanceHelper.wait_for_stats(self.master, self.default_bucket_name, "curr_items_tot", item_count * (replica_count + 1), 600)
+            RebalanceHelper.wait_for_stats(self.main, self.default_bucket_name, "curr_items_tot", item_count * (replica_count + 1), 600)
 
         count = self._getr_items(item_count=item_count, replica_count=replica_count, prefix=prefix, vprefix=vprefix)
 
@@ -475,11 +475,11 @@ class GetrTests(BaseTestCase):
         else:
             self.assertTrue(count == replica_count * item_count, "expected {0} items, got {1} items".format(replica_count * item_count, count))
         if rebalance == GetrTests.DURING_REBALANCE:
-            ClusterOperationHelper.end_rebalance(self.master)
+            ClusterOperationHelper.end_rebalance(self.main)
 
     def _load_items(self, item_count, expiration, prefix, vprefix=""):
         flags = 0
-        client = MemcachedClientHelper.proxy_client(self.master, self.default_bucket_name)
+        client = MemcachedClientHelper.proxy_client(self.main, self.default_bucket_name)
         time_start = time.time()
         for i in range(item_count):
             timeout_end = time.time() + 10
@@ -495,7 +495,7 @@ class GetrTests(BaseTestCase):
         self.log.info("loaded {0} items in {1} seconds".format(item_count, time.time() - time_start))
 
     def _get_items(self, item_count, prefix, vprefix=""):
-        client = MemcachedClientHelper.proxy_client(self.master, self.default_bucket_name)
+        client = MemcachedClientHelper.proxy_client(self.main, self.default_bucket_name)
         time_start = time.time()
         get_count = 0
         last_error = ""
@@ -550,7 +550,7 @@ class GetrTests(BaseTestCase):
         return get_count
 
     def _delete_items(self, item_count, prefix):
-        client = MemcachedClientHelper.proxy_client(self.master, self.default_bucket_name)
+        client = MemcachedClientHelper.proxy_client(self.main, self.default_bucket_name)
         time_start = time.time()
         for i in range(item_count):
             timeout_end = time.time() + 10
@@ -566,7 +566,7 @@ class GetrTests(BaseTestCase):
         self.log.info("deleted {0} items in {1} seconds".format(item_count, time.time() - time_start))
 
     def _eject_items(self, item_count, prefix):
-        client = MemcachedClientHelper.proxy_client(self.master, self.default_bucket_name)
+        client = MemcachedClientHelper.proxy_client(self.main, self.default_bucket_name)
         time_start = time.time()
         for i in range(item_count):
             timeout_end = time.time() + 10
@@ -665,28 +665,28 @@ class AppendTests(unittest.TestCase):
     def setUp(self):
         self.log = logger.Logger.get_logger()
         self.params = TestInputSingleton.input.test_params
-        self.master = TestInputSingleton.input.servers[0]
-        rest = RestConnection(self.master)
-        rest.init_cluster(self.master.rest_username, self.master.rest_password)
+        self.main = TestInputSingleton.input.servers[0]
+        rest = RestConnection(self.main)
+        rest.init_cluster(self.main.rest_username, self.main.rest_password)
         info = rest.get_nodes_self()
-        rest.init_cluster_memoryQuota(self.master.rest_username, self.master.rest_password,
+        rest.init_cluster_memoryQuota(self.main.rest_username, self.main.rest_password,
                                       memoryQuota=info.mcdMemoryReserved)
-        ClusterOperationHelper.cleanup_cluster([self.master])
-        ClusterOperationHelper.wait_for_ns_servers_or_assert([self.master], self)
+        ClusterOperationHelper.cleanup_cluster([self.main])
+        ClusterOperationHelper.wait_for_ns_servers_or_assert([self.main], self)
         self._create_default_bucket()
-        self.onenodemc = MemcachedClientHelper.direct_client(self.master, "default")
+        self.onenodemc = MemcachedClientHelper.direct_client(self.main, "default")
 
     def _create_default_bucket(self):
         name = "default"
-        master = self.master
-        rest = RestConnection(master)
-        helper = RestHelper(RestConnection(master))
+        main = self.main
+        rest = RestConnection(main)
+        helper = RestHelper(RestConnection(main))
         if not helper.bucket_exists(name):
             node_ram_ratio = BucketOperationHelper.base_bucket_ratio(TestInputSingleton.input.servers)
             info = rest.get_nodes_self()
             available_ram = info.memoryQuota * node_ram_ratio
             rest.create_bucket(bucket=name, ramQuotaMB=int(available_ram))
-            ready = BucketOperationHelper.wait_for_memcached(master, name)
+            ready = BucketOperationHelper.wait_for_memcached(main, name)
             self.assertTrue(ready, msg="wait_for_memcached failed")
         self.assertTrue(helper.bucket_exists(name),
                         msg="unable to create {0} bucket".format(name))
@@ -787,7 +787,7 @@ class AppendTests(unittest.TestCase):
         if self.load_thread:
             self.load_thread.join()
 
-#        BucketOperationHelper.delete_all_buckets_or_assert([self.master], self)
+#        BucketOperationHelper.delete_all_buckets_or_assert([self.main], self)
 
 class WarmUpMemcachedTest(unittest.TestCase):
     def setUp(self):
@@ -800,23 +800,23 @@ class WarmUpMemcachedTest(unittest.TestCase):
                     hd.setLevel(level=logging.DEBUG)
                 else:
                     hd.setLevel(level=getattr(logging, TestInputSingleton.input.param("log_level", None)))
-        self.master = TestInputSingleton.input.servers[0]
-        rest = RestConnection(self.master)
-        rest.init_cluster(self.master.rest_username, self.master.rest_password)
+        self.main = TestInputSingleton.input.servers[0]
+        rest = RestConnection(self.main)
+        rest.init_cluster(self.main.rest_username, self.main.rest_password)
         info = rest.get_nodes_self()
-        rest.init_cluster_memoryQuota(self.master.rest_username, self.master.rest_password,
+        rest.init_cluster_memoryQuota(self.main.rest_username, self.main.rest_password,
                                       memoryQuota=info.mcdMemoryReserved)
-        ClusterOperationHelper.cleanup_cluster([self.master])
-        ClusterOperationHelper.wait_for_ns_servers_or_assert([self.master], self)
-        BucketOperationHelper.delete_all_buckets_or_assert([self.master], self)
+        ClusterOperationHelper.cleanup_cluster([self.main])
+        ClusterOperationHelper.wait_for_ns_servers_or_assert([self.main], self)
+        BucketOperationHelper.delete_all_buckets_or_assert([self.main], self)
         # recreate bucket instead of flush
         self._create_default_bucket()
-        self.onenodemc = MemcachedClientHelper.direct_client(self.master, "default")
+        self.onenodemc = MemcachedClientHelper.direct_client(self.main, "default")
         self._log_start()
 
     def tearDown(self):
-        ClusterOperationHelper.cleanup_cluster([self.master])
-        BucketOperationHelper.delete_all_buckets_or_assert([self.master], self)
+        ClusterOperationHelper.cleanup_cluster([self.main])
+        BucketOperationHelper.delete_all_buckets_or_assert([self.main], self)
         self._log_finish()
 
     def _log_start(self):
@@ -836,13 +836,13 @@ class WarmUpMemcachedTest(unittest.TestCase):
 
     def _create_default_bucket(self):
         name = "default"
-        master = self.master
-        rest = RestConnection(master)
+        main = self.main
+        rest = RestConnection(main)
         node_ram_ratio = BucketOperationHelper.base_bucket_ratio(TestInputSingleton.input.servers)
         info = rest.get_nodes_self()
         available_ram = info.memoryQuota * node_ram_ratio
         rest.create_bucket(bucket=name, ramQuotaMB=int(available_ram))
-        ready = BucketOperationHelper.wait_for_memcached(master, name)
+        ready = BucketOperationHelper.wait_for_memcached(main, name)
         self.assertTrue(ready, msg="wait_for_memcached failed")
         self.load_thread = None
         self.shutdown_load_data = False
@@ -862,9 +862,9 @@ class WarmUpMemcachedTest(unittest.TestCase):
             time.sleep(10)
         curr_items = int(self.onenodemc.stats()["curr_items"])
         uptime = int(self.onenodemc.stats()["uptime"])
-        RebalanceHelper.wait_for_persistence(self.master, "default")
+        RebalanceHelper.wait_for_persistence(self.main, "default")
 
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         command = "try ns_server_testrunner_api:kill_memcached(20000) catch _:_ -> [erlang:exit(element(2, X), kill) || X <- supervisor:which_children(ns_port_sup)] end."
         memcached_restarted, content = rest.diag_eval(command)
         self.assertTrue(memcached_restarted, "unable to restart memcached/moxi process through diag/eval")
@@ -874,7 +874,7 @@ class WarmUpMemcachedTest(unittest.TestCase):
         memcached_restarted = False
         while time.time() - start < 60:
             try:
-                self.onenodemc = MemcachedClientHelper.direct_client(self.master, "default")
+                self.onenodemc = MemcachedClientHelper.direct_client(self.main, "default")
                 value = int(self.onenodemc.stats()["uptime"])
                 if value < uptime:
                     self.log.info("memcached restarted...")
@@ -902,14 +902,14 @@ class WarmUpMemcachedTest(unittest.TestCase):
         for _ in range(5):
             self.log.info("Waiting for bucket to be loaded again.")
             try:
-                ready = BucketOperationHelper.wait_for_memcached(self.master, "default")
+                ready = BucketOperationHelper.wait_for_memcached(self.main, "default")
                 self.assertTrue(ready, "wait_for_memcached failed")
             except:
                 continue
             break
 
         while True:
-            self.onenodemc = MemcachedClientHelper.direct_client(self.master, "default")
+            self.onenodemc = MemcachedClientHelper.direct_client(self.main, "default")
             stats = self.onenodemc.stats()
             if 'curr_items' in stats:
                 break
@@ -962,18 +962,18 @@ class MultiGetNegativeTest(unittest.TestCase):
     def setUp(self):
         self.log = logger.Logger.get_logger()
         self.params = TestInputSingleton.input.test_params
-        self.master = TestInputSingleton.input.servers[0]
-        rest = RestConnection(self.master)
-        rest.init_cluster(self.master.rest_username, self.master.rest_password)
+        self.main = TestInputSingleton.input.servers[0]
+        rest = RestConnection(self.main)
+        rest.init_cluster(self.main.rest_username, self.main.rest_password)
         info = rest.get_nodes_self()
-        rest.init_cluster_memoryQuota(self.master.rest_username, self.master.rest_password,
+        rest.init_cluster_memoryQuota(self.main.rest_username, self.main.rest_password,
                                       memoryQuota=info.mcdMemoryReserved)
-        ClusterOperationHelper.cleanup_cluster([self.master])
-        ClusterOperationHelper.wait_for_ns_servers_or_assert([self.master], self)
+        ClusterOperationHelper.cleanup_cluster([self.main])
+        ClusterOperationHelper.wait_for_ns_servers_or_assert([self.main], self)
         self._create_default_bucket()
         self.keys_cleanup = []
-        self.onenodemc = MemcachedClientHelper.direct_client(self.master, "default", timeout=600)
-        self.onenodemoxi = MemcachedClientHelper.proxy_client(self.master, "default", timeout=600)
+        self.onenodemc = MemcachedClientHelper.direct_client(self.main, "default", timeout=600)
+        self.onenodemoxi = MemcachedClientHelper.proxy_client(self.main, "default", timeout=600)
 
 
     def tearDown(self):
@@ -987,15 +987,15 @@ class MultiGetNegativeTest(unittest.TestCase):
 
     def _create_default_bucket(self):
         name = "default"
-        master = self.master
-        rest = RestConnection(master)
-        helper = RestHelper(RestConnection(master))
+        main = self.main
+        rest = RestConnection(main)
+        helper = RestHelper(RestConnection(main))
         if not helper.bucket_exists(name):
             node_ram_ratio = BucketOperationHelper.base_bucket_ratio(TestInputSingleton.input.servers)
             info = rest.get_nodes_self()
             available_ram = info.memoryQuota * node_ram_ratio
             rest.create_bucket(bucket=name, ramQuotaMB=int(available_ram))
-            ready = BucketOperationHelper.wait_for_memcached(master, name)
+            ready = BucketOperationHelper.wait_for_memcached(main, name)
             self.assertTrue(ready, msg="wait_for_memcached failed")
         self.assertTrue(helper.bucket_exists(name),
                         msg="unable to create {0} bucket".format(name))
@@ -1032,7 +1032,7 @@ class MultiGetNegativeTest(unittest.TestCase):
     def _test_multi_get(self, client, howmany):
         mc_message = "memcached virt memory size {0} : resident memory size : {1}"
         mx_message = "moxi virt memory size {0} : resident memory size : {1}"
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         moxi_pid = RemoteMachineHelper(shell).is_process_running("moxi").pid
         mc_pid = RemoteMachineHelper(shell).is_process_running("memcached").pid
         keys = self._insert_data(client, howmany)
@@ -1078,17 +1078,17 @@ class MemcachedValueSizeLimitTest(unittest.TestCase):
     def setUp(self):
         self.log = logger.Logger.get_logger()
         self.params = TestInputSingleton.input.test_params
-        self.master = TestInputSingleton.input.servers[0]
-        rest = RestConnection(self.master)
-        rest.init_cluster(self.master.rest_username, self.master.rest_password)
+        self.main = TestInputSingleton.input.servers[0]
+        rest = RestConnection(self.main)
+        rest.init_cluster(self.main.rest_username, self.main.rest_password)
         info = rest.get_nodes_self()
-        rest.init_cluster_memoryQuota(self.master.rest_username, self.master.rest_password,
+        rest.init_cluster_memoryQuota(self.main.rest_username, self.main.rest_password,
                                       memoryQuota=info.mcdMemoryReserved)
-        ClusterOperationHelper.cleanup_cluster([self.master])
-        ClusterOperationHelper.wait_for_ns_servers_or_assert([self.master], self)
+        ClusterOperationHelper.cleanup_cluster([self.main])
+        ClusterOperationHelper.wait_for_ns_servers_or_assert([self.main], self)
         self._create_default_bucket()
         self.keys_cleanup = []
-        self.onenodemc = MemcachedClientHelper.direct_client(self.master, "default")
+        self.onenodemc = MemcachedClientHelper.direct_client(self.main, "default")
 
 
     def tearDown(self):
@@ -1102,15 +1102,15 @@ class MemcachedValueSizeLimitTest(unittest.TestCase):
 
     def _create_default_bucket(self):
         name = "default"
-        master = self.master
-        rest = RestConnection(master)
-        helper = RestHelper(RestConnection(master))
+        main = self.main
+        rest = RestConnection(main)
+        helper = RestHelper(RestConnection(main))
         if not helper.bucket_exists(name):
             node_ram_ratio = BucketOperationHelper.base_bucket_ratio(TestInputSingleton.input.servers)
             info = rest.get_nodes_self()
             available_ram = info.memoryQuota * node_ram_ratio
             rest.create_bucket(bucket=name, ramQuotaMB=int(available_ram))
-            ready = BucketOperationHelper.wait_for_memcached(master, name)
+            ready = BucketOperationHelper.wait_for_memcached(main, name)
             self.assertTrue(ready, msg="wait_for_memcached failed")
         self.assertTrue(helper.bucket_exists(name),
                         msg="unable to create {0} bucket".format(name))

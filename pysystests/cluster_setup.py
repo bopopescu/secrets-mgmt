@@ -46,8 +46,8 @@ class initialize(unittest.TestCase):
         self._rdirection = self._input.param("rdirection","unidirection")
         if self._xdcr:
             #Considering that there be a maximum of 2 clusters for XDCR
-            self._s_master = self._clusters_dic[0][0]
-            self._d_master = self._clusters_dic[1][0]
+            self._s_main = self._clusters_dic[0][0]
+            self._d_main = self._clusters_dic[1][0]
 
     def tearDown(self):
         pass
@@ -76,20 +76,20 @@ class SETUP(initialize):
         time.sleep(20)
 
         if self._xdcr:
-            self._link_create_replications(self._s_master, self._d_master, "cluster1")
+            self._link_create_replications(self._s_main, self._d_main, "cluster1")
             if self._rdirection == "bidirection":
-                self._link_create_replications(self._d_master, self._s_master, "cluster0")
+                self._link_create_replications(self._d_main, self._s_main, "cluster0")
 
     def setupXDCR(self):
-        self._link_create_replications(self._s_master, self._d_master, "cluster1")
+        self._link_create_replications(self._s_main, self._d_main, "cluster1")
         if self._rdirection == "bidirection":
-            self._link_create_replications(self._d_master, self._s_master, "cluster0")
+            self._link_create_replications(self._d_main, self._s_main, "cluster0")
 
     def terminate(self):
         if self._xdcr:
-            self._terminate_replications(self._s_master, "cluster1")
+            self._terminate_replications(self._s_main, "cluster1")
             if self._rdirection == "bidirection":
-                self._terminate_replications(self._d_master, "cluster0")
+                self._terminate_replications(self._d_main, "cluster0")
         for key in self._clusters_keys_olst:
             nodes = self._clusters_dic[key]
             for node in nodes:
@@ -102,17 +102,17 @@ class SETUP(initialize):
             rest = RestConnection(nodes[0])
             helper = RestHelper(rest)
             servers = rest.node_statuses()
-            master_id = rest.get_nodes_self().id
+            main_id = rest.get_nodes_self().id
             if len(nodes) > 1:
                 removed = helper.remove_nodes(knownNodes=[node.id for node in servers],
-                                          ejectedNodes=[node.id for node in servers if node.id != master_id],
+                                          ejectedNodes=[node.id for node in servers if node.id != main_id],
                                           wait_for_rebalance=True   )
 
-    def _terminate_replications(self, master, cluster_name):
-        rest = RestConnection(master)
+    def _terminate_replications(self, main, cluster_name):
+        rest = RestConnection(main)
         rest.remove_all_replications()
         os.system("curl --user {0}:{1} -X DELETE http://{2}:{3}/pools/default/remoteClusters/{4}".format(
-                    master.rest_username, master.rest_password, master.ip, master.port, cluster_name))
+                    main.rest_username, main.rest_password, main.ip, main.port, cluster_name))
 
     def set_the_cluster_up(self, nodes):
         self._init_nodes(nodes)
@@ -129,26 +129,26 @@ class SETUP(initialize):
             rest.init_cluster_memoryQuota(node.rest_username, node.rest_password, quota)
 
     def _config_cluster(self, nodes):
-        master = nodes[0]
-        rest = RestConnection(master)
+        main = nodes[0]
+        rest = RestConnection(main)
         for node in nodes[1:]:
-            rest.add_node(master.rest_username, master.rest_password,
+            rest.add_node(main.rest_username, main.rest_password,
                           node.ip, node.port)
         servers = rest.node_statuses()
         rest.rebalance(otpNodes=[node.id for node in servers], ejectedNodes=[])
         time.sleep(5)
 
     def _create_buckets(self, nodes):
-        master_node = nodes[0]
+        main_node = nodes[0]
         num_buckets = 0
         if self._default_bucket:
             num_buckets += 1
         num_buckets += self._sasl_buckets + self._standard_buckets
         if num_buckets == 0:
             return
-        bucket_size = self._get_bucket_size(master_node, nodes, self._mem_quota_int, num_buckets)
-        rest = RestConnection(master_node)
-        master_id = rest.get_nodes_self().id
+        bucket_size = self._get_bucket_size(main_node, nodes, self._mem_quota_int, num_buckets)
+        rest = RestConnection(main_node)
+        main_id = rest.get_nodes_self().id
         if self._default_bucket:
             if self._default_quota != 0:
                 bucket_size = self._default_quota
@@ -163,16 +163,16 @@ class SETUP(initialize):
         if self._sasl_buckets > 0:
             if self._sasl_quota != 0:
                 bucket_size = self._sasl_quota
-            self._create_sasl_buckets(master_node, master_id, bucket_size, password="password")
+            self._create_sasl_buckets(main_node, main_id, bucket_size, password="password")
         if self._standard_buckets > 0:
             if self._standard_quota != 0:
                 bucket_size = self._standard_quota
-            self._create_standard_buckets(master_node, master_id, bucket_size)
+            self._create_standard_buckets(main_node, main_id, bucket_size)
 
-    def _link_create_replications(self, master_1, master_2, cluster_name):
-        rest = RestConnection(master_1)
-        rest.add_remote_cluster(master_2.ip, master_2.port, master_1.rest_username,
-                                 master_1.rest_password, cluster_name)
+    def _link_create_replications(self, main_1, main_2, cluster_name):
+        rest = RestConnection(main_1)
+        rest.add_remote_cluster(main_2.ip, main_2.port, main_1.rest_username,
+                                 main_1.rest_password, cluster_name)
         time.sleep(30)
         if len(self._buckets) == 0:
             self._buckets = rest.get_buckets()
@@ -209,8 +209,8 @@ class SETUP(initialize):
                                saslPassword=None)
             self._buckets.append(name)
 
-    def _get_bucket_size(self, master_node, nodes, mem_quota, num_buckets, ratio=3.0 / 2.0):
+    def _get_bucket_size(self, main_node, nodes, mem_quota, num_buckets, ratio=3.0 / 2.0):
         for node in nodes:
-            if node.ip == master_node.ip:
+            if node.ip == main_node.ip:
                 return int(ratio / float(len(nodes)) / float(num_buckets) * float(mem_quota))
         return int(ratio / float(num_buckets) * float(mem_quota))

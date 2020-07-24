@@ -32,7 +32,7 @@ class SecondaryIndexingCreateDropTests(BaseSecondaryIndexingTests):
         Create indexes on empty buckets
         :return:
         """
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         for bucket in self.buckets:
             log.info("Flushing bucket {0}...".format(bucket.name))
             rest.flush_bucket(bucket)
@@ -364,7 +364,7 @@ class SecondaryIndexingCreateDropTests(BaseSecondaryIndexingTests):
             self.run_multi_operations(buckets = self.buckets,
                 query_definitions = self.query_definitions, create_index = True, drop_index = False)
             servr_out = self.get_nodes_from_services_map(service_type = "index", get_all_nodes = True)
-            failover_task = self.cluster.async_failover([self.master],
+            failover_task = self.cluster.async_failover([self.main],
                     failover_nodes = servr_out, graceful=self.graceful)
             failover_task.result()
             self.sleep(10)
@@ -390,7 +390,7 @@ class SecondaryIndexingCreateDropTests(BaseSecondaryIndexingTests):
             for bucket in self.buckets:
                 build_task = self.async_build_index(bucket, index_list)
                 log.info("Deleting bucket {0}".format(bucket.name))
-                BucketOperationHelper.delete_bucket_or_assert(serverInfo=self.master, bucket=bucket.name)
+                BucketOperationHelper.delete_bucket_or_assert(serverInfo=self.main, bucket=bucket.name)
                 build_task.result()
         except Exception as ex:
             msg = "Keyspace not found keyspace"

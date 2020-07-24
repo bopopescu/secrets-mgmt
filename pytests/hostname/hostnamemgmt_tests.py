@@ -15,10 +15,10 @@ class HostnameMgmtTests(HostnameBaseTests):
         hostnames = self.rename_nodes(self.servers)
         self.verify_referenced_by_names(self.servers, hostnames)
         self._set_hostames_to_servers_objs(hostnames)
-        master_rest = RestConnection(self.master)
+        main_rest = RestConnection(self.main)
         self.sleep(5, "Sleep to wait renaming")
         for server in self.servers[1:self.nodes_in + 1]:
-            master_rest.add_node(server.rest_username, server.rest_password, hostnames[server], server.port)
+            main_rest.add_node(server.rest_username, server.rest_password, hostnames[server], server.port)
         self.verify_referenced_by_names(self.servers, hostnames)
 
     def test_add_nodes_and_rebalance(self):
@@ -74,11 +74,11 @@ class HostnameMgmtTests(HostnameBaseTests):
         views = []
         for bucket in self.buckets:
             view = self.make_default_views(views_prefix, num_views, different_map=True)
-            self.create_views(self.master, ddoc_name, view, bucket)
+            self.create_views(self.main, ddoc_name, view, bucket)
             views += view
         for bucket in self.buckets:
             for view in views:
-                self.cluster.query_view(self.master, ddoc_name, view.name, query)
+                self.cluster.query_view(self.main, ddoc_name, view.name, query)
         hostnames = self.rename_nodes(self.servers[:self.nodes_init])
         self.verify_referenced_by_names(self.servers[:self.nodes_init], hostnames)
         self._set_hostames_to_servers_objs(hostnames)
@@ -137,7 +137,7 @@ class HostnameMgmtTests(HostnameBaseTests):
                                                  self.servers[self.nodes_init:self.nodes_in + self.nodes_init], [],
                                                  use_hostnames=True)
         self.sleep(3, 'wait for some progress in rebalance...')
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         reached = RestHelper(rest).rebalance_reached(expected_progress)
         self.assertTrue(reached, "rebalance failed or did not reach {0}%".format(expected_progress))
         if not RestHelper(rest).is_cluster_rebalanced():
@@ -175,7 +175,7 @@ class HostnameMgmtTests(HostnameBaseTests):
         self.cluster.rebalance(self.servers[:self.nodes_init],
                                self.servers[self.nodes_init:self.nodes_in + failover_factor + 1], [],
                                use_hostnames=True)
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         nodes_all = rest.node_statuses()
         nodes = []
         for failover_node in failover_nodes:

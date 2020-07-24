@@ -15,20 +15,20 @@ class DCPRebalanceTests(DCPBase):
 
         # start rebalance
         task = self.cluster.async_rebalance(
-            [self.master],
+            [self.main],
             self.servers[1:], [])
 
         # load some data
         vbucket = 0
-        self.load_docs(self.master, vbucket, self.num_items)
-        vb_uuid, seqno, high_seqno = self.vb_info(self.master,
+        self.load_docs(self.main, vbucket, self.num_items)
+        vb_uuid, seqno, high_seqno = self.vb_info(self.main,
                                                   vbucket)
         # stream
         log.info("streaming vb {0} to seqno {1}".format(
             vbucket, high_seqno))
         self.assertEquals(high_seqno, self.num_items)
 
-        dcp_client = self.dcp_client(self.master, PRODUCER, vbucket)
+        dcp_client = self.dcp_client(self.main, PRODUCER, vbucket)
         stream = dcp_client.stream_req(
             vbucket, 0, 0,
             high_seqno, vb_uuid)
@@ -67,7 +67,7 @@ class DCPRebalanceTests(DCPBase):
         # stop and failover nodeA
         assert self.stop_node(0)
         self.stopped_nodes.append(0)
-        self.master = nodeB
+        self.main = nodeB
 
         assert self.cluster.failover([nodeB], [nodeA])
         try:
@@ -96,16 +96,16 @@ class DCPRebalanceTests(DCPBase):
 
         # start rebalance
         try:
-            self.cluster.rebalance([self.master], self.servers[1:], [])
+            self.cluster.rebalance([self.main], self.servers[1:], [])
         except:
             pass
 
         vbucket = 0
-        mcd_client = self.mcd_client(self.master, vbucket, auth_user=True)
+        mcd_client = self.mcd_client(self.main, vbucket, auth_user=True)
         mcd_client.set('key1', 0, 0, 'value', vbucket)
 
         # failover node where key was set
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         index = self.vbucket_host_index(rest, vbucket)
         fail_n = self.servers[index]
         ready_n = filter(lambda n: n.ip != fail_n.ip or n.port != fail_n.port,
@@ -119,17 +119,17 @@ class DCPRebalanceTests(DCPBase):
         # vbucket has moved, set another key in new location
         rest = RestConnection(ready_n[0])
         index = self.vbucket_host_index(rest, vbucket)
-        new_master = ready_n[0]
-        mcd_client = self.mcd_client(new_master, auth_user=True)
+        new_main = ready_n[0]
+        mcd_client = self.mcd_client(new_main, auth_user=True)
         try:
             mcd_client.set('key2', 0, 0, 'value', vbucket)
         except MemcachedError:
             self.sleep(10)
-            mcd_client = self.mcd_client(new_master, auth_user=True)
+            mcd_client = self.mcd_client(new_main, auth_user=True)
             mcd_client.set('key2', 0, 0, 'value', vbucket)
 
         # stream mutation
-        dcp_client = self.dcp_client(new_master, PRODUCER, vbucket)
+        dcp_client = self.dcp_client(new_main, PRODUCER, vbucket)
         stream = dcp_client.stream_req(vbucket, 0, 0, 2, 0)
 
         while stream.has_response():
@@ -151,7 +151,7 @@ class DCPRebalanceTests(DCPBase):
 
         assert stream.last_by_seqno == 2
         assert rebalance_t.result()
-        self.cluster.rebalance([new_master], [], ready_n[1:])
+        self.cluster.rebalance([new_main], [], ready_n[1:])
 
     def test_failover_log_table_updated(self):
         """Verifies failover table entries are updated when vbucket ownership changes"""
@@ -177,7 +177,7 @@ class DCPRebalanceTests(DCPBase):
         # stop nodeA and failover
         assert self.stop_node(0)
         self.stopped_nodes.append(0)
-        self.master = nodeB
+        self.main = nodeB
         assert self.cluster.failover([nodeB], [nodeA])
         assert self.cluster.rebalance([nodeB], [], [])
 
@@ -198,7 +198,7 @@ class DCPRebalanceTests(DCPBase):
 
         # stop nodeB and failover
         assert self.stop_node(1)
-        self.master = nodeA
+        self.main = nodeA
         self.stopped_nodes.append(1)
         assert self.cluster.failover([nodeA], [nodeB])
         assert self.cluster.rebalance([nodeA], [], [])

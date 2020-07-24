@@ -54,15 +54,15 @@ class CollectinfoTests(CliBaseTest):
         gen_delete = BlobGenerator('nosql', 'nosql-', self.value_size,
                                                  start=self.num_items * 3 / 4,
                                                           end=self.num_items)
-        self._load_all_buckets(self.master, gen_load, "create", 0)
+        self._load_all_buckets(self.main, gen_load, "create", 0)
 
         if(self.doc_ops is not None):
             if("update" in self.doc_ops):
-                self._load_all_buckets(self.master, gen_update, "update", 0)
+                self._load_all_buckets(self.main, gen_update, "update", 0)
             if("delete" in self.doc_ops):
-                self._load_all_buckets(self.master, gen_delete, "delete", 0)
+                self._load_all_buckets(self.main, gen_delete, "delete", 0)
             if("expire" in self.doc_ops):
-                self._load_all_buckets(self.master, gen_expire, "update",\
+                self._load_all_buckets(self.main, gen_expire, "update",\
                                                                self.expire_time)
                 self.sleep(self.expire_time + 1)
         self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
@@ -74,7 +74,7 @@ class CollectinfoTests(CliBaseTest):
         cb_server_started = False
         if self.node_down:
             """ set autofailover to off """
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             rest.update_autofailover_settings(False, 60)
             if self.os == 'linux':
                 output, error = self.shell.execute_command(
@@ -96,7 +96,7 @@ class CollectinfoTests(CliBaseTest):
             if self.node_down:
                 if self.os == 'linux':
                     self.shell.start_server()
-                    rest = RestConnection(self.master)
+                    rest = RestConnection(self.main)
                     if RestHelper(rest).is_ns_server_running(timeout_in_seconds=60):
                         cb_server_started = True
                     else:
@@ -106,7 +106,7 @@ class CollectinfoTests(CliBaseTest):
             if self.node_down and not cb_server_started:
                 if self.os == 'linux':
                     self.shell.start_server()
-                    rest = RestConnection(self.master)
+                    rest = RestConnection(self.main)
                     if not RestHelper(rest).is_ns_server_running(timeout_in_seconds=60):
                         self.fail("CB server failed to start")
 
@@ -156,7 +156,7 @@ class CollectinfoTests(CliBaseTest):
                 if len(error) > 0:
                     raise Exception("unable to list the files. Check ls command output for help")
                 missing_logs = False
-                nodes_services = RestConnection(self.master).get_nodes_services()
+                nodes_services = RestConnection(self.main).get_nodes_services()
                 for node, services in nodes_services.iteritems():
                     for service in services:
                         if service.encode("ascii") == "fts" and \
@@ -238,7 +238,7 @@ class CollectinfoTests(CliBaseTest):
         self.generate_map_reduce_error = self.input.param("map_reduce_error", False)
         self.default_map_func = 'function (doc) { emit(doc.age, doc.first_name);}'
         self.gen_load = BlobGenerator('couch', 'cb-', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, self.gen_load, "create", 0)
+        self._load_all_buckets(self.main, self.gen_load, "create", 0)
         self.reduce_fn = "_count"
         expected_num_items = self.num_items
         if self.generate_map_reduce_error:
@@ -246,11 +246,11 @@ class CollectinfoTests(CliBaseTest):
             expected_num_items = None
 
         view = View(self.view_name, self.default_map_func, self.reduce_fn, dev_view=False)
-        self.cluster.create_view(self.master, self.default_design_doc_name, view,
+        self.cluster.create_view(self.main, self.default_design_doc_name, view,
                                  'default', self.wait_timeout * 2)
         query = {"stale": "false", "connection_timeout": 60000}
         try:
-            self.cluster.query_view(self.master, self.default_design_doc_name, self.view_name, query,
+            self.cluster.query_view(self.main, self.default_design_doc_name, self.view_name, query,
                                 expected_num_items, 'default', timeout=self.wait_timeout)
         except Exception, ex:
             if not self.generate_map_reduce_error:
@@ -266,7 +266,7 @@ class CollectinfoTests(CliBaseTest):
         """
         gen_load = BlobGenerator('cbcollect', 'cbcollect-', self.value_size,
                                                             end=self.num_items)
-        self._load_all_buckets(self.master, gen_load, "create", 0)
+        self._load_all_buckets(self.main, gen_load, "create", 0)
         self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
         self.log.info("Delete old logs files")
         self.shell.delete_files("%s.zip" % (self.log_filename))
@@ -300,7 +300,7 @@ class CollectinfoTests(CliBaseTest):
         """
         gen_load = BlobGenerator('cbcollect', 'cbcollect-', self.value_size,
                                                             end=200000)
-        self._load_all_buckets(self.master, gen_load, "create", 0)
+        self._load_all_buckets(self.main, gen_load, "create", 0)
         self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
         self.log.info("Delete old logs files")
         self.shell.delete_files("%s.zip" % (self.log_filename))
@@ -329,7 +329,7 @@ class CollectinfoTests(CliBaseTest):
     def _monitor_collect_log_mem_process(self):
         mem_stat = []
         results = []
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         vsz, rss = RemoteMachineHelper(shell).monitor_process_memory('cbcollect_info')
         vsz_delta = max(abs(x - y) for (x, y) in zip(vsz[1:], vsz[:-1]))
         rss_delta = max(abs(x - y) for (x, y) in zip(rss[1:], rss[:-1]))

@@ -46,7 +46,7 @@ class MovingTopFTS(FTSBaseTest):
         self.wait_for_indexing_complete()
         self.validate_index_count(equal_bucket_doc_count=True)
 
-    def rebalance_out_master_during_index_building(self):
+    def rebalance_out_main_during_index_building(self):
         self.load_data()
         self.create_fts_indexes_all_buckets()
         self.sleep(10)
@@ -54,7 +54,7 @@ class MovingTopFTS(FTSBaseTest):
         for index in self._cb_cluster.get_indexes():
             self.log.info("Index count for %s: %s"
                           %(index.name, index.get_indexed_doc_count()))
-        self._cb_cluster.rebalance_out_master()
+        self._cb_cluster.rebalance_out_main()
         for index in self._cb_cluster.get_indexes():
             self.is_index_partitioned_balanced(index)
         self.wait_for_indexing_complete()
@@ -82,22 +82,22 @@ class MovingTopFTS(FTSBaseTest):
         for index in self._cb_cluster.get_indexes():
             self.log.info("Index count for %s: %s"
                           %(index.name,index.get_indexed_doc_count()))
-        self._cb_cluster.swap_rebalance_master(services=["kv"])
+        self._cb_cluster.swap_rebalance_main(services=["kv"])
         try:
             for index in self._cb_cluster.get_indexes():
                 self.is_index_partitioned_balanced(index)
             self.wait_for_indexing_complete()
             self.validate_index_count(equal_bucket_doc_count=True)
         except Exception as e:
-            # to work around fts node becoming master and
+            # to work around fts node becoming main and
             # unable to rebalance out kv node
-            self._cb_cluster.swap_rebalance_master(services=["fts"])
+            self._cb_cluster.swap_rebalance_main(services=["fts"])
             self.validate_index_count(equal_bucket_doc_count=True)
             raise e
-        self._cb_cluster.swap_rebalance_master(services=["fts"])
+        self._cb_cluster.swap_rebalance_main(services=["fts"])
         self.validate_index_count(equal_bucket_doc_count=True)
 
-    def failover_non_master_during_index_building(self):
+    def failover_non_main_during_index_building(self):
         self.load_data()
         self.create_fts_indexes_all_buckets()
         self.sleep(10)
@@ -133,7 +133,7 @@ class MovingTopFTS(FTSBaseTest):
         except Exception as e:
             self.log.info("Expected exception: %s" % e)
 
-    def failover_master_during_index_building(self):
+    def failover_main_during_index_building(self):
         self.load_data()
         self.create_fts_indexes_all_buckets()
         self.sleep(10)
@@ -144,7 +144,7 @@ class MovingTopFTS(FTSBaseTest):
         self._cb_cluster.rebalance_in(num_nodes=1, services=["kv,fts"])
         for index in self._cb_cluster.get_indexes():
             self.is_index_partitioned_balanced(index)
-        self._cb_cluster.failover_and_rebalance_master()
+        self._cb_cluster.failover_and_rebalance_main()
         for index in self._cb_cluster.get_indexes():
             self.is_index_partitioned_balanced(index)
         self.wait_for_indexing_complete()
@@ -159,7 +159,7 @@ class MovingTopFTS(FTSBaseTest):
             self.log.info("Index count for %s: %s"
                           %(index.name,index.get_indexed_doc_count()))
         try:
-            self._cb_cluster.failover_and_rebalance_master()
+            self._cb_cluster.failover_and_rebalance_main()
         except Exception as e:
             self.log.info("Expected exception caught: %s" % e)
         for index in self._cb_cluster.get_indexes():
@@ -248,7 +248,7 @@ class MovingTopFTS(FTSBaseTest):
             self.is_index_partitioned_balanced(index)
         self.validate_index_count(equal_bucket_doc_count=True)
 
-    def warmup_master_during_index_building(self):
+    def warmup_main_during_index_building(self):
         self.load_data()
         self.create_fts_indexes_all_buckets()
         self.sleep(10)
@@ -256,7 +256,7 @@ class MovingTopFTS(FTSBaseTest):
         for index in self._cb_cluster.get_indexes():
             self.log.info("Index count for %s: %s"
                           %(index.name,index.get_indexed_doc_count()))
-        self._cb_cluster.warmup_node(master=True)
+        self._cb_cluster.warmup_node(main=True)
         for index in self._cb_cluster.get_indexes():
             self.is_index_partitioned_balanced(index)
         self.wait_for_indexing_complete()
@@ -284,7 +284,7 @@ class MovingTopFTS(FTSBaseTest):
         for index in self._cb_cluster.get_indexes():
             self.log.info("Index count for %s: %s"
                           %(index.name,index.get_indexed_doc_count()))
-        self._cb_cluster.reboot_one_node(test_case=self, master=True)
+        self._cb_cluster.reboot_one_node(test_case=self, main=True)
         for index in self._cb_cluster.get_indexes():
             self.is_index_partitioned_balanced(index)
         self.wait_for_indexing_complete()
@@ -298,7 +298,7 @@ class MovingTopFTS(FTSBaseTest):
         for index in self._cb_cluster.get_indexes():
             self.log.info("Index count for %s: %s"
                           %(index.name, index.get_indexed_doc_count()))
-        NodeHelper.kill_memcached(self._cb_cluster.get_master_node())
+        NodeHelper.kill_memcached(self._cb_cluster.get_main_node())
         for index in self._cb_cluster.get_indexes():
             self.is_index_partitioned_balanced(index)
         self.wait_for_indexing_complete()
@@ -312,7 +312,7 @@ class MovingTopFTS(FTSBaseTest):
         for index in self._cb_cluster.get_indexes():
             self.log.info("Index count for %s: %s"
                           %(index.name, index.get_indexed_doc_count()))
-        NodeHelper.kill_erlang(self._cb_cluster.get_master_node())
+        NodeHelper.kill_erlang(self._cb_cluster.get_main_node())
         for index in self._cb_cluster.get_indexes():
             self.is_index_partitioned_balanced(index)
         self.wait_for_indexing_complete()
@@ -363,7 +363,7 @@ class MovingTopFTS(FTSBaseTest):
                                              expected_hits=self._num_items)
         self.log.info("SUCCESS! Hits: %s" % hits)
 
-    def rebalance_out_master_between_indexing_and_querying(self):
+    def rebalance_out_main_between_indexing_and_querying(self):
         #TESTED
         self.load_data()
         self.create_fts_indexes_all_buckets()
@@ -372,7 +372,7 @@ class MovingTopFTS(FTSBaseTest):
         for index in self._cb_cluster.get_indexes():
             self.log.info("Index count for %s: %s"
                           %(index.name,index.get_indexed_doc_count()))
-        self._cb_cluster.rebalance_out(master=True)
+        self._cb_cluster.rebalance_out(main=True)
         for index in self._cb_cluster.get_indexes():
             self.is_index_partitioned_balanced(index)
         self.wait_for_indexing_complete()
@@ -438,12 +438,12 @@ class MovingTopFTS(FTSBaseTest):
                 self.log.info("SUCCESS: Fewer docs ({0}) returned after "
                               "hard-failover".format(hits))
 
-    def hard_failover_master_between_indexing_and_querying(self):
+    def hard_failover_main_between_indexing_and_querying(self):
         #TESTED
         self.load_data()
         self.create_fts_indexes_all_buckets()
         self.wait_for_indexing_complete()
-        self._cb_cluster.failover_and_rebalance_master()
+        self._cb_cluster.failover_and_rebalance_main()
         for index in self._cb_cluster.get_indexes():
             self.is_index_partitioned_balanced(index)
         for index in self._cb_cluster.get_indexes():
@@ -546,7 +546,7 @@ class MovingTopFTS(FTSBaseTest):
                                              expected_hits=self._num_items)
         self.log.info("SUCCESS! Hits: %s" % hits)
 
-    def warmup_master_between_indexing_and_querying(self):
+    def warmup_main_between_indexing_and_querying(self):
         #TESTED
         self.load_data()
         self.create_fts_indexes_all_buckets()
@@ -554,7 +554,7 @@ class MovingTopFTS(FTSBaseTest):
         self.log.info("Index building has begun...")
         self.wait_for_indexing_complete()
         self.validate_index_count(equal_bucket_doc_count=True)
-        self._cb_cluster.warmup_node(master=True)
+        self._cb_cluster.warmup_node(main=True)
         for index in self._cb_cluster.get_indexes():
             self.is_index_partitioned_balanced(index)
         for index in self._cb_cluster.get_indexes():
@@ -824,10 +824,10 @@ class MovingTopFTS(FTSBaseTest):
         NodeHelper.wait_warmup_completed([node])
         self.run_query_and_compare(index)
 
-    def warmup_master_during_querying(self):
+    def warmup_main_during_querying(self):
         #TESTED
         index = self.create_index_generate_queries()
-        self._cb_cluster.warmup_node(master=True)
+        self._cb_cluster.warmup_node(main=True)
         self.is_index_partitioned_balanced(index)
         self.run_query_and_compare(index)
 
@@ -880,7 +880,7 @@ class MovingTopFTS(FTSBaseTest):
                           %(index.name, index.get_indexed_doc_count()))
         # wait till indexing is midway...
         self.wait_for_indexing_complete(self._num_items/2)
-        reb_thread = Thread(target=self._cb_cluster.rebalance_out_master,
+        reb_thread = Thread(target=self._cb_cluster.rebalance_out_main,
                                    name="rebalance",
                                    args=())
         reb_thread.start()
@@ -965,7 +965,7 @@ class MovingTopFTS(FTSBaseTest):
                           % (index.name, index.get_indexed_doc_count()))
         # wait till indexing is midway...
         self.wait_for_indexing_complete(self._num_items / 2)
-        reb_thread = Thread(target=self._cb_cluster.rebalance_out_master,
+        reb_thread = Thread(target=self._cb_cluster.rebalance_out_main,
                             name="rebalance",
                             args=())
         reb_thread.start()
@@ -1103,8 +1103,8 @@ class MovingTopFTS(FTSBaseTest):
             before_bucket_doc_count, before_index_doc_count))
 
         # Kill memcached on Node A
-        self.log.info("Killing memcached on {0}".format(self._master.ip))
-        shell = RemoteMachineShellConnection(self._master)
+        self.log.info("Killing memcached on {0}".format(self._main.ip))
+        shell = RemoteMachineShellConnection(self._main)
         shell.kill_memcached()
 
         # Start persistence on Node B
@@ -1172,12 +1172,12 @@ class MovingTopFTS(FTSBaseTest):
             4. start rebalance
         """
         from lib.membase.api.rest_client import RestConnection, RestHelper
-        rest = RestConnection(self._cb_cluster.get_master_node())
+        rest = RestConnection(self._cb_cluster.get_main_node())
         nodes = rest.node_statuses()
         ejected_nodes = []
 
         for node in nodes:
-            if node.ip != self._master.ip:
+            if node.ip != self._main.ip:
                 ejected_nodes.append(node.id)
                 break
 
@@ -1211,12 +1211,12 @@ class MovingTopFTS(FTSBaseTest):
         self.wait_for_indexing_complete()
 
         from lib.membase.api.rest_client import RestConnection, RestHelper
-        rest = RestConnection(self._cb_cluster.get_master_node())
+        rest = RestConnection(self._cb_cluster.get_main_node())
         nodes = rest.node_statuses()
         ejected_nodes = []
 
         for node in nodes:
-            if node.ip != self._master.ip:
+            if node.ip != self._main.ip:
                 ejected_nodes.append(node.id)
                 break
         self.log.info(
@@ -1240,24 +1240,24 @@ class MovingTopFTS(FTSBaseTest):
     def test_rebalance_cancel_new_rebalance(self):
         """
             Load bucket, do not create index
-            From a 3 kv+fts node cluster, rebalance out master + one node
+            From a 3 kv+fts node cluster, rebalance out main + one node
             Immediately (after few secs), stop rebalance
-            Rebalance out other nodes than master.
+            Rebalance out other nodes than main.
             After rebalance completes, create an index
         :return:
         """
         self.load_data()
 
-        non_master_nodes = list(set(self._cb_cluster.get_nodes())-
-                           set([self._master]))
+        non_main_nodes = list(set(self._cb_cluster.get_nodes())-
+                           set([self._main]))
 
         from lib.membase.api.rest_client import RestConnection, RestHelper
-        rest = RestConnection(self._master)
+        rest = RestConnection(self._main)
         nodes = rest.node_statuses()
         ejected_nodes = []
 
-        # first eject a master + non-master node
-        eject_nodes = [self._master] + [non_master_nodes[0]]
+        # first eject a main + non-main node
+        eject_nodes = [self._main] + [non_main_nodes[0]]
 
         for eject in eject_nodes:
             for node in nodes:
@@ -1272,7 +1272,7 @@ class MovingTopFTS(FTSBaseTest):
         stopped = rest.stop_rebalance()
         self.assertTrue(stopped, msg="unable to stop rebalance")
 
-        eject_nodes = non_master_nodes[:2]
+        eject_nodes = non_main_nodes[:2]
         ejected_nodes = []
 
         for eject in eject_nodes:

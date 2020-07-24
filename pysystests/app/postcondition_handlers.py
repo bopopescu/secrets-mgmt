@@ -40,7 +40,7 @@ GREATER_THAN_EQ = '>='
     Note by default <condition_method> is determined at prerun time and is
     really only needed for custom postcondition methods
 
-    Also master ip:port in testcfg will be used if not specified
+    Also main ip:port in testcfg will be used if not specified
 """
 def parse_condition(postconditions):
     condition_params = postconditions.split(',')

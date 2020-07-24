@@ -57,7 +57,7 @@ class SubdocXattrSdkTest(SubdocBaseTest):
 
     def setUp(self):
         super(SubdocXattrSdkTest, self).setUp()
-        self.client = self.direct_client(self.master, self.buckets[0]).cb
+        self.client = self.direct_client(self.main, self.buckets[0]).cb
 
     def tearDown(self):
         super(SubdocXattrSdkTest, self).tearDown()
@@ -1044,10 +1044,10 @@ class SubdocXattrSdkTest(SubdocBaseTest):
         view = View(default_view_name, default_map_func, None, False)
 
         ddoc_name = "ddoc1"
-        tasks = self.async_create_views(self.master, ddoc_name, [view], self.buckets[0].name)
+        tasks = self.async_create_views(self.main, ddoc_name, [view], self.buckets[0].name)
         for task in tasks:
             task.result()
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         query = {"stale": "false", "full_set": "true", "connection_timeout": 60000}
 
         result = rest.query_view(ddoc_name, view.name, self.buckets[0].name, query)
@@ -1070,10 +1070,10 @@ class SubdocXattrSdkTest(SubdocBaseTest):
         view = View(default_view_name, default_map_func, None, False)
 
         ddoc_name = "ddoc1"
-        tasks = self.async_create_views(self.master, ddoc_name, [view], self.buckets[0].name)
+        tasks = self.async_create_views(self.main, ddoc_name, [view], self.buckets[0].name)
         for task in tasks:
             task.result()
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         query = {"stale": "false", "full_set": "true", "connection_timeout": 60000}
 
         result = rest.query_view(ddoc_name, view.name, self.buckets[0].name, query)
@@ -1092,10 +1092,10 @@ class SubdocXattrSdkTest(SubdocBaseTest):
         view = View(default_view_name, default_map_func, None, False)
 
         ddoc_name = "ddoc1"
-        tasks = self.async_create_views(self.master, ddoc_name, [view], self.buckets[0].name)
+        tasks = self.async_create_views(self.main, ddoc_name, [view], self.buckets[0].name)
         for task in tasks:
             task.result()
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         query = {"stale": "false", "full_set": "true", "connection_timeout": 60000}
 
         result = rest.query_view(ddoc_name, view.name, self.buckets[0].name, query)
@@ -1108,7 +1108,7 @@ class SubdocXattrSdkTest(SubdocBaseTest):
         self.client.upsert(k, {"xattr": True})
         self.client.mutate_in(k, SD.upsert('integer', 2, xattr=True))
 
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         shell.execute_command("""echo '{
     "views" : {
         "view1": {
@@ -1120,7 +1120,7 @@ class SubdocXattrSdkTest(SubdocBaseTest):
         o, e = shell.execute_command(
             "curl -X PUT -H 'Content-Type: application/json' http://Administrator:password@127.0.0.1:8092/default/_design/ddoc1 -d @/tmp/views_def.json")
         self.log.info(o)
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         query = {"stale": "false", "full_set": "true", "connection_timeout": 60000}
 
         result = rest.query_view('ddoc1', 'view1', self.buckets[0].name, query)
@@ -1138,10 +1138,10 @@ class SubdocXattrSdkTest(SubdocBaseTest):
         view = View(default_view_name, default_map_func, None, False)
 
         ddoc_name = "ddoc1"
-        tasks = self.async_create_views(self.master, ddoc_name, [view], self.buckets[0].name)
+        tasks = self.async_create_views(self.main, ddoc_name, [view], self.buckets[0].name)
         for task in tasks:
             task.result()
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         query = {"stale": "false", "full_set": "true", "connection_timeout": 60000}
 
         result = rest.query_view(ddoc_name, view.name, self.buckets[0].name, query)
@@ -1158,10 +1158,10 @@ class SubdocXattrSdkTest(SubdocBaseTest):
         view = View(default_view_name, default_map_func, None, False)
 
         ddoc_name = "ddoc1"
-        tasks = self.async_create_views(self.master, ddoc_name, [view], self.buckets[0].name)
+        tasks = self.async_create_views(self.main, ddoc_name, [view], self.buckets[0].name)
         for task in tasks:
             task.result()
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         query = {"stale": "false", "full_set": "true", "connection_timeout": 60000}
 
         result = rest.query_view(ddoc_name, view.name, self.buckets[0].name, query)
@@ -1178,10 +1178,10 @@ class SubdocXattrSdkTest(SubdocBaseTest):
         view = View(default_view_name, default_map_func, None, False)
 
         ddoc_name = "ddoc1"
-        tasks = self.async_create_views(self.master, ddoc_name, [view], self.buckets[0].name)
+        tasks = self.async_create_views(self.main, ddoc_name, [view], self.buckets[0].name)
         for task in tasks:
             task.result()
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         query = {"stale": "false", "full_set": "true", "connection_timeout": 60000}
 
         result = rest.query_view(ddoc_name, view.name, self.buckets[0].name, query)
@@ -1198,10 +1198,10 @@ class SubdocXattrSdkTest(SubdocBaseTest):
         view = View(default_view_name, default_map_func, None, False)
 
         ddoc_name = "ddoc1"
-        tasks = self.async_create_views(self.master, ddoc_name, [view], self.buckets[0].name)
+        tasks = self.async_create_views(self.main, ddoc_name, [view], self.buckets[0].name)
         for task in tasks:
             task.result()
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         query = {"stale": "false", "full_set": "true", "connection_timeout": 60000}
 
         result = rest.query_view(ddoc_name, view.name, self.buckets[0].name, query)
@@ -1219,10 +1219,10 @@ class SubdocXattrSdkTest(SubdocBaseTest):
         view = View(default_view_name, default_map_func, None, False)
 
         ddoc_name = "ddoc1"
-        tasks = self.async_create_views(self.master, ddoc_name, [view], self.buckets[0].name)
+        tasks = self.async_create_views(self.main, ddoc_name, [view], self.buckets[0].name)
         for task in tasks:
             task.result()
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         query = {"stale": "false", "full_set": "true", "connection_timeout": 60000}
 
         result = rest.query_view(ddoc_name, view.name, self.buckets[0].name, query)
@@ -1240,10 +1240,10 @@ class SubdocXattrSdkTest(SubdocBaseTest):
         view = View(default_view_name, default_map_func, None, False)
 
         ddoc_name = "ddoc1"
-        tasks = self.async_create_views(self.master, ddoc_name, [view], self.buckets[0].name)
+        tasks = self.async_create_views(self.main, ddoc_name, [view], self.buckets[0].name)
         for task in tasks:
             task.result()
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         query = {"stale": "false", "full_set": "true", "connection_timeout": 60000}
 
         result = rest.query_view(ddoc_name, view.name, self.buckets[0].name, query)
@@ -1274,7 +1274,7 @@ class SubdocXattrSdkTest(SubdocBaseTest):
         view = View(default_view_name, default_map_func, None, False)
 
         ddoc_name = "ddoc1"
-        tasks = self.async_create_views(self.master, ddoc_name, [view], self.buckets[0].name)
+        tasks = self.async_create_views(self.main, ddoc_name, [view], self.buckets[0].name)
         for task in tasks:
             try:
                 task.result()
@@ -1284,7 +1284,7 @@ class SubdocXattrSdkTest(SubdocBaseTest):
                 else:
                     raise
 
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         query = {"stale": "false", "full_set": "true", "connection_timeout": 60000}
 
         result = rest.query_view(ddoc_name, view.name, self.buckets[0].name, query)
@@ -1312,7 +1312,7 @@ class SubdocXattrSdkTest(SubdocBaseTest):
         for k, v in SubdocXattrSdkTest.VALUES.iteritems():
             self.client.mutate_in(key, SD.upsert(k, v, xattr=True))
 
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         shell.execute_command("""echo '{
         "views" : {
             "view1": {
@@ -1326,7 +1326,7 @@ class SubdocXattrSdkTest(SubdocBaseTest):
         self.log.info(o)
 
         ddoc_name = "ddoc1"
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         query = {"stale": "false", "full_set": "true", "connection_timeout": 60000}
 
         result = rest.query_view(ddoc_name, "view1", self.buckets[0].name, query)
@@ -1363,7 +1363,7 @@ class SubdocXattrSdkTest(SubdocBaseTest):
             self.log.info("xattr '%s' exists?: %s" % (k, rv.success))
             self.assertTrue(rv.success)
 
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         shell.stop_couchbase()
         self.sleep(2)
         shell.start_couchbase()
@@ -1434,10 +1434,10 @@ class XattrImportExportTests(ImportExportTests, SubdocBaseTest):
 
     def _load_all_buckets(self):
         for bucket in self.buckets:
-            self.client = SDKClient(scheme="couchbase", hosts=[self.master.ip],
+            self.client = SDKClient(scheme="couchbase", hosts=[self.main.ip],
                                     bucket=bucket.name, uhm_options='timeout=3').cb
             for i in xrange(self._num_items):
-                key = 'k_%s_%s' % (i, str(self.master.ip))
+                key = 'k_%s_%s' % (i, str(self.main.ip))
                 value = {'xattr_%s' % i: 'value%s' % i}
                 self.client.upsert(key, value)
                 self.client.mutate_in(key, SD.upsert('xattr_%s' % i, 'value%s' % i,
@@ -1521,8 +1521,8 @@ class XattrImportExportTests(ImportExportTests, SubdocBaseTest):
         if "url" in import_method:
             import_method = ""
         self.ex_path = self.tmp_path + "export/"
-        master = self.servers[0]
-        server = copy.deepcopy(master)
+        main = self.servers[0]
+        server = copy.deepcopy(main)
 
         if username is None:
             username = server.rest_username
@@ -1566,19 +1566,19 @@ class XattrImportExportTests(ImportExportTests, SubdocBaseTest):
             if self.import_back:
                 import_file = export_file
                 BucketOperationHelper.delete_all_buckets_or_assert(self.servers, self)
-                imp_rest = RestConnection(self.master)
+                imp_rest = RestConnection(self.main)
                 info = imp_rest.get_nodes_self()
                 if info.memoryQuota and int(info.memoryQuota) > 0:
                     self.quota = info.memoryQuota
-                bucket_params = self._create_bucket_params(server=self.master, size=250, replicas=self.num_replicas,
+                bucket_params = self._create_bucket_params(server=self.main, size=250, replicas=self.num_replicas,
                                                            enable_replica_index=self.enable_replica_index,
                                                            eviction_policy=self.eviction_policy)
                 self.cluster.create_default_bucket(bucket_params)
                 imp_cmd_str = "%s%s%s %s -c %s -u %s -p %s -b %s -d file://%s -f %s -g key::##xattr##::#MONO_INCR#" \
                               % (self.cli_command_path, "cbimport", self.cmd_ext, self.imex_type,
-                                 self.master.ip, username, password, "default",
+                                 self.main.ip, username, password, "default",
                                  import_file, self.format_type)
-                import_shell = RemoteMachineShellConnection(self.master)
+                import_shell = RemoteMachineShellConnection(self.main)
                 output, error = import_shell.execute_command(imp_cmd_str)
                 if self._check_output("error", output):
                     self.fail("Fail to run import back to bucket")
@@ -1655,7 +1655,7 @@ class XattrEnterpriseBackupRestoreTest(SubdocBaseTest):
         super(SubdocBaseTest, self).setUp()
         self._num_items = self.input.param("items", 1000)
         self.only_store_hash = False
-        self.shell = RemoteMachineShellConnection(self.master)
+        self.shell = RemoteMachineShellConnection(self.main)
         for bucket in self.buckets:
             testuser = [{'id': bucket.name, 'name': bucket.name, 'password': 'password'}]
             rolelist = [{'id': bucket.name, 'name': bucket.name, 'roles': 'admin'}]
@@ -1666,10 +1666,10 @@ class XattrEnterpriseBackupRestoreTest(SubdocBaseTest):
 
     def _load_all_buckets(self, postfix_xattr_value=''):
         for bucket in self.buckets:
-            self.client = SDKClient(scheme="couchbase", hosts=[self.master.ip],
+            self.client = SDKClient(scheme="couchbase", hosts=[self.main.ip],
                                     bucket=bucket.name).cb
             for i in xrange(self._num_items):
-                key = 'k_%s_%s' % (i, str(self.master.ip))
+                key = 'k_%s_%s' % (i, str(self.main.ip))
                 value = {'xattr_%s' % i: 'value%s' % i}
                 self.client.upsert(key, value)
                 self.client.mutate_in(key, SD.upsert('xattr_%s' % i, 'value_%s%s' % (postfix_xattr_value, i),
@@ -1684,10 +1684,10 @@ class XattrEnterpriseBackupRestoreTest(SubdocBaseTest):
 
     def _verify_all_buckets(self, postfix_xattr_value=''):
         for bucket in self.buckets:
-            self.client = SDKClient(scheme="couchbase", hosts=[self.master.ip],
+            self.client = SDKClient(scheme="couchbase", hosts=[self.main.ip],
                                     bucket=bucket.name).cb
             for i in xrange(self._num_items):
-                key = 'k_%s_%s' % (i, str(self.master.ip))
+                key = 'k_%s_%s' % (i, str(self.main.ip))
                 rv = self.client.lookup_in(key, SD.get('xattr_%s%s' % (postfix_xattr_value, i), xattr=True))
                 self.assertTrue(rv.exists('xattr_%s' % i))
                 self.assertEqual('value_%s%s' % (postfix_xattr_value, i), rv['xattr_%s' % i])
@@ -1708,11 +1708,11 @@ class XattrEnterpriseBackupRestoreTest(SubdocBaseTest):
         self.log.info(output)
         self.assertEquals('Backup successfully completed', output[1])
         BucketOperationHelper.delete_all_buckets_or_assert(self.servers, self)
-        imp_rest = RestConnection(self.master)
+        imp_rest = RestConnection(self.main)
         info = imp_rest.get_nodes_self()
         if info.memoryQuota and int(info.memoryQuota) > 0:
             self.quota = info.memoryQuota
-        bucket_params = self._create_bucket_params(server=self.master, size=250, replicas=self.num_replicas,
+        bucket_params = self._create_bucket_params(server=self.main, size=250, replicas=self.num_replicas,
                                                    enable_replica_index=self.enable_replica_index,
                                                    eviction_policy=self.eviction_policy)
         self.cluster.create_default_bucket(bucket_params)
@@ -1777,7 +1777,7 @@ class XattrUpgradeTests(NewUpgradeBaseTest, SubdocBaseTest):
         self.operations(self.servers[:self.nodes_init])
 
         self.key = 'xattrs'
-        self.host = "{0}:{1}".format(self.master.ip, self.master.port)
+        self.host = "{0}:{1}".format(self.main.ip, self.main.port)
         self.client = SDKClient(scheme='couchbase', hosts=[self.host], bucket=self.buckets[0]).cb
         self.client.upsert(self.key, {})
 
@@ -1812,7 +1812,7 @@ class XattrUpgradeTests(NewUpgradeBaseTest, SubdocBaseTest):
         servers_result = list((set(self.servers[:self.nodes_init]) | set(servs_in)) - set(servs_out))
 
         servs_in = self.servers[self.nodes_init - 1:self.nodes_init]
-        servs_out = [self.master]
+        servs_out = [self.main]
 
         if self.initial_build_type == "community" and self.upgrade_build_type == "enterprise":
             self._install(servs_in, community_to_enterprise=True)
@@ -1823,13 +1823,13 @@ class XattrUpgradeTests(NewUpgradeBaseTest, SubdocBaseTest):
         task_reb = self.cluster.async_rebalance(servers_result, servs_in, servs_out)
         task_reb.result()
 
-        self.master = servs_in[0]
+        self.main = servs_in[0]
 
         self.assertTrue(
             u'Hot-reloaded memcached.json for config change of the following keys: [<<"xattr_enabled">>] (repeated 1 times)'
-            in [log['text'] for log in RestConnection(self.master).get_logs()])
+            in [log['text'] for log in RestConnection(self.main).get_logs()])
 
-        self.host = "{0}:{1}".format(self.master.ip, self.master.port)
+        self.host = "{0}:{1}".format(self.main.ip, self.main.port)
         self._check_insert()
 
         self.verification(list((set(servers_result) | set(servs_in)) - set(servs_out)))

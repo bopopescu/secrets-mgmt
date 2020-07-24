@@ -85,7 +85,7 @@ class NewUpgradeBaseTest(QueryHelperTests):
             self.product = 'couchbase-server'
         if self.max_verify is None:
             self.max_verify = min(self.num_items, 100000)
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         type = shell.extract_remote_info().distribution_type
         shell.disconnect()
         if type.lower() == 'windows':
@@ -126,7 +126,7 @@ class NewUpgradeBaseTest(QueryHelperTests):
                 # cleanup only nodes that are in cluster
                 # not all servers have been installed
                 if self.rest is None:
-                    self._new_master(self.master)
+                    self._new_main(self.main)
                 nodes = self.rest.get_nodes()
                 temp = []
                 for server in self.servers:
@@ -178,7 +178,7 @@ class NewUpgradeBaseTest(QueryHelperTests):
                 if not success:
                     sys.exit("some nodes were not install successfully!")
         if self.rest is None:
-            self._new_master(self.master)
+            self._new_main(self.main)
         if self.use_hostnames:
             for server in self.servers[:self.nodes_init]:
                 hostname = RemoteUtilHelper.use_hostname_for_server_settings(server)
@@ -192,7 +192,7 @@ class NewUpgradeBaseTest(QueryHelperTests):
                                             self.maxParallelIndexers,
                                             self.maxParallelReplicaIndexers, self.port)
         if self.port and self.port != '8091':
-            self.rest = RestConnection(self.master)
+            self.rest = RestConnection(self.main)
             self.rest_helper = RestHelper(self.rest)
         self.sleep(20, "wait to make sure node is ready")
         if len(servers) > 1:
@@ -221,7 +221,7 @@ class NewUpgradeBaseTest(QueryHelperTests):
                     client.stop_persistence()
             self.sleep(10)
         gen_load = BlobGenerator('upgrade', 'upgrade-', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen_load, "create", self.expire_time,
+        self._load_all_buckets(self.main, gen_load, "create", self.expire_time,
                                                              flag=self.item_flag)
         if not self.stop_persistence:
             self._wait_for_stats_all_buckets(servers)
@@ -333,9 +333,9 @@ class NewUpgradeBaseTest(QueryHelperTests):
             upgrade_thread.start()
         return upgrade_threads
 
-    def _new_master(self, server):
-        self.master = server
-        self.rest = RestConnection(self.master)
+    def _new_main(self, server):
+        self.main = server
+        self.rest = RestConnection(self.main)
         self.rest_helper = RestHelper(self.rest)
 
     def verification(self, servers, check_items=True):
@@ -345,11 +345,11 @@ class NewUpgradeBaseTest(QueryHelperTests):
                 new_hostname = node_info.hostname
                 self.assertEqual("%s:%s" % (server.hostname, server.port), new_hostname,
                                  "Hostname is incorrect for server %s. Settings are %s" % (server.ip, new_hostname))
-        if self.master.ip != self.rest.ip or \
-           self.master.ip == self.rest.ip and str(self.master.port) != str(self.rest.port):
+        if self.main.ip != self.rest.ip or \
+           self.main.ip == self.rest.ip and str(self.main.port) != str(self.rest.port):
             if self.port:
-                self.master.port = self.port
-            self.rest = RestConnection(self.master)
+                self.main.port = self.port
+            self.rest = RestConnection(self.main)
             self.rest_helper = RestHelper(self.rest)
         if self.port and self.port != '8091':
             settings = self.rest.get_cluster_settings()
@@ -440,15 +440,15 @@ class NewUpgradeBaseTest(QueryHelperTests):
                     self.perform_verify_queries(len(ddoc.views), prefix, ddoc.name, query, bucket=bucket)
 
     def failover(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         nodes = rest.node_statuses()
         nodes = [node for node in nodes
-                if node.ip != self.master.ip or str(node.port) != self.master.port]
+                if node.ip != self.main.ip or str(node.port) != self.main.port]
         self.failover_node = nodes[0]
         rest.fail_over(self.failover_node.id)
 
     def add_back_failover(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         rest.add_back_node(self.failover_node.id)
 
     def create_ddocs_and_views(self):
@@ -460,7 +460,7 @@ class NewUpgradeBaseTest(QueryHelperTests):
                 ddoc = DesignDocument(self.default_view_name + str(i), views)
                 self.ddocs.append(ddoc)
                 for view in views:
-                    self.cluster.create_view(self.master, ddoc.name, view, bucket=bucket)
+                    self.cluster.create_view(self.main, ddoc.name, view, bucket=bucket)
 
     def delete_data(self, servers, paths_to_delete):
         for server in servers:
@@ -475,17 +475,17 @@ class NewUpgradeBaseTest(QueryHelperTests):
         for bucket in self.buckets:
             if bucket.type == 'memcached':
                 continue
-            ready = BucketOperationHelper.wait_for_memcached(self.master,
+            ready = BucketOperationHelper.wait_for_memcached(self.main,
                                                           bucket.name)
             self.assertTrue(ready, "wait_for_memcached failed")
-            client = VBucketAwareMemcached(RestConnection(self.master), bucket)
+            client = VBucketAwareMemcached(RestConnection(self.main), bucket)
             valid_keys, deleted_keys = bucket.kvs[1].key_set()
             for valid_key in valid_keys:
                 try:
                     _, flags, exp, seqno, cas = client.memcached(valid_key).getMeta(valid_key)
                 except MemcachedError, e:
                     print e
-                    client.reset(RestConnection(self.master))
+                    client.reset(RestConnection(self.main))
                     _, flags, exp, seqno, cas = client.memcached(valid_key).getMeta(valid_key)
                 self.assertTrue((comparator == '==' and seqno == seqno_expected) or
                                 (comparator == '>=' and seqno >= seqno_expected),
@@ -549,12 +549,12 @@ class NewUpgradeBaseTest(QueryHelperTests):
            (self.input.param('upgrade_version', '')[:5] in COUCHBASE_VERSION_3 or \
             self.input.param('upgrade_version', '')[:5] in SHERLOCK_VERSION):
             if int(self.initial_vbuckets) >= 256:
-                if self.master.ip != self.rest.ip or \
-                   self.master.ip == self.rest.ip and \
-                   str(self.master.port) != str(self.rest.port):
+                if self.main.ip != self.rest.ip or \
+                   self.main.ip == self.rest.ip and \
+                   str(self.main.port) != str(self.rest.port):
                     if self.port:
-                        self.master.port = self.port
-                    self.rest = RestConnection(self.master)
+                        self.main.port = self.port
+                    self.rest = RestConnection(self.main)
                     self.rest_helper = RestHelper(self.rest)
                 if self.rest._rebalance_progress_status() == 'running':
                     self.log.info("Start monitoring DCP upgrade from {0} to {1}"\
@@ -573,8 +573,8 @@ class NewUpgradeBaseTest(QueryHelperTests):
             else:
                 self.fail("Need vbuckets setting >= 256 for upgrade from 2.x.x to 3+")
         else:
-            if self.master.ip != self.rest.ip:
-                self.rest = RestConnection(self.master)
+            if self.main.ip != self.rest.ip:
+                self.rest = RestConnection(self.main)
                 self.rest_helper = RestHelper(self.rest)
             self.log.info("No need to do DCP rebalance upgrade")
 
@@ -598,7 +598,7 @@ class NewUpgradeBaseTest(QueryHelperTests):
 
     def pre_upgrade(self, servers):
         if self.rest is None:
-            self._new_master(self.master)
+            self._new_main(self.main)
         self.ddocs_num = 0
         self.create_ddocs_and_views()
         verify_data = False
@@ -641,7 +641,7 @@ class NewUpgradeBaseTest(QueryHelperTests):
             "create_ephemeral_buckets", False)
         if not create_ephemeral_buckets:
             return
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         versions = rest.get_nodes_versions()
         for version in versions:
             if "5" > version:
@@ -650,7 +650,7 @@ class NewUpgradeBaseTest(QueryHelperTests):
                               "bucket for the cluster.")
                 return
         num_ephemeral_bucket = self.input.param("num_ephemeral_bucket", 1)
-        server = self.master
+        server = self.main
         server_id = RestConnection(server).get_nodes_self().id
         ram_size = RestConnection(server).get_nodes_self().memoryQuota
         bucket_size = self._get_bucket_size(ram_size, self.bucket_size +
@@ -684,7 +684,7 @@ class NewUpgradeBaseTest(QueryHelperTests):
             bucket = Bucket(name=name, authType=None, saslPassword=None,
                             num_replicas=self.num_replicas,
                             bucket_size=self.bucket_size,
-                            port=port, master_id=server_id,
+                            port=port, main_id=server_id,
                             eviction_policy='noEviction', lww=self.lww)
             self.buckets.append(bucket)
             ephemeral_buckets.append(bucket)
@@ -699,7 +699,7 @@ class NewUpgradeBaseTest(QueryHelperTests):
         load_gen = BlobGenerator('upgrade', 'upgrade-', self.value_size,
                                  end=self.num_items)
         for bucket in ephemeral_buckets:
-            self._load_bucket(bucket, self.master, load_gen, "create",
+            self._load_bucket(bucket, self.main, load_gen, "create",
                               self.expire_time)
 
     def _return_maps(self):

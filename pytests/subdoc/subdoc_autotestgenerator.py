@@ -27,7 +27,7 @@ class SubdocAutoTestGenerator(SubdocBaseTest):
         self.prepopulate_item_count = self.input.param("prepopulate_item_count", 10000)
         self.seed = self.input.param("seed", 0)
         self.run_mutation_mode = self.input.param("run_mutation_mode", "seq")
-        self.client = self.direct_client(self.master, self.buckets[0])
+        self.client = self.direct_client(self.main, self.buckets[0])
         self.build_kv_store = self.input.param("build_kv_store", False)
         self.total_writer_threads = self.input.param("total_writer_threads", 10)
         self.number_of_documents = self.input.param("number_of_documents", 10)
@@ -43,7 +43,7 @@ class SubdocAutoTestGenerator(SubdocBaseTest):
         super(SubdocAutoTestGenerator, self).tearDown()
 
     def test_readonly(self):
-        self.client = self.direct_client(self.master, self.buckets[0])
+        self.client = self.direct_client(self.main, self.buckets[0])
         error_result = {}
         data_set = self.generate_json_for_nesting()
         base_json = self.generate_json_for_nesting()
@@ -59,7 +59,7 @@ class SubdocAutoTestGenerator(SubdocBaseTest):
         self.assertTrue(len(error_result) == 0, error_result)
 
     def test_exists(self):
-        self.client = self.direct_client(self.master, self.buckets[0])
+        self.client = self.direct_client(self.main, self.buckets[0])
         error_result = {}
         data_set = self.generate_json_for_nesting()
         base_json = self.generate_json_for_nesting()
@@ -109,7 +109,7 @@ class SubdocAutoTestGenerator(SubdocBaseTest):
             self.assertTrue(queue_size == 0, "number of failures {0}, check file {1}".format(queue.qsize(), filename))
 
     def test_seq_mutations(self, queue, number_of_times, prefix, json_document, bucket):
-        client = self.direct_client(self.master, bucket)
+        client = self.direct_client(self.main, bucket)
         for x in range(number_of_times):
             self.number_of_operations = self.input.param("number_of_operations", 50)
             data_key = prefix + self.randomDataGenerator.random_uuid()
@@ -152,7 +152,7 @@ class SubdocAutoTestGenerator(SubdocBaseTest):
         self.run_mutation_concurrent_operations(self.buckets[0], data_key, json_document)
 
     def run_mutation_concurrent_operations(self, bucket=None, document_key="", json_document={}):
-        client = self.direct_client(self.master, bucket)
+        client = self.direct_client(self.main, bucket)
         self.number_of_operations = self.input.param("number_of_operations", 10)
         # INSERT INTO  COUCHBASE
         self.set(client, document_key, json_document)
@@ -166,7 +166,7 @@ class SubdocAutoTestGenerator(SubdocBaseTest):
         result_queue = Queue.Queue()
         self.log.info(" number of operations {0}".format(len(operations)))
         for operation in operations:
-            client = self.direct_client(self.master, bucket)
+            client = self.direct_client(self.main, bucket)
             t = Process(target=self.run_mutation_operation, args=(client, document_key, operation, result_queue))
             t.start()
             thread_list.append(t)
@@ -296,7 +296,7 @@ class SubdocAutoTestGenerator(SubdocBaseTest):
                              bucket,
                              mutation_operation_type="any",
                              force_operation_type=None):
-        client = self.direct_client(self.master, bucket)
+        client = self.direct_client(self.main, bucket)
         while not queue.empty():
             document_info = queue.get()
             document_key = document_info["document_key"]
@@ -406,7 +406,7 @@ class SubdocAutoTestGenerator(SubdocBaseTest):
         self.log.info("TOTAL OPERATIONS CALCULATED {0} ".format(len(operations)))
         thread_list = []
         for operation in operations:
-            client = self.direct_client(self.master, bucket)
+            client = self.direct_client(self.main, bucket)
             t = Process(target=self.run_mutation_operation, args=(client, document_key, operation, result_queue))
             t.start()
             thread_list.append(t)
@@ -427,7 +427,7 @@ class SubdocAutoTestGenerator(SubdocBaseTest):
             self.load_thread_list = []
             for bucket in self.buckets:
                 for x in range(self.total_writer_threads):
-                    client = VBucketAwareMemcached(RestConnection(self.master), bucket)
+                    client = VBucketAwareMemcached(RestConnection(self.main), bucket)
                     t = Process(target=self.run_populate_data_per_bucket, args=(
                     client, bucket, json_document, (self.prepopulate_item_count / self.total_writer_threads), x))
                     t.start()
@@ -446,7 +446,7 @@ class SubdocAutoTestGenerator(SubdocBaseTest):
             self.load_thread_list = []
             for bucket in self.buckets:
                 for x in range(self.total_writer_threads):
-                    client = VBucketAwareMemcached(RestConnection(self.master), bucket)
+                    client = VBucketAwareMemcached(RestConnection(self.main), bucket)
                     t = Process(target=self.run_populate_data_per_bucket, args=(
                     client, bucket, json_document, (self.prepopulate_item_count / self.total_writer_threads), x))
                     t.start()
@@ -470,7 +470,7 @@ class SubdocAutoTestGenerator(SubdocBaseTest):
     ''' Method to verify kv store data set '''
 
     def run_verification(self, bucket, kv_store={}):
-        client = self.direct_client(self.master, bucket)
+        client = self.direct_client(self.main, bucket)
         error_result = {}
         for document_key in kv_store.keys():
             pairs = {}

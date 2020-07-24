@@ -9,7 +9,7 @@ CONFIGSVR_PORT = 27019 # Needs to match the ports defined by scripts/install.py
 SHARDSVR_PORT  = 27018
 MONGOS_PORT    = 27017
 
-class EPerfMasterMongo(eperf.EPerfMaster):
+class EPerfMainMongo(eperf.EPerfMain):
 
     def setUpBase1(self):
         self.is_leader = self.parami("prefix", 0) == 0
@@ -26,19 +26,19 @@ class EPerfMasterMongo(eperf.EPerfMaster):
         return None
 
     def admin_db(self):
-        master = self.input.servers[0]
-        self.log.info("Connecting pymongo: {0}:{1}".format(master.ip, MONGOS_PORT))
-        conn = pymongo.Connection(master.ip, MONGOS_PORT)
+        main = self.input.servers[0]
+        self.log.info("Connecting pymongo: {0}:{1}".format(main.ip, MONGOS_PORT))
+        conn = pymongo.Connection(main.ip, MONGOS_PORT)
         self.log.info(conn)
         self.log.info(conn['admin'])
         return conn, conn['admin']
 
     def set_up_cluster(self):
-        master = self.input.servers[0]
+        main = self.input.servers[0]
 
         conn, admin = self.admin_db()
         try:
-            admin.command("addshard", master.ip + ":" + str(SHARDSVR_PORT),
+            admin.command("addshard", main.ip + ":" + str(SHARDSVR_PORT),
                           allowLocal=True)
             admin.command("enablesharding", "default") # The shard key defaults to "_id".
         except Exception as ex:
@@ -104,17 +104,17 @@ class EPerfMasterMongo(eperf.EPerfMaster):
                           ctl=ctl)
 
 
-class EPerfClientMongo(EPerfMasterMongo):
+class EPerfClientMongo(EPerfMainMongo):
 
     def setUp(self):
         self.dgm = False
-        self.is_master = False
+        self.is_main = False
         self.level_callbacks = []
         self.latched_rebalance_done = False
         self.setUpBase0()
         self.is_leader = self.parami("prefix", 0) == 0
 
-        pass # Skip super's setUp().  The master should do the real work.
+        pass # Skip super's setUp().  The main should do the real work.
 
     def tearDwon(self):
-        pass # Skip super's tearDown().  The master should do the real work.
+        pass # Skip super's tearDown().  The main should do the real work.

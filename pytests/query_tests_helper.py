@@ -21,8 +21,8 @@ class QueryHelperTests(BaseTestCase):
         self.use_gsi_for_secondary = self.input.param(
             "use_gsi_for_secondary", True)
         self.scan_consistency = self.input.param("scan_consistency", "request_plus")
-        self.shell = RemoteMachineShellConnection(self.master)
-        self.buckets = RestConnection(self.master).get_buckets()
+        self.shell = RemoteMachineShellConnection(self.main)
+        self.buckets = RestConnection(self.main).get_buckets()
         self.docs_per_day = self.input.param("doc-per-day", 49)
         self.use_rest = self.input.param("use_rest", True)
         self.max_verify = self.input.param("max_verify", None)
@@ -156,7 +156,7 @@ class QueryHelperTests(BaseTestCase):
                                       n1ql_port=self.n1ql_port,
                                       full_docs_list=self.full_docs_list,
                                       log=self.log, input=self.input,
-                                      master=self.master,
+                                      main=self.main,
                                       use_rest=True
                                       )
         create_index_task = self.cluster.async_create_index(
@@ -194,7 +194,7 @@ class QueryHelperTests(BaseTestCase):
                                           n1ql_port=self.n1ql_port,
                                           full_docs_list=self.full_docs_list,
                                           log=self.log, input=self.input,
-                                          master=self.master,
+                                          main=self.main,
                                           use_rest=True
                                           )
             log.info(self.n1ql_server)

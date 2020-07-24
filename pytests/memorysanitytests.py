@@ -36,7 +36,7 @@ class MemorySanity(BaseTestCase):
         self.repetitions = self.input.param("repetition_count", 1)
         self.bufferspace = self.input.param("bufferspace", 600000)
         # the first front end load
-        self._load_all_buckets(self.master, self.gen_create, "create", 0,
+        self._load_all_buckets(self.main, self.gen_create, "create", 0,
                                batch_size=10000, pause_secs=5, timeout_secs=100)
         self._wait_for_stats_all_buckets(self.servers)
         rest = RestConnection(self.servers[0])
@@ -61,7 +61,7 @@ class MemorySanity(BaseTestCase):
             self.log.info('About to create the buckets')
             self._bucket_creation()
             self.log.info('Done bucket creation, about to load them')
-            self._load_all_buckets(self.master, self.gen_create, "create", 0,
+            self._load_all_buckets(self.main, self.gen_create, "create", 0,
                                    batch_size=10000, pause_secs=5, timeout_secs=100)
             self.log.info('Buckets are loaded, waiting for stats')
             self._wait_for_stats_all_buckets(self.servers)
@@ -97,7 +97,7 @@ class MemorySanity(BaseTestCase):
     def memory_quota_default_bucket(self):
         resident_ratio = self.input.param("resident_ratio", 50)
         delta_items = 200000
-        mc = MemcachedClientHelper.direct_client(self.master, self.default_bucket_name)
+        mc = MemcachedClientHelper.direct_client(self.main, self.default_bucket_name)
 
         self.log.info("LOAD PHASE")
         end_time = time.time() + self.wait_timeout * 30
@@ -107,7 +107,7 @@ class MemorySanity(BaseTestCase):
             self.log.info("Resident ratio is %s" % mc.stats()["vb_active_perc_mem_resident"])
             gen = DocumentGenerator('test_docs', '{{"age": {0}}}', xrange(5),
                                     start=self.num_items, end=(self.num_items + delta_items))
-            self._load_all_buckets(self.master, gen, 'create', 0)
+            self._load_all_buckets(self.main, gen, 'create', 0)
             self.num_items += delta_items
             self.log.info("Resident ratio is %s" % mc.stats()["vb_active_perc_mem_resident"])
         memory_mb = int(mc.stats("memory")["mem_used"]) / (1024 * 1024)
@@ -129,7 +129,7 @@ class MemorySanity(BaseTestCase):
         self.append_size = self.input.param("append_size", 1024)
         self.fixed_append_size = self.input.param("fixed_append_size", True)
         self.append_ratio = self.input.param("append_ratio", 0.5)
-        self._load_all_buckets(self.master, self.gen_create, "create", 0,
+        self._load_all_buckets(self.main, self.gen_create, "create", 0,
                                batch_size=1000, pause_secs=5, timeout_secs=100)
 
         for bucket in self.buckets:
@@ -147,7 +147,7 @@ class MemorySanity(BaseTestCase):
                     break
                 selected_keys.append(key)
 
-            awareness = VBucketAwareMemcached(RestConnection(self.master), bucket.name)
+            awareness = VBucketAwareMemcached(RestConnection(self.main), bucket.name)
             if self.kv_verify:
                 for key in selected_keys:
                     value = awareness.memcached(key).get(key)[2]
@@ -213,7 +213,7 @@ class MemorySanity(BaseTestCase):
                         self.fail("Content at key {0}: not what's expected.".format(k))
                 self.log.info("VERIFICATION <" + msg + ">: Successful")
 
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         shell.execute_cbstats("", "raw", keyname="allocator", vbid="")
         shell.disconnect()
 
@@ -237,7 +237,7 @@ class MemorySanity(BaseTestCase):
                           "Memory total of this bucket is {0}"
                           .format(mem_stats_init[bucket.name]["mem_total"]))
         self.log.info("***   Load data to buckets   ***")
-        self._load_all_buckets(self.master, self.gen_create, "create", 0,
+        self._load_all_buckets(self.main, self.gen_create, "create", 0,
                                batch_size=5000, pause_secs=2, timeout_secs=100)
         self._wait_for_stats_all_buckets(self.servers)
         mem_stats_load = {}

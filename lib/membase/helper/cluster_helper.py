@@ -15,21 +15,21 @@ import traceback
 
 
 class ClusterOperationHelper(object):
-    # the first ip is taken as the master ip
+    # the first ip is taken as the main ip
 
     # Returns True if cluster successfully finished then rebalance
     @staticmethod
     def add_and_rebalance(servers, wait_for_rebalance=True):
         log = logger.Logger.get_logger()
-        master = servers[0]
+        main = servers[0]
         all_nodes_added = True
         rebalanced = True
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         if len(servers) > 1:
             for serverInfo in servers[1:]:
                 log.info('adding node : {0}:{1} to the cluster'.format(
                         serverInfo.ip, serverInfo.port))
-                otpNode = rest.add_node(master.rest_username, master.rest_password, serverInfo.ip, port=serverInfo.port)
+                otpNode = rest.add_node(main.rest_username, main.rest_password, serverInfo.ip, port=serverInfo.port)
                 if otpNode:
                     log.info('added node : {0} to the cluster'.format(otpNode.id))
                 else:
@@ -44,13 +44,13 @@ class ClusterOperationHelper(object):
         return all_nodes_added and rebalanced
 
     @staticmethod
-    def add_all_nodes_or_assert(master, all_servers, rest_settings, test_case):
+    def add_all_nodes_or_assert(main, all_servers, rest_settings, test_case):
         log = logger.Logger.get_logger()
         otpNodes = []
         all_nodes_added = True
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         for serverInfo in all_servers:
-            if serverInfo.ip != master.ip:
+            if serverInfo.ip != main.ip:
                 log.info('adding node : {0}:{1} to the cluster'.format(
                         serverInfo.ip, serverInfo.port))
                 otpNode = rest.add_node(rest_settings.rest_username,
@@ -137,13 +137,13 @@ class ClusterOperationHelper(object):
     @staticmethod
     def verify_persistence(servers, test, keys_count=400000, timeout_in_seconds=300):
         log = logger.Logger.get_logger()
-        master = servers[0]
-        rest = RestConnection(master)
+        main = servers[0]
+        rest = RestConnection(main)
         log.info("Verifying Persistence")
         buckets = rest.get_buckets()
         for bucket in buckets:
         # Load some data
-            l_threads = MemcachedClientHelper.create_threads([master], bucket.name,
+            l_threads = MemcachedClientHelper.create_threads([main], bucket.name,
                                                                      - 1, keys_count, {1024: 0.50, 512: 0.50}, 2, -1,
                                                                      True, True)
             [t.start() for t in l_threads]
@@ -236,15 +236,15 @@ class ClusterOperationHelper(object):
                 shell.stop_membase()
 
     @staticmethod
-    def cleanup_cluster(servers, wait_for_rebalance=True, master = None):
+    def cleanup_cluster(servers, wait_for_rebalance=True, main = None):
         log = logger.Logger.get_logger()
-        if master is None:
-            master = servers[0]
-        rest = RestConnection(master)
+        if main is None:
+            main = servers[0]
+        rest = RestConnection(main)
         helper = RestHelper(rest)
         helper.is_ns_server_running(timeout_in_seconds=testconstants.NS_SERVER_TIMEOUT)
         nodes = rest.node_statuses()
-        master_id = rest.get_nodes_self().id
+        main_id = rest.get_nodes_self().id
         for node in nodes:
             if int(node.port) in xrange(9091, 9991):
                 rest.eject_node(node)
@@ -253,12 +253,12 @@ class ClusterOperationHelper(object):
         if len(nodes) > 1:
             log.info("rebalancing all nodes in order to remove nodes")
             rest.log_client_error("Starting rebalance from test, ejected nodes %s" % \
-                                                             [node.id for node in nodes if node.id != master_id])
+                                                             [node.id for node in nodes if node.id != main_id])
             removed = helper.remove_nodes(knownNodes=[node.id for node in nodes],
-                                          ejectedNodes=[node.id for node in nodes if node.id != master_id],
+                                          ejectedNodes=[node.id for node in nodes if node.id != main_id],
                                           wait_for_rebalance=wait_for_rebalance)
             success_cleaned = []
-            for removed in [node for node in nodes if (node.id != master_id)]:
+            for removed in [node for node in nodes if (node.id != main_id)]:
                 removed.rest_password = servers[0].rest_password
                 removed.rest_username = servers[0].rest_username
                 try:
@@ -278,7 +278,7 @@ class ClusterOperationHelper(object):
                 if time.time() - start > 10:
                     log.error("'pools' on node {0}:{1} - {2}".format(
                            removed.ip, removed.port, rest.get_pools_info()["pools"]))
-            for node in set([node for node in nodes if (node.id != master_id)]) - set(success_cleaned):
+            for node in set([node for node in nodes if (node.id != main_id)]) - set(success_cleaned):
                 log.error("node {0}:{1} was not cleaned after removing from cluster".format(
                            removed.ip, removed.port))
                 try:
@@ -286,12 +286,12 @@ class ClusterOperationHelper(object):
                     rest.force_eject_node()
                 except Exception as ex:
                     log.error("force_eject_node {0}:{1} failed: {2}".format(removed.ip, removed.port, ex))
-            if len(set([node for node in nodes if (node.id != master_id)])\
+            if len(set([node for node in nodes if (node.id != main_id)])\
                     - set(success_cleaned)) != 0:
                 raise Exception("not all ejected nodes were cleaned successfully")
 
             log.info("removed all the nodes from cluster associated with {0} ? {1}".format(servers[0], \
-                    [(node.id, node.port) for node in nodes if (node.id != master_id)]))
+                    [(node.id, node.port) for node in nodes if (node.id != main_id)]))
 
     @staticmethod
     def flushctl_start(servers, username=None, password=None):
@@ -321,14 +321,14 @@ class ClusterOperationHelper(object):
                 pass
 
     @staticmethod
-    def flushctl_set(master, key, val, bucket='default'):
-        rest = RestConnection(master)
+    def flushctl_set(main, key, val, bucket='default'):
+        rest = RestConnection(main)
         servers = rest.get_nodes()
         for server in servers:
             if "kv" in server.services:
                 _server = {"ip": server.ip, "port": server.port,
-                           "username": master.rest_username,
-                           "password": master.rest_password}
+                           "username": main.rest_username,
+                           "password": main.rest_password}
                 ClusterOperationHelper.flushctl_set_per_node(_server, key, val, bucket)
 
     @staticmethod
@@ -357,7 +357,7 @@ class ClusterOperationHelper(object):
     @staticmethod
     def _get_engine_param_type(key):
         tap_params = ['tap_keepalive', 'tap_throttle_queue_cap', 'tap_throttle_threshold']
-        checkpoint_params = ['chk_max_items', 'chk_period', 'inconsistent_slave_chk', 'keep_closed_chks',
+        checkpoint_params = ['chk_max_items', 'chk_period', 'inconsistent_subordinate_chk', 'keep_closed_chks',
                              'max_checkpoints', 'item_num_based_new_chk']
         flush_params = ['bg_fetch_delay', 'couch_response_timeout', 'exp_pager_stime', 'flushall_enabled',
                         'klog_compactor_queue_cap', 'klog_max_log_size', 'klog_max_entry_ratio',
@@ -371,9 +371,9 @@ class ClusterOperationHelper(object):
             return memcacheConstants.ENGINE_PARAM_FLUSH
 
     @staticmethod
-    def set_expiry_pager_sleep_time(master, bucket, value=30):
+    def set_expiry_pager_sleep_time(main, bucket, value=30):
         log = logger.Logger.get_logger()
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         servers = rest.get_nodes()
         for server in servers:
             # this is not bucket specific so no need to pass in the bucketname
@@ -467,21 +467,21 @@ class ClusterOperationHelper(object):
             log.info(msg)
 
     @staticmethod
-    def begin_rebalance_in(master, servers, timeout=5):
-        RebalanceHelper.begin_rebalance_in(master, servers, timeout)
+    def begin_rebalance_in(main, servers, timeout=5):
+        RebalanceHelper.begin_rebalance_in(main, servers, timeout)
 
     @staticmethod
-    def begin_rebalance_out(master, servers, timeout=5):
-        RebalanceHelper.begin_rebalance_out(master, servers, timeout)
+    def begin_rebalance_out(main, servers, timeout=5):
+        RebalanceHelper.begin_rebalance_out(main, servers, timeout)
 
     @staticmethod
-    def end_rebalance(master):
-        RebalanceHelper.end_rebalance(master)
+    def end_rebalance(main):
+        RebalanceHelper.end_rebalance(main)
 
     @staticmethod
     # Returns the otpNode for Orchestrator
-    def find_orchestrator(master):
-        rest = RestConnection(master)
+    def find_orchestrator(main):
+        rest = RestConnection(main)
         status, content = ClusterOperationHelper.find_orchestrator_with_rest(rest)
         # Get rid of single quotes 'ns_1@10.1.3.74'
         content = content.replace("'", '')
@@ -489,13 +489,13 @@ class ClusterOperationHelper(object):
 
     @staticmethod
     def find_orchestrator_with_rest(rest):
-        command = "mb_master:master_node()."
+        command = "mb_main:main_node()."
         status, content = rest.diag_eval(command)
         return status, content
 
     @staticmethod
-    def set_vbuckets(master, vbuckets):
-        rest = RestConnection(master)
+    def set_vbuckets(main, vbuckets):
+        rest = RestConnection(main)
         command = "rpc:eval_everywhere(ns_config, set, [couchbase_num_vbuckets_default, {0}]).".format(vbuckets)
         status, content = rest.diag_eval(command)
         return status, content

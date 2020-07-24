@@ -9,9 +9,9 @@ class HostnameXdcrTest(XDCRNewBaseTest, HostnameBaseTests):
     def setUp(self):
         super(HostnameXdcrTest, self).setUp()
         self.src_cluster = self.get_cb_cluster_by_name('C1')
-        self.src_master = self.src_cluster.get_master_node()
+        self.src_main = self.src_cluster.get_main_node()
         self.dest_cluster = self.get_cb_cluster_by_name('C2')
-        self.dest_master = self.dest_cluster.get_master_node()
+        self.dest_main = self.dest_cluster.get_main_node()
         self.src_nodes = self.src_cluster.get_nodes()
         self.dest_nodes = self.dest_cluster.get_nodes()
 

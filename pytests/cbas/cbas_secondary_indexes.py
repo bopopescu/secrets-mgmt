@@ -11,7 +11,7 @@ class CBASSecondaryIndexes(CBASBaseTest):
             self.input.test_params.update({"default_bucket": False})
         super(CBASSecondaryIndexes, self).setUp()
 
-        self.load_sample_buckets(servers=[self.master],
+        self.load_sample_buckets(servers=[self.main],
                                  bucketName=self.cb_bucket_name,
                                  total_items=self.beer_sample_docs_count)
 
@@ -462,10 +462,10 @@ class CBASSecondaryIndexes(CBASBaseTest):
             try:
                 from sdk_client import SDKClient
                 scheme = "couchbase"
-                host = self.master.ip
-                if self.master.ip == "127.0.0.1":
+                host = self.main.ip
+                if self.main.ip == "127.0.0.1":
                     scheme = "http"
-                    host="{0}:{1}".format(self.master.ip,self.master.port)
+                    host="{0}:{1}".format(self.main.ip,self.main.port)
                 return SDKClient(scheme=scheme,hosts = [host], bucket = bucket)
             except Exception, ex:
                 self.log.error("cannot load sdk client due to error {0}".format(str(ex)))
@@ -492,7 +492,7 @@ class CBASSecondaryIndexes(CBASBaseTest):
         rolelist = [{'id': self.cb_bucket_name, 'name': self.cb_bucket_name, 'roles': 'admin'}]
         self.add_built_in_server_user(testuser=testuser, rolelist=rolelist)
         self.use_sdk_client =True
-        self.client = self._direct_client(self.master, self.cb_bucket_name).cb
+        self.client = self._direct_client(self.main, self.cb_bucket_name).cb
         k = 'test_index_population'
 
         index_fields = ""
@@ -587,7 +587,7 @@ class CBASSecondaryIndexes(CBASBaseTest):
         rolelist = [{'id': self.cb_bucket_name, 'name': self.cb_bucket_name, 'roles': 'admin'}]
         self.add_built_in_server_user(testuser=testuser, rolelist=rolelist)
         self.use_sdk_client = True
-        self.client = self._direct_client(self.master, self.cb_bucket_name).cb
+        self.client = self._direct_client(self.main, self.cb_bucket_name).cb
         k = 'test_index_population_thread'
 
         index_fields = ""
@@ -651,7 +651,7 @@ class CBASSecondaryIndexes(CBASBaseTest):
         rolelist = [{'id': self.cb_bucket_name, 'name': self.cb_bucket_name, 'roles': 'admin'}]
         self.add_built_in_server_user(testuser=testuser, rolelist=rolelist)
         self.use_sdk_client = True
-        self.client = self._direct_client(self.master, self.cb_bucket_name).cb
+        self.client = self._direct_client(self.main, self.cb_bucket_name).cb
 
         index_fields = ""
         for index_field in self.index_fields:
@@ -695,7 +695,7 @@ class CBASSecondaryIndexes(CBASBaseTest):
         rolelist = [{'id': self.cb_bucket_name, 'name': self.cb_bucket_name, 'roles': 'admin'}]
         self.add_built_in_server_user(testuser=testuser, rolelist=rolelist)
         self.use_sdk_client = True
-        self.client = self._direct_client(self.master, self.cb_bucket_name).cb
+        self.client = self._direct_client(self.main, self.cb_bucket_name).cb
 
         index_fields = ""
         for index_field in self.index_fields:

@@ -254,7 +254,7 @@ class RackzoneTests(RackzoneBaseTest):
                     conn.start_couchbase()
                     time.sleep(5)
             BucketOperationHelper.delete_all_buckets_or_assert(self.servers, self)
-            ClusterOperationHelper.cleanup_cluster(self.servers, master=self.master)
+            ClusterOperationHelper.cleanup_cluster(self.servers, main=self.main)
             self.log.info("---> remove all zones in cluster")
             rm_zones = rest.get_zone_names()
             for zone in rm_zones:
@@ -283,7 +283,7 @@ class RackzoneTests(RackzoneBaseTest):
         if len(ini_servers) > 1:
             self.cluster.rebalance([ini_servers[0]], ini_servers[1:], [],\
                                                  services = self.services)
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         self._bucket_creation()
 
         """ verify all nodes in cluster in CE """
@@ -366,9 +366,9 @@ class RackzoneTests(RackzoneBaseTest):
         """ re-install enterprise edition for next test if there is any """
         InstallerJob().parallel_install([self.servers[0]], params)
 
-        """ reset master node to new node to teardown cluster """
+        """ reset main node to new node to teardown cluster """
         self.log.info("Start to clean up cluster")
-        self.master = self.servers[1]
+        self.main = self.servers[1]
         self.servers = self.servers[1:]
 
     def _verify_zone(self, name):
@@ -382,7 +382,7 @@ class RackzoneTests(RackzoneBaseTest):
     def _verify_replica_distribution_in_zones(self, nodes, command, saslPassword = ""):
         shell = RemoteMachineShellConnection(self.servers[0])
         saslPassword = ''
-        versions = RestConnection(self.master).get_nodes_versions()
+        versions = RestConnection(self.main).get_nodes_versions()
         for group in nodes:
             for node in nodes[group]:
                 buckets = RestConnection(self.servers[0]).get_buckets()
@@ -398,7 +398,7 @@ class RackzoneTests(RackzoneBaseTest):
                 elif versions[0][:5] in COUCHBASE_FROM_VERSION_3:
                     command = "dcp"
                     if 5 <= versions[0]:
-                        saslPassword = self.master.rest_password
+                        saslPassword = self.main.rest_password
                     cmd  = "%s %s:11210 %s -b %s -u Administrator -p '%s' "\
                             % (self.cbstat_command, node, command, buckets[0].name, saslPassword)
                     cmd += "| grep :replication:ns_1@%s |  grep vb_uuid "\

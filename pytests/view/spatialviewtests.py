@@ -189,16 +189,16 @@ class SpatialViewsTests(BaseTestCase):
     def test_views_node_pending_state(self):
         operation = self.input.param('operation', 'add_node')
         ddocs =  self.make_ddocs(self.num_ddoc, self.views_per_ddoc, 0)
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         if operation == 'add_node':
             self.log.info("adding the node %s:%s" % (
                         self.servers[1].ip, self.servers[1].port))
-            otpNode = rest.add_node(self.master.rest_username, self.master.rest_password,
+            otpNode = rest.add_node(self.main.rest_username, self.main.rest_password,
                                     self.servers[1].ip, self.servers[1].port)
         elif operation == 'failover':
             nodes = rest.node_statuses()
             nodes = [node for node in nodes
-                     if node.ip != self.master.ip or node.port != self.master.port]
+                     if node.ip != self.main.ip or node.port != self.main.port]
             rest.fail_over(nodes[0].id)
         else:
             self.fail("There is no operation %s" % operation)
@@ -207,7 +207,7 @@ class SpatialViewsTests(BaseTestCase):
     def test_views_failover(self):
         num_nodes = self.input.param('num-nodes', 1)
         ddocs =  self.make_ddocs(self.num_ddoc, self.views_per_ddoc, 0)
-        RebalanceHelper.wait_for_persistence(self.master, self.bucket_name)
+        RebalanceHelper.wait_for_persistence(self.main, self.bucket_name)
         self.cluster.failover(self.servers,
                               self.servers[1:num_nodes])
         self.cluster.rebalance(self.servers, [], self.servers[1:num_nodes])
@@ -227,7 +227,7 @@ class SpatialViewsTests(BaseTestCase):
         ddocs =  self.make_ddocs(1, 1, 1)
         self.create_ddocs(ddocs)
         #run query stale=false to start index
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         for ddoc in ddocs:
             for view in ddoc.spatial_views:
                 self.helper.query_view(rest, ddoc, view, bucket=self.bucket_name, extra_params={})
@@ -243,7 +243,7 @@ class SpatialViewsTests(BaseTestCase):
         ddocs =  self.make_ddocs(self.num_ddoc, self.views_per_ddoc, 0)
         self.disable_compaction()
         self.create_ddocs([ddoc_to_compact,])
-        fragmentation_monitor = self.cluster.async_monitor_view_fragmentation(self.master,
+        fragmentation_monitor = self.cluster.async_monitor_view_fragmentation(self.main,
                              ddoc_to_compact.name, fragmentation_value, self.default_bucket_name)
         end_time = time.time() + self.wait_timeout * 30
         while fragmentation_monitor.state != "FINISHED" and end_time > time.time():
@@ -252,7 +252,7 @@ class SpatialViewsTests(BaseTestCase):
         if end_time < time.time() and fragmentation_monitor.state != "FINISHED":
             self.fail("impossible to reach compaction value after %s sec" % (self.wait_timeout * 20))
         fragmentation_monitor.result()
-        compaction_task = self.cluster.async_compact_view(self.master, ddoc_to_compact.name,
+        compaction_task = self.cluster.async_compact_view(self.main, ddoc_to_compact.name,
                                                           self.default_bucket_name)
         self.perform_ddoc_ops(ddocs)
         result = compaction_task.result(self.wait_timeout * 10)
@@ -277,11 +277,11 @@ class SpatialViewsTests(BaseTestCase):
         bucket_views = bucket or self.buckets[0]
         for ddoc in ddocs:
             if not (ddoc.views or ddoc.spatial_views):
-                self.cluster.create_view(self.master, ddoc.name, [], bucket=bucket_views)
+                self.cluster.create_view(self.main, ddoc.name, [], bucket=bucket_views)
             for view in ddoc.views:
-                self.cluster.create_view(self.master, ddoc.name, view, bucket=bucket_views)
+                self.cluster.create_view(self.main, ddoc.name, view, bucket=bucket_views)
             for view in ddoc.spatial_views:
-                self.cluster.create_view(self.master, ddoc.name, view, bucket=bucket_views)
+                self.cluster.create_view(self.main, ddoc.name, view, bucket=bucket_views)
 
     def delete_views(self, ddocs, views=[], spatial_views=[], bucket=None):
         bucket_views = bucket or self.buckets[0]
@@ -289,9 +289,9 @@ class SpatialViewsTests(BaseTestCase):
             vs = views or ddoc.views
             sp_vs = spatial_views or ddoc.spatial_views
             for view in vs:
-                self.cluster.delete_view(self.master, ddoc.name, view, bucket=bucket_views)
+                self.cluster.delete_view(self.main, ddoc.name, view, bucket=bucket_views)
             for view in sp_vs:
-                self.cluster.delete_view(self.master, ddoc.name, view, bucket=bucket_views)
+                self.cluster.delete_view(self.main, ddoc.name, view, bucket=bucket_views)
 
     def perform_ddoc_ops(self, ddocs):
         try:
@@ -361,7 +361,7 @@ class SpatialViewQueriesTests(BaseTestCase):
         diff_nodes = self.input.param("diff-nodes", False)
         query_threads = []
         for i in xrange(len(self.servers)):
-            node = (self.master, self.servers[i])[diff_nodes]
+            node = (self.main, self.servers[i])[diff_nodes]
             self.query_and_verify_result(self.docs, self.params, node=node)
             q_thread = Thread(target=self.query_and_verify_result,
                                    name="query_thread" + str(i),
@@ -397,16 +397,16 @@ class SpatialViewQueriesTests(BaseTestCase):
 
     def test_view_queries_node_pending_state(self):
         operation = self.input.param('operation', 'add_node')
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         if operation == 'add_node':
             self.log.info("adding the node %s:%s" % (
                         self.servers[1].ip, self.servers[1].port))
-            otpNode = rest.add_node(self.master.rest_username, self.master.rest_password,
+            otpNode = rest.add_node(self.main.rest_username, self.main.rest_password,
                                     self.servers[1].ip, self.servers[1].port)
         elif operation == 'failover':
             nodes = rest.node_statuses()
             nodes = [node for node in nodes
-                     if node.ip != self.master.ip or node.port != self.master.port]
+                     if node.ip != self.main.ip or node.port != self.main.port]
             rest.fail_over(nodes[0].id)
         else:
             self.fail("There is no operation %s" % operation)
@@ -431,7 +431,7 @@ class SpatialViewQueriesTests(BaseTestCase):
     def test_view_queries_during_ddoc_compaction(self):
         fragmentation_value = self.input.param("fragmentation_value", 80)
         self.disable_compaction()
-        fragmentation_monitor = self.cluster.async_monitor_view_fragmentation(self.master,
+        fragmentation_monitor = self.cluster.async_monitor_view_fragmentation(self.main,
                              self.ddocs[0].name, fragmentation_value, self.default_bucket_name)
         end_time = time.time() + self.wait_timeout * 30
         while fragmentation_monitor.state != "FINISHED" and end_time > time.time():
@@ -441,7 +441,7 @@ class SpatialViewQueriesTests(BaseTestCase):
         if end_time < time.time() and fragmentation_monitor.state != "FINISHED":
             self.fail("impossible to reach compaction value after %s sec" % (self.wait_timeout * 20))
         fragmentation_monitor.result()
-        compaction_task = self.cluster.async_compact_view(self.master, self.ddocs[0].name,
+        compaction_task = self.cluster.async_compact_view(self.main, self.ddocs[0].name,
                                                           self.default_bucket_name)
         self.query_and_verify_result(self.docs, self.params)
         result = compaction_task.result(self.wait_timeout * 10)
@@ -461,7 +461,7 @@ class SpatialViewQueriesTests(BaseTestCase):
 
     def query_and_verify_result(self, doc_inserted, params, node=None):
         try:
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             if node:
                 rest = RestConnection(node)
             expected_ddocs = self.helper.generate_matching_docs(doc_inserted, params)
@@ -760,7 +760,7 @@ class SpatialViewTests(BaseTestCase):
     def test_compare_views_all_nodes_x_docs(self):
         num_docs = self.helper.input.param("num-docs")
         self.log.info("description : creates view on {0} documents, queries "
-                      "all nodes (not only the master node) and compares "
+                      "all nodes (not only the main node) and compares "
                       "if the results are all the same"\
                           .format(num_docs))
         design_name = "dev_test_compare_views_{0}_docs".format(num_docs)
@@ -775,8 +775,8 @@ class SpatialViewTests(BaseTestCase):
             n_rest = RestConnection({
                     "ip": n.ip,
                     "port": n.port,
-                    "username": self.helper.master.rest_username,
-                    "password": self.helper.master.rest_password})
+                    "username": self.helper.main.rest_username,
+                    "password": self.helper.main.rest_password})
             results = n_rest.spatial_results(self.helper.bucket, design_name,
                                              params, None)
             result_keys = self.helper.get_keys(results)

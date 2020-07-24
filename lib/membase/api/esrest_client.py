@@ -17,10 +17,10 @@ log = logger.Logger.get_logger()
 class EsRestConnection(RestConnection):
     def __init__(self, serverInfo, proto = "http"):
         #serverInfo can be a json object
-        #only connect pyes to master es node
+        #only connect pyes to main es node
         #in the case that other nodes are taken down
         #because http requests will fail
-        # TODO: dynamic master node detection
+        # TODO: dynamic main node detection
         if isinstance(serverInfo, dict):
             self.ip = serverInfo["ip"]
             self.rest_username = serverInfo["username"]
@@ -75,7 +75,7 @@ class EsRestConnection(RestConnection):
             bucketStats.itemCount = docs.count()
             bucket.stats = bucketStats
             buckets.append(bucket)
-            bucket.master_id = "es@"+self.ip
+            bucket.main_id = "es@"+self.ip
 
         return buckets
 
@@ -136,7 +136,7 @@ class EsRestConnection(RestConnection):
 
     def get_nodes_self(self, timeout=120):
         for node in self.get_nodes():
-            # force to return master node
+            # force to return main node
             if node.port == 9091:
                 return node
         return
@@ -163,16 +163,16 @@ class EsRestConnection(RestConnection):
     def get_node_params(self, info):
         ip, port = parse_addr(info["transport_address"])
         clusters = self.test_params.clusters
-        master_node = None
+        main_node = None
         for _id in clusters:
             for node in clusters[_id]:
                 if node.ip == ip and int(node.port) == port:
                     return node
                 if int(node.port) == 9091:
-                    master_node = node
+                    main_node = node
 
-        # use params from master node
-        return master_node
+        # use params from main node
+        return main_node
 
     def search_term(self, key, indices=["default"]):
         result = None
@@ -392,7 +392,7 @@ class EsRestConnection(RestConnection):
 
 
     def monitorRebalance(self, stop_if_loop=False):
-        # since removed nodes are shutdown use master node for monitoring
+        # since removed nodes are shutdown use main node for monitoring
         return self.get_nodes_self()
 
     def get_pools_info(self):

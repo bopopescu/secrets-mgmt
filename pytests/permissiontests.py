@@ -16,7 +16,7 @@ class PermissionTests(BaseTestCase):
         super(PermissionTests, self).tearDown()
 
     def test_permissions(self):
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         info = shell.extract_remote_info()
         if info.type.lower() == 'windows':
             self.log.info('Test is designed for linux only')
@@ -26,14 +26,14 @@ class PermissionTests(BaseTestCase):
         shell.execute_command('chmod 755 %s' % LINUX_CB_PATH)
         self.sleep(10, 'wait for couchbase start')
         try:
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             self.assertTrue(RestHelper(rest).is_ns_server_running(timeout_in_seconds=60),
                                             'NS server is not up')
         except Exception, ex:
             self.log.error('Couchbase is not running')
             shell.execute_command('reboot')
             self.sleep(60, 'wait for reboot of VM')
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             self.assertTrue(RestHelper(rest).is_ns_server_running(timeout_in_seconds=60),
                             'NS server is not up')
             raise ex

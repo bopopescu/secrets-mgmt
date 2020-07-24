@@ -51,7 +51,7 @@ class DCPBase(BaseTestCase):
         else:
             super(DCPBase, self).tearDown()
         for server in self.servers:
-            ClusterOperationHelper.cleanup_cluster(self.servers, master=server)
+            ClusterOperationHelper.cleanup_cluster(self.servers, main=server)
 
     def load_docs(self, node, vbucket, num_docs,
                   bucket='default', password='',

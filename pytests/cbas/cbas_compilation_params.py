@@ -10,7 +10,7 @@ class CBASCompilationParamsTests(CBASBaseTest):
         if self.expected_error:
             self.validate_error = True
         self.handles = []
-        self.rest = RestConnection(self.master)
+        self.rest = RestConnection(self.main)
         self.failed_count = 0
         self.success_count = 0
         self.rejected_count = 0

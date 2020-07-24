@@ -14,7 +14,7 @@ class CasBaseTest(BaseTestCase):
             self.doc_ops = self.doc_ops.split(";")
         self.clients = {}
         for bucket in self.buckets:
-            client = MemcachedClientHelper.direct_client(self.master, bucket.name)
+            client = MemcachedClientHelper.direct_client(self.main, bucket.name)
             self.clients[bucket.name]=client
 
     def tearDown(self):

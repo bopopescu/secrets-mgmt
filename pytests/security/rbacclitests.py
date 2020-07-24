@@ -26,7 +26,7 @@ class rbacclitests(BaseTestCase):
         super(rbacclitests, self).setUp()
         self.r = random.Random()
         self.vbucket_count = 1024
-        self.shell = RemoteMachineShellConnection(self.master)
+        self.shell = RemoteMachineShellConnection(self.main)
         info = self.shell.extract_remote_info()
         type = info.type.lower()
         self.excluded_commands = self.input.param("excluded_commands", None)
@@ -46,7 +46,7 @@ class rbacclitests(BaseTestCase):
             self.command_options = self.command_options.split(";")
         TestInputSingleton.input.test_params["default_bucket"] = False
         self.eventID = self.input.param('id', None)
-        AuditTemp = audit(host=self.master)
+        AuditTemp = audit(host=self.main)
         self.ipAddress = self.getLocalIPAddress()
         self.ldapUser = self.input.param('ldapUser', 'Administrator')
         self.ldapPass = self.input.param('ldapPass', 'password')
@@ -59,7 +59,7 @@ class rbacclitests(BaseTestCase):
             raise Exception(" Ldap Tests cannot run on windows");
         else:
             if self.source == 'saslauthd':
-                rest = RestConnection(self.master)
+                rest = RestConnection(self.main)
                 self.setupLDAPSettings(rest)
                 #rest.ldapUserRestOperation(True, [[self.ldapUser]], exclude=None)
                 self.set_user_role(rest,self.ldapUser,user_role=self.role)
@@ -131,7 +131,7 @@ class rbacclitests(BaseTestCase):
 
     def testClusterEdit(self):
         options = "--server-add={0}:8091 --server-add-username=Administrator --server-add-password=password".format(self.servers[num + 1].ip)
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         output, error = remote_client.execute_couchbase_cli(cli_command='cluster-edit', options=options, cluster_host="localhost", user=self.ldapUser, password=self.ldapPass)
 
     def testAddRemoveNodes(self):
@@ -146,7 +146,7 @@ class rbacclitests(BaseTestCase):
         nodes_readd = self.input.param("nodes_readd", 0)
         cli_command = self.input.param("cli_command", None)
         source = self.source
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         for num in xrange(nodes_add):
             options = "--server-add={0}:8091 --server-add-username=Administrator --server-add-password=password".format(self.servers[num + 1].ip)
             output, error = remote_client.execute_couchbase_cli(cli_command='server-add', options=options, cluster_host="localhost", user=self.ldapUser, password=self.ldapPass)
@@ -201,7 +201,7 @@ class rbacclitests(BaseTestCase):
         enable_flush = self.input.param("enable_flush", None)
         enable_index_replica = self.input.param("enable_index_replica", None)
 
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         output = self._create_bucket(remote_client, bucket=bucket_name, bucket_type=bucket_type, bucket_port=bucket_port, \
                         bucket_ramsize=bucket_ramsize, bucket_replica=bucket_replica, wait=wait, enable_flush=enable_flush, enable_index_replica=enable_index_replica)
         self._validate_roles(output,result)
@@ -229,7 +229,7 @@ class rbacclitests(BaseTestCase):
         enable_index_replica = self.input.param("enable_index_replica", None)
         wait = self.input.param("wait", False)
 
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
 
         self._create_bucket(remote_client, bucket, bucket_type=bucket_type, bucket_ramsize=bucket_ramsize,
                             bucket_replica=bucket_replica, wait=wait, enable_flush=enable_flush,
@@ -283,7 +283,7 @@ class rbacclitests(BaseTestCase):
         enable_compaction_parallel = self.input.param("enable-compaction-parallel", None)
         bucket = self.input.param("bucket", "default")
         output = self.input.param("output", '')
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         cli_command = "setting-compaction"
         options = (" --compaction-db-percentage={0}".format(compaction_db_percentage), "")[compaction_db_percentage is None]
         options += (" --compaction-db-size={0}".format(compaction_db_size), "")[compaction_db_size is None]
@@ -314,7 +314,7 @@ class rbacclitests(BaseTestCase):
         setting_email_port = self.input.param("email-port", '25')
         #setting_email_encrypt = self.input.param("enable-email-encrypt", 1)
 
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         cli_command = "setting-alert"
         options = (" --enable-email-alert={0}".format(setting_enable_email_alert))
         options += (" --email-recipients={0}".format(setting_email_recipients))
@@ -345,7 +345,7 @@ class rbacclitests(BaseTestCase):
             result = 'SUCCESS'
         setting_enable_notification = self.input.param("enable-notification", 1)
 
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         cli_command = "setting-notification"
         options = (" --enable-notification={0}".format(setting_enable_notification))
 
@@ -361,7 +361,7 @@ class rbacclitests(BaseTestCase):
         setting_enable_auto_failover = self.input.param("enable-auto-failover", 1)
         setting_auto_failover_timeout = self.input.param("auto-failover-timeout", 50)
 
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         cli_command = "setting-autofailover"
         options = (" --enable-auto-failover={0}".format(setting_enable_auto_failover))
         options += (" --auto-failover-timeout={0}".format(setting_auto_failover_timeout))
@@ -377,13 +377,13 @@ class rbacclitests(BaseTestCase):
         xdcr_cert = self.input.param("xdcr-certificate", None)
         xdcr_cert = "/tmp/" + xdcr_cert
         cli_command = "ssl-manage"
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         options = "--regenerate-cert={0}".format(xdcr_cert)
         output, error = remote_client.execute_couchbase_cli(cli_command=cli_command, options=options, cluster_host="localhost", user=self.ldapUser, password=self.ldapPass)
         self.assertFalse(error, "Error thrown during CLI execution %s" % error)
         self.shell.execute_command("rm {0}".format(xdcr_cert))
         expectedResults = {"real_userid:source":self.source, "real_userid:user":self.ldapUser, "remote:ip":"127.0.0.1", "port":60035}
-        self.checkConfig(8226, self.master, expectedResults)
+        self.checkConfig(8226, self.main, expectedResults)
 
 
     """ tests for the group-manage option. group creation, renaming and deletion are tested .
@@ -394,11 +394,11 @@ class rbacclitests(BaseTestCase):
         elif self.role in ['admin','cluster_admin']:
             result = 'SUCCESS'
 
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         cli_command = "group-manage"
         source = self.source
         user = self.ldapUser
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
 
         if self.os == "linux":
             # create group
@@ -454,7 +454,7 @@ class XdcrCLITest(CliBaseTest):
         self.source = self.input.param('source', 'ns_server')
         self.__user = self.input.param("ldapUser", 'Administrator')
         self.__password = self.input.param('ldapPass', 'password')
-        self.shell = RemoteMachineShellConnection(self.master)
+        self.shell = RemoteMachineShellConnection(self.main)
         info = self.shell.extract_remote_info()
         type = info.type.lower()
         self.role = self.input.param("role","admin")
@@ -465,7 +465,7 @@ class XdcrCLITest(CliBaseTest):
             raise Exception(" Ldap Tests cannot run on windows");
         else:
             if self.source == 'saslauthd':
-                rest = RestConnection(self.master)
+                rest = RestConnection(self.main)
                 self.setupLDAPSettings(rest)
                 self.set_user_role(rest,self.ldapUser,user_role=self.role)
 
@@ -521,9 +521,9 @@ class XdcrCLITest(CliBaseTest):
                      'password': 'password'}]
         rolelist = [{'id': 'cbadminbucket', 'name': 'cbadminbucket',
                      'roles': 'admin'}]
-        RbacBase().create_user_source(testuser, 'builtin', self.master)
-        RbacBase().add_user_role(rolelist, RestConnection(self.master), 'builtin')
-        # xdcr_hostname=the number of server in ini file to add to master as replication
+        RbacBase().create_user_source(testuser, 'builtin', self.main)
+        RbacBase().add_user_role(rolelist, RestConnection(self.main), 'builtin')
+        # xdcr_hostname=the number of server in ini file to add to main as replication
         xdcr_cluster_name = self.input.param("xdcr-cluster-name", None)
         xdcr_hostname = self.input.param("xdcr-hostname", None)
         xdcr_username = self.input.param("xdcr-username", None)
@@ -601,7 +601,7 @@ class XdcrCLITest(CliBaseTest):
         options += (" --xdcr-replication-mode=\'{0}\'".format(replication_mode), "")[replication_mode is None]
         self.bucket_size = self._get_bucket_size(self.quota, 1)
         if from_bucket:
-            bucket_params = self._create_bucket_params(server=self.master, size=self.bucket_size,
+            bucket_params = self._create_bucket_params(server=self.main, size=self.bucket_size,
                                                               replicas=self.num_replicas,
                                                               enable_replica_index=self.enable_replica_index)
             self.cluster.create_default_bucket(bucket_params)

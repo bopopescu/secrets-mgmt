@@ -18,16 +18,16 @@ class XDCRXattr(XDCRNewBaseTest):
         super(XDCRXattr, self).setUp()
         self.__topology = self._input.param("ctopology", TOPOLOGY.CHAIN)
         self.src_cluster = self.get_cb_cluster_by_name('C1')
-        self.src_master = self.src_cluster.get_master_node()
+        self.src_main = self.src_cluster.get_main_node()
         self.dest_cluster = self.get_cb_cluster_by_name('C2')
-        self.dest_master = self.dest_cluster.get_master_node()
+        self.dest_main = self.dest_cluster.get_main_node()
         self.only_store_hash = False
 
         for _, cluster in enumerate(self.get_cb_clusters()):
             for bucket in cluster.get_buckets():
                 testuser = [{'id': bucket.name, 'name': bucket.name, 'password': 'password'}]
                 rolelist = [{'id': bucket.name, 'name': bucket.name, 'roles': 'admin'}]
-                self.add_built_in_server_user(testuser=testuser, rolelist=rolelist, node=cluster.get_master_node())
+                self.add_built_in_server_user(testuser=testuser, rolelist=rolelist, node=cluster.get_main_node())
         for cluster in self.get_cb_clusters():
             for node in cluster.get_nodes():
                 shell = RemoteMachineShellConnection(node)
@@ -47,7 +47,7 @@ class XDCRXattr(XDCRNewBaseTest):
                     break
             if not self._dgm_run:
                 for bucket in cluster.get_buckets():
-                    client = SDKClient(scheme="couchbase", hosts=[cluster.get_master_node().ip],
+                    client = SDKClient(scheme="couchbase", hosts=[cluster.get_main_node().ip],
                                             bucket=bucket.name).cb
                     for i in xrange(start_num, start_num + self._num_items):
                         key = 'k_%s_%s' % (i, str(cluster).replace(' ','_').
@@ -189,7 +189,7 @@ class XDCRXattr(XDCRNewBaseTest):
                         for b in src_cluster.get_buckets():
                             # only need to do compaction on the source cluster, evictions are propagated to the remote
                             # cluster
-                            src_cluster.get_cluster().compact_bucket(src_cluster.get_master_node(), b)
+                            src_cluster.get_cluster().compact_bucket(src_cluster.get_main_node(), b)
 
                     else:
                         src_cluster.run_expiry_pager()
@@ -222,9 +222,9 @@ class XDCRXattr(XDCRNewBaseTest):
                             for bucket in cluster.get_buckets():
                                 h = httplib2.Http(".cache")
                                 resp, content = h.request(
-                                    "http://{0}:4984/db/_all_docs".format(cluster.get_master_node().ip))
+                                    "http://{0}:4984/db/_all_docs".format(cluster.get_main_node().ip))
                                 self.assertEqual(json.loads(content)['total_rows'], self._num_items)
-                                client = SDKClient(scheme="couchbase", hosts=[cluster.get_master_node().ip],
+                                client = SDKClient(scheme="couchbase", hosts=[cluster.get_main_node().ip],
                                                         bucket=bucket.name).cb
                                 for i in xrange(self._num_items):
                                     key = 'k_%s_%s' % (i, str(cluster).replace(' ', '_').
@@ -235,7 +235,7 @@ class XDCRXattr(XDCRNewBaseTest):
                                         self.assertTrue(rv.exists(xk))
                                         self.assertEqual(xv, rv[xk])
                                     if sg_run:
-                                        resp, content = h.request("http://{0}:4984/db/{1}".format(cluster.get_master_node().ip, key))
+                                        resp, content = h.request("http://{0}:4984/db/{1}".format(cluster.get_main_node().ip, key))
                                         self.assertEqual(json.loads(content)['_id'], key)
                                         self.assertEqual(json.loads(content)[xk], xv)
                                         self.assertTrue('2-' in json.loads(content)['_rev'])

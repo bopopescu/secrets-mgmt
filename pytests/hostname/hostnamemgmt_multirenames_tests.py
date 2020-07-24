@@ -69,9 +69,9 @@ class HostnameMgmtMultiTests(HostnameBaseTests):
         self.verify_referenced_by_names(self.servers[:self.nodes_init], hostnames)
         add_node = self.servers[:self.nodes_in + self.nodes_init][-1]
         new_name = self.name_prefix + str(add_node.ip.split('.')[-1]) + '_1' + '.' + self.domain
-        master_rest = RestConnection(self.master)
+        main_rest = RestConnection(self.main)
         try:
-            master_rest.add_node(add_node.rest_username, add_node.rest_password, new_name)
+            main_rest.add_node(add_node.rest_username, add_node.rest_password, new_name)
         except ServerAlreadyJoinedException:
             self.log.info('Expected exception was raised.')
         else:

@@ -63,7 +63,7 @@ class DCPCrashTests(DCPBase):
     def test_crash_entire_cluster(self):
 
         self.cluster.rebalance(
-            [self.master],
+            [self.main],
             self.servers[1:], [])
 
         vbucket = 0

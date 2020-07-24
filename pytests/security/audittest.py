@@ -32,14 +32,14 @@ class auditTest(BaseTestCase):
         super(auditTest, self).setUp()
         self.ipAddress = self.getLocalIPAddress()
         self.eventID = self.input.param('id', None)
-	auditTemp = audit(host=self.master)
+	auditTemp = audit(host=self.main)
 	currentState = auditTemp.getAuditStatus()
-	self.log.info ("Current status of audit on ip - {0} is {1}".format(self.master.ip, currentState))
+	self.log.info ("Current status of audit on ip - {0} is {1}".format(self.main.ip, currentState))
 	if not currentState:
 	    self.log.info ("Enabling Audit ")
             auditTemp.setAuditEnable('true')
             self.sleep(30)
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         self.setupLDAPSettings(rest)
 
     def tearDown(self):
@@ -83,9 +83,9 @@ class auditTest(BaseTestCase):
     #Tests to check for bucket events
     def test_bucketEvents(self):
         ops = self.input.param("ops", None)
-        user = self.master.rest_username
+        user = self.main.rest_username
         source = 'ns_server'
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
 
         if (ops in ['create']):
             expectedResults = {'bucket_name':'TestBucket', 'ram_quota':104857600, 'num_replicas':1,
@@ -126,11 +126,11 @@ class auditTest(BaseTestCase):
             self.sleep(10)
             rest.flush_bucket(expectedResults['bucket_name'])
 
-        self.checkConfig(self.eventID, self.master, expectedResults)
+        self.checkConfig(self.eventID, self.main, expectedResults)
 
 
     def test_clusterOps(self):
-        Audit = audit(eventID=self.eventID, host=self.master)
+        Audit = audit(eventID=self.eventID, host=self.main)
         ops = self.input.param('ops', None)
         servs_inout = self.servers[1:self.nodes_in + 1]
         source = 'ns_server'
@@ -141,81 +141,81 @@ class auditTest(BaseTestCase):
             print servs_inout[0].ip
             expectedResults = {"services":['kv'], 'port':8091, 'hostname':servs_inout[0].ip,
                                'groupUUID':"0", 'node':'ns_1@' + servs_inout[0].ip, 'source':source,
-                               'user':self.master.rest_username, "ip":self.ipAddress, "remote:port":57457}
+                               'user':self.main.rest_username, "ip":self.ipAddress, "remote:port":57457}
 
         if (ops in ['addNodeN1QL']):
-           rest = RestConnection(self.master)
-           rest.add_node(user=self.master.rest_username, password=self.master.rest_password, remoteIp=servs_inout[0].ip, services=['n1ql'])
+           rest = RestConnection(self.main)
+           rest.add_node(user=self.main.rest_username, password=self.main.rest_password, remoteIp=servs_inout[0].ip, services=['n1ql'])
            expectedResults = {"services":['n1ql'], 'port':8091, 'hostname':servs_inout[0].ip,
                                'groupUUID':"0", 'node':'ns_1@' + servs_inout[0].ip, 'source':source,
-                               'user':self.master.rest_username, "ip":self.ipAddress, "remote:port":57457}
+                               'user':self.main.rest_username, "ip":self.ipAddress, "remote:port":57457}
 
         if (ops in ['addNodeIndex']):
-           rest = RestConnection(self.master)
-           rest.add_node(user=self.master.rest_username, password=self.master.rest_password, remoteIp=servs_inout[0].ip, services=['index'])
+           rest = RestConnection(self.main)
+           rest.add_node(user=self.main.rest_username, password=self.main.rest_password, remoteIp=servs_inout[0].ip, services=['index'])
            expectedResults = {"services":['index'], 'port':8091, 'hostname':servs_inout[0].ip,
                                'groupUUID':"0", 'node':'ns_1@' + servs_inout[0].ip, 'source':source,
-                               'user':self.master.rest_username, "ip":self.ipAddress, "remote:port":57457}
+                               'user':self.main.rest_username, "ip":self.ipAddress, "remote:port":57457}
 
         if (ops in ['removeNode']):
             self.cluster.rebalance(self.servers, [], servs_inout)
-            shell = RemoteMachineShellConnection(self.master)
+            shell = RemoteMachineShellConnection(self.main)
             os_type = shell.extract_remote_info().distribution_type
             log.info ("OS type is {0}".format(os_type))
             if os_type == 'windows':
-                expectedResults = {"delta_recovery_buckets":"all", 'known_nodes':["ns_1@" + servs_inout[0].ip, "ns_1@" + self.master.ip], 'ejected_nodes':['ns_1@' + servs_inout[0].ip], 'source':'ns_server', \
-                               'source':source, 'user':self.master.rest_username, "ip":self.ipAddress, "port":57457}
+                expectedResults = {"delta_recovery_buckets":"all", 'known_nodes':["ns_1@" + servs_inout[0].ip, "ns_1@" + self.main.ip], 'ejected_nodes':['ns_1@' + servs_inout[0].ip], 'source':'ns_server', \
+                               'source':source, 'user':self.main.rest_username, "ip":self.ipAddress, "port":57457}
             else:
-                expectedResults = {"delta_recovery_buckets":"all", 'known_nodes':["ns_1@" + servs_inout[0].ip, "ns_1@" + self.master.ip], 'ejected_nodes':['ns_1@' + servs_inout[0].ip], 'source':'ns_server', \
-                               'source':source, 'user':self.master.rest_username, "ip":self.ipAddress, "port":57457}
+                expectedResults = {"delta_recovery_buckets":"all", 'known_nodes':["ns_1@" + servs_inout[0].ip, "ns_1@" + self.main.ip], 'ejected_nodes':['ns_1@' + servs_inout[0].ip], 'source':'ns_server', \
+                               'source':source, 'user':self.main.rest_username, "ip":self.ipAddress, "port":57457}
 
 
         if (ops in ['rebalanceIn']):
             self.cluster.rebalance(self.servers, servs_inout, [])
-            shell = RemoteMachineShellConnection(self.master)
+            shell = RemoteMachineShellConnection(self.main)
             os_type = shell.extract_remote_info().distribution_type
             log.info ("OS type is {0}".format(os_type))
             if os_type == 'windows':
-                expectedResults = {"delta_recovery_buckets":"all", 'known_nodes':["ns_1@" + servs_inout[0].ip, "ns_1@" + self.master.ip], 'ejected_nodes':[], 'source':'ns_server', \
-                                'source':source, 'user':self.master.rest_username, "ip":self.ipAddress, "port":57457}
+                expectedResults = {"delta_recovery_buckets":"all", 'known_nodes':["ns_1@" + servs_inout[0].ip, "ns_1@" + self.main.ip], 'ejected_nodes':[], 'source':'ns_server', \
+                                'source':source, 'user':self.main.rest_username, "ip":self.ipAddress, "port":57457}
             else:
-                expectedResults = {"delta_recovery_buckets":"all", 'known_nodes':["ns_1@" + servs_inout[0].ip, "ns_1@" + self.master.ip], 'ejected_nodes':[], 'source':'ns_server', \
-                                'source':source, 'user':self.master.rest_username, "ip":self.ipAddress, "port":57457}
+                expectedResults = {"delta_recovery_buckets":"all", 'known_nodes':["ns_1@" + servs_inout[0].ip, "ns_1@" + self.main.ip], 'ejected_nodes':[], 'source':'ns_server', \
+                                'source':source, 'user':self.main.rest_username, "ip":self.ipAddress, "port":57457}
 
         if (ops in ['rebalanceOut']):
             self.cluster.rebalance(self.servers, [], servs_inout)
-            shell = RemoteMachineShellConnection(self.master)
+            shell = RemoteMachineShellConnection(self.main)
             os_type = shell.extract_remote_info().distribution_type
             log.info ("OS type is {0}".format(os_type))
             if os_type == 'windows':
-                expectedResults = {"delta_recovery_buckets":"all", 'known_nodes':["ns_1@" + servs_inout[0].ip, "ns_1@" + self.master.ip], 'ejected_nodes':['ns_1@' + servs_inout[0].ip], 'source':'ns_server', \
-                               'source':source, 'user':self.master.rest_username, "ip":self.ipAddress, "port":57457}
+                expectedResults = {"delta_recovery_buckets":"all", 'known_nodes':["ns_1@" + servs_inout[0].ip, "ns_1@" + self.main.ip], 'ejected_nodes':['ns_1@' + servs_inout[0].ip], 'source':'ns_server', \
+                               'source':source, 'user':self.main.rest_username, "ip":self.ipAddress, "port":57457}
             else:
-                expectedResults = {"delta_recovery_buckets":"all", 'known_nodes':["ns_1@" + servs_inout[0].ip, "ns_1@" + self.master.ip], 'ejected_nodes':['ns_1@' + servs_inout[0].ip], 'source':'ns_server', \
-                               'source':source, 'user':self.master.rest_username, "ip":self.ipAddress, "port":57457}
+                expectedResults = {"delta_recovery_buckets":"all", 'known_nodes':["ns_1@" + servs_inout[0].ip, "ns_1@" + self.main.ip], 'ejected_nodes':['ns_1@' + servs_inout[0].ip], 'source':'ns_server', \
+                               'source':source, 'user':self.main.rest_username, "ip":self.ipAddress, "port":57457}
 
         if (ops in ['failover']):
             type = self.input.param('type', None)
             self.cluster.failover(self.servers, servs_inout)
             self.cluster.rebalance(self.servers, [], [])
-            expectedResults = {'source':source, 'user':self.master.rest_username, "ip":self.ipAddress, "port":57457, 'type':type, 'node':'ns_1@' + servs_inout[0].ip}
+            expectedResults = {'source':source, 'user':self.main.rest_username, "ip":self.ipAddress, "port":57457, 'type':type, 'node':'ns_1@' + servs_inout[0].ip}
 
         if (ops == 'nodeRecovery'):
-            expectedResults = {'node':'ns_1@' + servs_inout[0].ip, 'type':'delta', 'source':source, 'user':self.master.rest_username, "ip":self.ipAddress, "port":57457}
+            expectedResults = {'node':'ns_1@' + servs_inout[0].ip, 'type':'delta', 'source':source, 'user':self.main.rest_username, "ip":self.ipAddress, "port":57457}
             self.cluster.failover(self.servers, servs_inout)
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             rest.set_recovery_type(expectedResults['node'], 'delta')
 
         # Pending of failover - soft
-        self.checkConfig(self.eventID, self.master, expectedResults)
+        self.checkConfig(self.eventID, self.main, expectedResults)
 
 
     def test_settingsCluster(self):
         ops = self.input.param("ops", None)
         source = 'ns_server'
-        user = self.master.rest_username
-        password = self.master.rest_password
-        rest = RestConnection(self.master)
+        user = self.main.rest_username
+        password = self.main.rest_password
+        rest = RestConnection(self.main)
 
         if (ops == 'memoryQuota'):
             expectedResults = {'memory_quota':512, 'source':source, 'user':user, 'ip':self.ipAddress, 'port':12345, 'cluster_name':'', 'index_memory_quota':512,'fts_memory_quota': 302}
@@ -327,11 +327,11 @@ class auditTest(BaseTestCase):
         elif (ops == "UpdateGroupAddNodes"):
             sourceGroup = "Group 1"
             destGroup = 'destGroup'
-            expectedResults = {'group_name':destGroup, 'source':source, 'user':user, 'ip':self.ipAddress, 'port':1234, 'nodes':['ns_1@' + self.master.ip], 'port':1234}
+            expectedResults = {'group_name':destGroup, 'source':source, 'user':user, 'ip':self.ipAddress, 'port':1234, 'nodes':['ns_1@' + self.main.ip], 'port':1234}
             #rest.add_zone(sourceGroup)
             rest.add_zone(destGroup)
             self.sleep(30)
-            rest.shuffle_nodes_in_zones([self.master.ip], sourceGroup, destGroup)
+            rest.shuffle_nodes_in_zones([self.main.ip], sourceGroup, destGroup)
             tempStr = rest.get_zone_uri()[expectedResults['group_name']]
             tempStr = (tempStr.split("/"))[4]
             expectedResults['uuid'] = tempStr
@@ -349,18 +349,18 @@ class auditTest(BaseTestCase):
             rest.regenerate_cluster_certificate()
 
         elif (ops == 'renameNode'):
-            rest.rename_node(self.master.ip, user, password)
-            expectedResults = {"hostname":self.master.ip, "node":"ns_1@" + self.master.ip, "source":source, "user":user, "ip":self.ipAddress, "port":56845}
+            rest.rename_node(self.main.ip, user, password)
+            expectedResults = {"hostname":self.main.ip, "node":"ns_1@" + self.main.ip, "source":source, "user":user, "ip":self.ipAddress, "port":56845}
 
         try:
-            self.checkConfig(self.eventID, self.master, expectedResults)
+            self.checkConfig(self.eventID, self.main, expectedResults)
         finally:
             if (ops == "UpdateGroupAddNodes"):
                 sourceGroup = "Group 1"
                 destGroup = 'destGroup'
-                rest.shuffle_nodes_in_zones([self.master.ip], destGroup, sourceGroup)
+                rest.shuffle_nodes_in_zones([self.main.ip], destGroup, sourceGroup)
 
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             zones = rest.get_zone_names()
             for zone in zones:
                 if zone != "Group 1":
@@ -371,9 +371,9 @@ class auditTest(BaseTestCase):
     def test_cbDiskConf(self):
         ops = self.input.param('ops', None)
         source = 'ns_server'
-        user = self.master.rest_username
-        rest = RestConnection(self.master)
-	shell = RemoteMachineShellConnection(self.master)
+        user = self.main.rest_username
+        rest = RestConnection(self.main)
+	shell = RemoteMachineShellConnection(self.main)
 	os_type = shell.extract_remote_info().distribution_type
 	if (os_type == 'Windows'):
             currentPath = "c:/Program Files/Couchbase/Server/var/lib/couchbase/data"
@@ -384,12 +384,12 @@ class auditTest(BaseTestCase):
 
         if (ops == 'indexPath'):
             try:
-                expectedResults = {'node': 'ns_1@' + self.master.ip, 'source':source,
+                expectedResults = {'node': 'ns_1@' + self.main.ip, 'source':source,
                                 'user':user, 'ip':self.ipAddress, 'port':1234,
                                 'index_path':newPath, 'db_path':currentPath}
 
                 rest.set_data_path(index_path=newPath)
-                self.checkConfig(self.eventID, self.master, expectedResults)
+                self.checkConfig(self.eventID, self.main, expectedResults)
             finally:
                 rest.set_data_path(index_path=currentPath)
 
@@ -400,8 +400,8 @@ class auditTest(BaseTestCase):
         username = self.input.param('username', None)
         password = self.input.param('password', None)
         source = 'ns_server'
-        rest = RestConnection(self.master)
-        user = self.master.rest_username
+        rest = RestConnection(self.main)
+        user = self.main.rest_username
         roles = []
         roles.append(role)
 
@@ -431,19 +431,19 @@ class auditTest(BaseTestCase):
 
         #User must be pre-created in LDAP in advance
         elif (ops in ['ldapLogin']):
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             self.set_user_role(rest,username)
             status, content = rest.validateLogin(username, password, True, getContent=True)
             sessionID = (((status['set-cookie']).split("="))[1]).split(";")[0]
             expectedResults = {'source':'external', 'user':username, 'password':password, 'roles':roles, 'ip':self.ipAddress, "port":123456, 'sessionid':sessionID}
 
-        self.checkConfig(self.eventID, self.master, expectedResults)
+        self.checkConfig(self.eventID, self.main, expectedResults)
 
 
     def test_checkCreateBucketCluster(self):
         ops = self.input.param("ops", None)
         source = 'ns_server'
-	#auditTemp = audit(host=self.master)
+	#auditTemp = audit(host=self.main)
 	#auditTemp.setAuditEnable('true')
         for server in self.servers:
             user = server.rest_username
@@ -463,7 +463,7 @@ class auditTest(BaseTestCase):
         ops = self.input.param("ops", None)
         nodesOut = self.input.param("nodes_out", 1)
         source = 'ns_server'
-	user = self.master.rest_username
+	user = self.main.rest_username
 
         firstNode = self.servers[0]
         secondNode = self.servers[1]
@@ -515,9 +515,9 @@ class auditTest(BaseTestCase):
 
 
     def test_Backup(self):
-         shell = RemoteMachineShellConnection(self.master)
+         shell = RemoteMachineShellConnection(self.main)
          gen_update = BlobGenerator('testdata', 'testdata-', self.value_size, end=100)
-         self._load_all_buckets(self.master, gen_update, "create", 0, 1, 0, True, batch_size=20000,
+         self._load_all_buckets(self.main, gen_update, "create", 0, 1, 0, True, batch_size=20000,
                                                                         pause_secs=5, timeout_secs=180)
          self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
          info = shell.extract_remote_info()
@@ -528,16 +528,16 @@ class auditTest(BaseTestCase):
          create_dir = "mkdir " + path
          shell.execute_command(create_dir)
          shell.execute_cluster_backup(backup_location=path)
-         expectedResults = {"peername":self.master.ip, "sockname":self.master.ip + ":11210", "source":"memcached", "user":"default", 'bucket':'default'}
-         self.checkConfig(self.eventID, self.master, expectedResults)
+         expectedResults = {"peername":self.main.ip, "sockname":self.main.ip + ":11210", "source":"memcached", "user":"default", 'bucket':'default'}
+         self.checkConfig(self.eventID, self.main, expectedResults)
 
     def test_Transfer(self):
-         shell = RemoteMachineShellConnection(self.master)
+         shell = RemoteMachineShellConnection(self.main)
          gen_update = BlobGenerator('testdata', 'testdata-', self.value_size, end=100)
-         self._load_all_buckets(self.master, gen_update, "create", 0, 1, 0, True, batch_size=20000,
+         self._load_all_buckets(self.main, gen_update, "create", 0, 1, 0, True, batch_size=20000,
                                                                         pause_secs=5, timeout_secs=180)
          self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
-         source = "http://" + self.master.ip + ":8091"
+         source = "http://" + self.main.ip + ":8091"
          info = shell.extract_remote_info()
          path = '/tmp/backup'
          #if info.type.lower() == "windows":
@@ -545,14 +545,14 @@ class auditTest(BaseTestCase):
          shell.delete_files(path)
          create_dir = "mkdir " + path
          shell.execute_command(create_dir)
-         options = "-b default " + " -u " + self.master.rest_username + " -p " + self.master.rest_password
+         options = "-b default " + " -u " + self.main.rest_username + " -p " + self.main.rest_password
          shell.execute_cbtransfer(source, path, options)
-         expectedResults = {"peername":self.master.ip, "sockname":self.master.ip + ":11210", "source":"memcached", "user":"default", 'bucket':'default'}
-         self.checkConfig(self.eventID, self.master, expectedResults)
+         expectedResults = {"peername":self.main.ip, "sockname":self.main.ip + ":11210", "source":"memcached", "user":"default", 'bucket':'default'}
+         self.checkConfig(self.eventID, self.main, expectedResults)
 
     #Need an implementation for cbreset_password
     def test_resetPass(self):
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         info = shell.extract_remote_info()
         if info.type.lower() == "windows":
             command = "%scbreset_password.exe" % (testconstants.WIN_COUCHBASE_BIN_PATH_RAW)
@@ -561,7 +561,7 @@ class auditTest(BaseTestCase):
         shell.delete_files(path)
 
     def test_AuthFailMemcache(self):
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         os_type = shell.extract_remote_info().distribution_type
         log.info ("OS type is {0}".format(os_type))
         if os_type == 'windows':
@@ -572,7 +572,7 @@ class auditTest(BaseTestCase):
         command = command + " -u foo -P bar"
         shell.execute_command(command)
         expectedResults = {"peername":'127.0.0.1', "sockname":'127.0.0.1' + ":11210", "source":"memcached", "user":"foo", "reason":"Unknown user"}
-        self.checkConfig(self.eventID, self.master, expectedResults)
+        self.checkConfig(self.eventID, self.main, expectedResults)
 
 
     def test_addLdapAdminRO(self):
@@ -582,8 +582,8 @@ class auditTest(BaseTestCase):
         roAdminUser = self.input.param('roAdminUser', None)
         default = self.input.param('default', None)
         source = 'ns_server'
-        rest = RestConnection(self.master)
-        user = self.master.rest_username
+        rest = RestConnection(self.main)
+        user = self.main.rest_username
 
         #User must be pre-created in LDAP in advance
         if (ops in ['ldapAdmin']) and (default is not None):
@@ -607,15 +607,15 @@ class auditTest(BaseTestCase):
             expectedResults = {"admins":[adminUser], "ro_admins":[roAdminUser], "enabled":True, "source":source, \
                                    "user":user, "ip":self.ipAddress, "port":57457, 'sessionid':''}
 
-        self.checkConfig(self.eventID, self.master, expectedResults)
+        self.checkConfig(self.eventID, self.main, expectedResults)
 
 
 
     def test_internalSettingsXDCR(self):
         ops = self.input.param("ops",None)
         value = self.input.param("value",None)
-        rest = RestConnection(self.master)
-        user = self.master.rest_username
+        rest = RestConnection(self.main)
+        user = self.main.rest_username
         source = 'ns_server'
         input = self.input.param("input",None)
 
@@ -624,10 +624,10 @@ class auditTest(BaseTestCase):
             src_bucket = repl.get_src_bucket()
             dst_bucket = repl.get_dst_bucket()
             rest.set_xdcr_param(src_bucket.name, dst_bucket.name, input,value)
-        expectedResults = {"user":user, "local_cluster_name":self.master.ip+":8091", ops:value,
+        expectedResults = {"user":user, "local_cluster_name":self.main.ip+":8091", ops:value,
                                "source":source}
 
-        self.checkConfig(self.eventID,self.master,expectedResults)
+        self.checkConfig(self.eventID,self.main,expectedResults)
 
     def test_internalSettingLocal(self):
         ops = self.input.param("ops",None)
@@ -635,8 +635,8 @@ class auditTest(BaseTestCase):
             ops = ops.replace(":",",")
             ops = '{' + ops + '}'
         value = self.input.param("value",None)
-        rest = RestConnection(self.master)
-        user = self.master.rest_username
+        rest = RestConnection(self.main)
+        user = self.main.rest_username
         source = 'ns_server'
         input = self.input.param("input",None)
 
@@ -644,4 +644,4 @@ class auditTest(BaseTestCase):
         rest.set_internalSetting(input,value)
         expectedResults = {"user":user, ops:value,"source":source,"ip":self.ipAddress, "port":57457}
 
-        self.checkConfig(self.eventID,self.master,expectedResults)
+        self.checkConfig(self.eventID,self.main,expectedResults)

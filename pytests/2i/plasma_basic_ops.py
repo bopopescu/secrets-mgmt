@@ -21,7 +21,7 @@ class SecondaryIndexingPlasmaBasicTests(BaseSecondaryIndexingTests):
                     raise
 
     def test_increase_memory_beyond_max_limit(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         memory_quota = 5000
         content = rest.set_service_memoryQuota(service='indexMemoryQuota', memoryQuota=memory_quota)
         if content:

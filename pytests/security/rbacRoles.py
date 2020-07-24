@@ -2,9 +2,9 @@ class rbacRoles:
     ''' Variable setup for comparison of roles using checkPermission'''
 
     @staticmethod
-    def _admin_role_master():
+    def _admin_role_main():
         per_set = {
-            "name":"Role master for Admin Role",
+            "name":"Role main for Admin Role",
             "permissionSet":"cluster.admin.internal!all, cluster.admin.setup!write, \
                     cluster.admin.security!read,cluster.admin.security!write,cluster.admin.logs!read,cluster.pools!read,cluster.pools!write,\
                     cluster.nodes!read,cluster.nodes!write,cluster.samples!read,cluster.settings!read,cluster.settings!write,cluster.tasks!read,\
@@ -35,9 +35,9 @@ class rbacRoles:
         return per_set
 
     @staticmethod
-    def _cluster_admin_role_master():
+    def _cluster_admin_role_main():
         per_set = {
-            "name":"Master role for cluster admin",
+            "name":"Main role for cluster admin",
             "permissionSet": "cluster.pools!read,cluster.pools!write,\
                     cluster.nodes!read,cluster.nodes!write,cluster.samples!read,cluster.settings!read,cluster.settings!write,cluster.tasks!read,\
                     cluster.stats!read,cluster.server_groups!read,cluster.server_groups!write,cluster.indexes!read,cluster.indexes!write,\
@@ -114,7 +114,7 @@ class rbacRoles:
         return per_set
 
     @staticmethod
-    def _cluster_admin_not_allowed_perm_master():
+    def _cluster_admin_not_allowed_perm_main():
         per_set = {
             "name":"Check for cluster Admin role not allowed for cluster admin",
             "permissionSet":"cluster.admin.internal!all,cluster.admin.setup!write,\
@@ -132,9 +132,9 @@ class rbacRoles:
         return per_set
 
     @staticmethod
-    def _bucket_admin_role_master():
+    def _bucket_admin_role_main():
         per_set = {
-            "name":"Bucket Admin master permission list",
+            "name":"Bucket Admin main permission list",
             "permissionSet":"cluster.pools!read, cluster.nodes!read,cluster.samples!read, cluster.settings!read,cluster.tasks!read,cluster.stats!read,cluster.server_groups!read,\
                     cluster.indexes!read,cluster.xdcr.settings!read,cluster.xdcr.remote_clusters!read,cluster.bucket[<bucket_name>]!create,cluster.bucket[<bucket_name>]!delete,cluster.bucket[<bucket_name>]!compact,\
                     cluster.bucket[<bucket_name>].settings!read,cluster.bucket[<bucket_name>].password!read,cluster.bucket[<bucket_name>].data!read,cluster.bucket[<bucket_name>].data!write,\
@@ -190,7 +190,7 @@ class rbacRoles:
         return per_set
 
     @staticmethod
-    def _bucket_admin_role_not_allowed_perm_master():
+    def _bucket_admin_role_not_allowed_perm_main():
         per_set = {
             "name":"List of permission not allowed for bucket admin",
             "permissionSet":"cluster.admin.internal!all,cluster.admin.diag!read,cluster.admin.diag!write,cluster.admin.setup!write,\
@@ -210,9 +210,9 @@ class rbacRoles:
         return per_set
 
     @staticmethod
-    def _view_admin_role_master():
+    def _view_admin_role_main():
         per_set = {
-            "name":"View Admin role master",
+            "name":"View Admin role main",
             "permissionSet":"cluster.bucket[<bucket_name>].views!read,cluster.bucket[<bucket_name>].views!write,cluster.bucket[<bucket_name>].data!read, cluster.bucket[<bucket_name>].settings!read,\
                             cluster.pools!read, cluster.nodes!read,cluster.samples!read, cluster.settings!read,cluster.tasks!read,cluster.stats!read,cluster.server_groups!read,\
                             cluster.indexes!read,cluster.xdcr.settings!read,cluster.xdcr.remote_clusters!read,cluster.bucket[<bucket_name>].settings!read"
@@ -232,7 +232,7 @@ class rbacRoles:
         return per_set
 
     @staticmethod
-    def _view_admin_role_not_allowed_perm_master():
+    def _view_admin_role_not_allowed_perm_main():
         per_set = {
             "name":"View Admin permission not allowed",
             "permissionSet":"cluster.admin.internal!all,cluster.admin.diag!read,cluster.admin.diag!write,cluster.admin.setup!write,\
@@ -262,7 +262,7 @@ class rbacRoles:
         return per_set
 
     @staticmethod
-    def _replication_admin_role_master():
+    def _replication_admin_role_main():
         per_set = {
             "name":"XDCR Admin expected result",
             "permissionSet":"cluster.bucket[<bucket_name>].xdcr!read,cluster.bucket[<bucket_name>].xdcr!write,cluster.bucket[<bucket_name>].xdcr!execute,\
@@ -285,9 +285,9 @@ class rbacRoles:
         return per_set
 
     @staticmethod
-    def _replication_admin_not_allowed_perm_master():
+    def _replication_admin_not_allowed_perm_main():
         per_set = {
-            "name":"Replication admin not allowed permission master",
+            "name":"Replication admin not allowed permission main",
             "permissionSet":"cluster.admin.internal!all,cluster.admin.diag!read,cluster.admin.diag!write,cluster.admin.setup!write,\
                             cluster.admin.security!write,cluster.admin.logs!read,cluster.pools!write,\
                             cluster.nodes!write,cluster.settings!write,cluster.server_groups!write,cluster.indexes!write,\
@@ -301,7 +301,7 @@ class rbacRoles:
     @staticmethod
     def _replication_admin_not_allowed_perm_expected():
         per_set = {
-            "name":"Replication admin not allowed permission master",
+            "name":"Replication admin not allowed permission main",
             "permissionSet":{'cluster.admin.internal!all':False,'cluster.admin.diag!read':False,'cluster.admin.diag!write':False,'cluster.admin.setup!write':False,\
                             'cluster.admin.security!write':False,'cluster.admin.logs!read':False,'cluster.pools!write':False,\
                             'cluster.nodes!write':False,'cluster.settings!write':False,'cluster.server_groups!write':False,'cluster.indexes!write':False,\
@@ -313,9 +313,9 @@ class rbacRoles:
         return  per_set
 
     @staticmethod
-    def _read_only_role_master():
+    def _read_only_role_main():
         per_set = {
-            "name":"Permission for read only user master",
+            "name":"Permission for read only user main",
             "permissionSet":"cluster.admin.security!read,cluster.pools!read,cluster.nodes!read,cluster.samples!read,\
                             cluster.settings!read,cluster.tasks!read,cluster.stats!read,cluster.server_groups!read,\
                             cluster.indexes!read,cluster.xdcr.settings!read,cluster.xdcr.remote_clusters!read, \
@@ -339,9 +339,9 @@ class rbacRoles:
         return per_set
 
     @staticmethod
-    def _read_only_role_not_allowed_master():
+    def _read_only_role_not_allowed_main():
         per_set = {
-            "name":"Permission for read only user master",
+            "name":"Permission for read only user main",
             "permissionSet":"cluster.admin.internal!all,cluster.admin.diag!write,cluster.admin.setup!write,cluster.admin.security!write,\
                     cluster.admin.logs!read,cluster.pools!write,cluster.nodes!write,cluster.settings!write,cluster.server_groups!write,\
                     cluster.indexes!write,cluster.xdcr.settings!write,cluster.xdcr.remote_clusters!write,cluster.bucket[<bucket_name>]!create,\
@@ -355,7 +355,7 @@ class rbacRoles:
     @staticmethod
     def _read_only_role_not_allowed_expected():
         per_set = {
-            "name":"Permission for read only user master",
+            "name":"Permission for read only user main",
             "permissionSet":{'cluster.admin.internal!all':False,'cluster.admin.diag!write':False,'cluster.admin.setup!write':False,'cluster.admin.security!write':False,\
                     'cluster.admin.logs!read':False,'cluster.pools!write':False,'cluster.nodes!write':False,'cluster.settings!write':False,'cluster.server_groups!write':False,\
                     'cluster.indexes!write':False,'cluster.xdcr.settings!write':False,'cluster.xdcr.remote_clusters!write':False,'cluster.bucket[<bucket_name>]!create':False,\
@@ -367,7 +367,7 @@ class rbacRoles:
         return per_set
 
     @staticmethod
-    def _replication_view_admin_role_master():
+    def _replication_view_admin_role_main():
         per_set = {
             "name":"XDCR Admin expected result",
             "permissionSet":"cluster.bucket[<bucket_name>].xdcr!read,cluster.bucket[<bucket_name>].xdcr!write,cluster.bucket[<bucket_name>].xdcr!execute,\
@@ -392,9 +392,9 @@ class rbacRoles:
         return per_set
 
     @staticmethod
-    def _read_only_replication_role_master():
+    def _read_only_replication_role_main():
         per_set = {
-            "name":"Permission for read only user master",
+            "name":"Permission for read only user main",
             "permissionSet":"cluster.admin.security!read,cluster.pools!read,cluster.nodes!read,cluster.samples!read,\
                             cluster.settings!read,cluster.tasks!read,cluster.stats!read,cluster.server_groups!read,\
                             cluster.indexes!read,cluster.xdcr.settings!read,cluster.xdcr.remote_clusters!read, \
@@ -420,9 +420,9 @@ class rbacRoles:
 
 
     @staticmethod
-    def _bucket_admin_view_replication_admin_role_master():
+    def _bucket_admin_view_replication_admin_role_main():
         per_set = {
-            "name":"Bucket Admin master permission list",
+            "name":"Bucket Admin main permission list",
             "permissionSet":"cluster.pools!read, cluster.nodes!read,cluster.samples!read, cluster.settings!read,cluster.tasks!read,cluster.stats!read,cluster.server_groups!read,\
                     cluster.indexes!read,cluster.xdcr.settings!read,cluster.xdcr.remote_clusters!read,cluster.bucket[<bucket_name>]!create,cluster.bucket[<bucket_name>]!delete,cluster.bucket[<bucket_name>]!compact,\
                     cluster.bucket[<bucket_name>].settings!read,cluster.bucket[<bucket_name>].password!read,cluster.bucket[<bucket_name>].data!read,cluster.bucket[<bucket_name>].data!write,\
@@ -432,7 +432,7 @@ class rbacRoles:
         return per_set
 
     @staticmethod
-    def _bucket_admin_view_replication_admin_role_master_expected():
+    def _bucket_admin_view_replication_admin_role_main_expected():
         per_set = {
             "name":"Bucket Admin expected result for correct bucket",
             "permissionSet": {'cluster.bucket[<bucket_name>].recovery!read': True, 'cluster.bucket[<bucket_name>].password!read': False, 'cluster.bucket[<bucket_name>].data!read': True,\
@@ -446,79 +446,79 @@ class rbacRoles:
 
     @staticmethod
     def _return_permission_set(role=None):
-        return_role_master = []
+        return_role_main = []
         return_role_expected = []
         return_role_expected_negative = []
 
         if role == "admin":
-            return_role_master = rbacRoles._admin_role_master()
+            return_role_main = rbacRoles._admin_role_main()
             return_role_expected = rbacRoles._admin_role_expected()
 
         if role == "roadmin":
-            return_role_master = rbacRoles._read_only_role_master()
+            return_role_main = rbacRoles._read_only_role_main()
             return_role_expected = rbacRoles._read_only_role_expected()
 
         if 'cluster_admin' in role:
-            return_role_master = rbacRoles._cluster_admin_role_master()
+            return_role_main = rbacRoles._cluster_admin_role_main()
             return_role_expected = rbacRoles._cluster_admin_role_expected()
 
         if 'cluster_ro_admin' in role:
-            return_role_master = rbacRoles._cluster_admin_role_master()
+            return_role_main = rbacRoles._cluster_admin_role_main()
             return_role_expected = rbacRoles._cluster_admin_roadmin_role_expected()
 
         if 'cluster_view_admin' in role:
             print "Into cluster view admin"
-            return_role_master = rbacRoles._cluster_admin_role_master()
+            return_role_main = rbacRoles._cluster_admin_role_main()
             return_role_expected = rbacRoles._cluster_view_admin_role_expected()
 
         if 'bucket_admin' in role:
-            return_role_master = rbacRoles._bucket_admin_role_master()
+            return_role_main = rbacRoles._bucket_admin_role_main()
             return_role_expected = rbacRoles._bucket_admin_role_expected_correct_bucket()
             return_role_expected_negative = rbacRoles._bucket_admin_role_expected_incorrect_bucket()
 
         if 'bucket_view_admin' in role:
-            return_role_master = rbacRoles._bucket_admin_role_master()
+            return_role_main = rbacRoles._bucket_admin_role_main()
             return_role_expected = rbacRoles._bucket_view_admin_role_expected_correct_bucket()
 
         if 'view_admin' in role:
-            return_role_master = rbacRoles._view_admin_role_master()
+            return_role_main = rbacRoles._view_admin_role_main()
             return_role_expected = rbacRoles._view_admin_role_expected()
 
         if 'replication_admin' in role:
-            return_role_master = rbacRoles._replication_admin_role_master()
+            return_role_main = rbacRoles._replication_admin_role_main()
             return_role_expected = rbacRoles._replication_admin_role_expected()
 
         if  'roadmin_no_access' in role:
-            return_role_master = rbacRoles._read_only_role_not_allowed_master()
+            return_role_main = rbacRoles._read_only_role_not_allowed_main()
             return_role_expected = rbacRoles._read_only_role_not_allowed_expected()
 
         if  'cluster_admin_no_access' in role:
-            return_role_master = rbacRoles._cluster_admin_not_allowed_perm_master()
+            return_role_main = rbacRoles._cluster_admin_not_allowed_perm_main()
             return_role_expected = rbacRoles._cluster_admin_not_allowed_perm_expected()
 
         if 'bucket_admin_no_access' in role:
-            return_role_master = rbacRoles._bucket_admin_role_not_allowed_perm_master()
+            return_role_main = rbacRoles._bucket_admin_role_not_allowed_perm_main()
             return_role_expected = rbacRoles._bucket_admin_role_not_allowed_perm_expected()
 
         if  'view_admin_no_access' in role:
-            return_role_master = rbacRoles._view_admin_role_not_allowed_perm_master()
+            return_role_main = rbacRoles._view_admin_role_not_allowed_perm_main()
             return_role_expected = rbacRoles._view_admin_role_not_allowed_perm_expected()
 
         if 'replication_admin_no_access' in role:
-            return_role_master = rbacRoles._replication_admin_not_allowed_perm_master()
+            return_role_main = rbacRoles._replication_admin_not_allowed_perm_main()
             return_role_expected = rbacRoles._replication_admin_not_allowed_perm_expected()
 
         if 'view_replication_admin' in role:
-            return_role_master = rbacRoles._replication_view_admin_role_master()
+            return_role_main = rbacRoles._replication_view_admin_role_main()
             return_role_expected = rbacRoles._replication_view_admin_role_expected()
 
         if 'replication_ro_admin' in role:
-            return_role_master = rbacRoles._read_only_replication_role_master()
+            return_role_main = rbacRoles._read_only_replication_role_main()
             return_role_expected = rbacRoles._read_only_role_expected()
 
         if  'bucket_view_replication_admin' in role:
-            return_role_master = rbacRoles._bucket_admin_view_replication_admin_role_master()
-            return_role_expected = rbacRoles._bucket_admin_view_replication_admin_role_master_expected()
+            return_role_main = rbacRoles._bucket_admin_view_replication_admin_role_main()
+            return_role_expected = rbacRoles._bucket_admin_view_replication_admin_role_main_expected()
 
 
-        return return_role_master,return_role_expected,return_role_expected_negative
+        return return_role_main,return_role_expected,return_role_expected_negative

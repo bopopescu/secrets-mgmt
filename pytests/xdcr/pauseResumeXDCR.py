@@ -5,9 +5,9 @@ class PauseResumeTest(XDCRNewBaseTest):
     def setUp(self):
         super(PauseResumeTest, self).setUp()
         self.src_cluster = self.get_cb_cluster_by_name('C1')
-        self.src_master = self.src_cluster.get_master_node()
+        self.src_main = self.src_cluster.get_main_node()
         self.dest_cluster = self.get_cb_cluster_by_name('C2')
-        self.dest_master = self.dest_cluster.get_master_node()
+        self.dest_main = self.dest_cluster.get_main_node()
         self.pause_xdcr_cluster = self._input.param("pause", "")
         self.consecutive_pause_resume = int(self._input.param("consecutive_pause_resume", 1))
         self.delete_bucket = self._input.param("delete_bucket", "")
@@ -92,7 +92,7 @@ class PauseResumeTest(XDCRNewBaseTest):
 
                 # reboot nodes?
                 if self.reboot == "dest_node":
-                    self.dest_cluster.reboot_one_node(self, master=True)
+                    self.dest_cluster.reboot_one_node(self, main=True)
                 if self.reboot == "dest_cluster":
                     from xdcrnewbasetests import NodeHelper
                     threads = []

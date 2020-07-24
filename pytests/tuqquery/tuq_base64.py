@@ -12,7 +12,7 @@ class Base64Tests(QueryTests):
         super(Base64Tests, self).setUp()
         self.gens_load = self.gen_docs(type='base64')
         for bucket in self.buckets:
-            self.cluster.bucket_flush(self.master, bucket=bucket, timeout=self.wait_timeout * 5)
+            self.cluster.bucket_flush(self.main, bucket=bucket, timeout=self.wait_timeout * 5)
         self.load(self.gens_load)
 
     def suite_setUp(self):
@@ -47,7 +47,7 @@ class Base64Tests(QueryTests):
             try:
                 self.run_cbq_query()
             except CBQError:
-                shell = RemoteMachineShellConnection(self.master)
+                shell = RemoteMachineShellConnection(self.main)
                 output = shell.execute_command('ps -aef | grep cbq')
                 if str(output).find('cbq-engine') == -1:
                     os = self.shell.extract_remote_info().type.lower()

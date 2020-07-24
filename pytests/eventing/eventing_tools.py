@@ -32,12 +32,12 @@ class EventingTools(EventingBaseTest, EnterpriseBackupRestoreBase, NewUpgradeBas
                                                        replicas=self.num_replicas)
             self.cluster.create_standard_bucket(name=self.src_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
-            self.src_bucket = RestConnection(self.master).get_buckets()
+            self.src_bucket = RestConnection(self.main).get_buckets()
             self.cluster.create_standard_bucket(name=self.dst_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
             self.cluster.create_standard_bucket(name=self.metadata_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
-            self.buckets = RestConnection(self.master).get_buckets()
+            self.buckets = RestConnection(self.main).get_buckets()
         self.gens_load = self.generate_docs(self.docs_per_day)
         self.expiry = 3
         handler_code = self.input.param('handler_code', 'bucket_op')
@@ -57,7 +57,7 @@ class EventingTools(EventingBaseTest, EnterpriseBackupRestoreBase, NewUpgradeBas
                                           n1ql_port=self.n1ql_port,
                                           full_docs_list=self.full_docs_list,
                                           log=self.log, input=self.input,
-                                          master=self.master,
+                                          main=self.main,
                                           use_rest=True
                                           )
             self.n1ql_helper.create_primary_index(using_gsi=True, server=self.n1ql_node)
@@ -74,11 +74,11 @@ class EventingTools(EventingBaseTest, EnterpriseBackupRestoreBase, NewUpgradeBas
         self.backupset.restore_cluster_host = self.servers[1]
         self.backupset.restore_cluster_host_username = self.servers[1].rest_username
         self.backupset.restore_cluster_host_password = self.servers[1].rest_password
-        cmd = 'curl -g %s:8091/diag/eval -u Administrator:password ' % self.master.ip
+        cmd = 'curl -g %s:8091/diag/eval -u Administrator:password ' % self.main.ip
         cmd += '-d "path_config:component_path(bin)."'
         bin_path = subprocess.check_output(cmd, shell=True)
         if "bin" not in bin_path:
-            self.fail("Check if cb server install on %s" % self.master.ip)
+            self.fail("Check if cb server install on %s" % self.main.ip)
         else:
             self.cli_command_location = bin_path.replace('"', '') + "/"
         shell = RemoteMachineShellConnection(self.servers[0])
@@ -91,9 +91,9 @@ class EventingTools(EventingBaseTest, EnterpriseBackupRestoreBase, NewUpgradeBas
         self.short_help_flag = "-h"
         if info == 'linux':
             if self.nonroot:
-                base_path = "/home/%s" % self.master.ssh_username
+                base_path = "/home/%s" % self.main.ssh_username
                 self.database_path = "%s%s" % (base_path, COUCHBASE_DATA_PATH)
-                self.root_path = "/home/%s/" % self.master.ssh_username
+                self.root_path = "/home/%s/" % self.main.ssh_username
         elif info == 'windows':
             self.os_name = "windows"
             self.cmd_ext = ".exe"
@@ -113,7 +113,7 @@ class EventingTools(EventingBaseTest, EnterpriseBackupRestoreBase, NewUpgradeBas
             self.backupset.directory = self.input.param("dir", "/tmp/entbackup")
         else:
             raise Exception("OS not supported.")
-        self.backup_validation_files_location = "/tmp/backuprestore" + self.master.ip
+        self.backup_validation_files_location = "/tmp/backuprestore" + self.main.ip
         self.backups = []
         self.validation_helper = BackupRestoreValidations(self.backupset,
                                                           self.cluster_to_backup,
@@ -177,10 +177,10 @@ class EventingTools(EventingBaseTest, EnterpriseBackupRestoreBase, NewUpgradeBas
         self.skip_buckets = self.input.param("skip_buckets", False)
         self.lww_new = self.input.param("lww_new", False)
         self.skip_consistency = self.input.param("skip_consistency", False)
-        self.master_services = self.get_services([self.backupset.cluster_host],
+        self.main_services = self.get_services([self.backupset.cluster_host],
                                                  self.services_init, start_node=0)
-        if not self.master_services:
-            self.master_services = ["kv"]
+        if not self.main_services:
+            self.main_services = ["kv"]
         self.per_node = self.input.param("per_node", True)
         if not os.path.exists(self.backup_validation_files_location):
             os.mkdir(self.backup_validation_files_location)

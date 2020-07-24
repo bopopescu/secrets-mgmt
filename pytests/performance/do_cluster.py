@@ -5,12 +5,12 @@ For example, when jenkins is driving the tests across a cluster, it
 can...
 
 1) Start a "do_cluster.py <testrunner-style-params> setUp".
-   This will create an EPerfMaster instance and call...
-     EPerfMaster.setUp()
-     EPerfMaster.test_FOO()
-       Next, due to the is_master settings, the
-       EPerfMaster.load_phase() will run, but the
-       EPerfMaster.access_phase() will be a NO-OP
+   This will create an EPerfMain instance and call...
+     EPerfMain.setUp()
+     EPerfMain.test_FOO()
+       Next, due to the is_main settings, the
+       EPerfMain.load_phase() will run, but the
+       EPerfMain.access_phase() will be a NO-OP
      Also, tearDown() will be a NO-OP.
 
 2) Next, jenkins will start N clients, running EPerfClient
@@ -20,7 +20,7 @@ can...
    Then, after all the clients exit...
 
 3) Finally, jenkins will call "do_cluster.py" WITHOUT the setUp
-   parameter, which makes EPerfMaster go through tearDown().
+   parameter, which makes EPerfMain go through tearDown().
 
 At development time, we don't really use this script, and just use
 testrunner, which runs the full
@@ -34,7 +34,7 @@ import pytests.performance.eperf as eperf
 from scripts.testrunner import parse_args
 
 
-class EPerfMasterWrapper(eperf.EPerfMaster):
+class EPerfMainWrapper(eperf.EPerfMain):
     def __init__(self):
         pass
 
@@ -45,7 +45,7 @@ def main():
     test_params.update(TestInputSingleton.input.test_params)
     TestInputSingleton.input.test_params = test_params
 
-    obj = EPerfMasterWrapper()
+    obj = EPerfMainWrapper()
     obj.input = TestInputSingleton.input
 
     # Run setUp with load_phase=0, index_phase=0 and access_phase=0

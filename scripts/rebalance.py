@@ -35,7 +35,7 @@ def usage(err=None):
         err_code = 1
         print "Error:",err
         print
-    print "./rebalance.py -i <inifile> -m <master:port> +<num_in> -<num_out> --phase-hint=[phase_hint]"
+    print "./rebalance.py -i <inifile> -m <main:port> +<num_in> -<num_out> --phase-hint=[phase_hint]"
     print ""
     print " inifile            the standard testrunner ini with all nodes listed (base nodes + number rebalance in + number rebalance out"
     print " num_in             number of nodes to rebalance in (chooses from the end of the server list)"
@@ -43,9 +43,9 @@ def usage(err=None):
     print " phase_hint         1: remove nodes from the end of the list, 2: remove nodes from the start of the list"
     print ""
     print " assuming we start with 24 nodes:"
-    print "./rebalance.py -i nodes.ini -m master:port +24 -12 --phase-hint=1"
-    print "./rebalance.py -i nodes.ini -m master:port +12 -12 --phase-hint=2"
-    print "./rebalance.py -i nodes.ini -m master:port +12"
+    print "./rebalance.py -i nodes.ini -m main:port +24 -12 --phase-hint=1"
+    print "./rebalance.py -i nodes.ini -m main:port +12 -12 --phase-hint=2"
+    print "./rebalance.py -i nodes.ini -m main:port +12"
     print """24 nodes -> (add 24 new nodes and remove 12 existing nodes) -> 36 nodes
 36 nodes -> (add 12 nodes with upgraded RAM that were removed  and remove 12 existing nodes with lower RAM size) -> 36 nodes
 36 nodes -> (add 12 nodes with upgraded RAM that were removed in previous rebalance)  -> 48 nodes"""
@@ -190,7 +190,7 @@ class Config(object):
         phase_hint = 0
         num_in = 0
         num_out = 0
-        master = None
+        main = None
         inifile = None
 
         # first parse out the num_in and num_out
@@ -204,7 +204,7 @@ class Config(object):
                 argv_stripped.append(arg)
 
         try:
-            (opts, args) = getopt.getopt(argv_stripped, 'hi:m:p:', ['help', 'ini=', 'master=', 'phase-hint='])
+            (opts, args) = getopt.getopt(argv_stripped, 'hi:m:p:', ['help', 'ini=', 'main=', 'phase-hint='])
         except IndexError:
             usage()
         except getopt.GetoptError, err:
@@ -215,21 +215,21 @@ class Config(object):
                 usage()
             if o == "-i" or o == "--ini":
                 inifile = a
-            if o == "-m" or o == "--master":
-                master = a
+            if o == "-m" or o == "--main":
+                main = a
             if o == "-p" or o == "--phase-hint":
                 phase_hint = int(a)
 
         if not inifile:
             usage("missing ini file")
-        if not master:
-            usage("missing master")
+        if not main:
+            usage("missing main")
         if not num_in and not num_out:
             usage("missing num_in or num_out")
 
 
         self.servers = []
-        self.master = None
+        self.main = None
         self.num_in = int(num_in)
         self.num_out = int(num_out)
         self.phase_hint = int(phase_hint)
@@ -238,8 +238,8 @@ class Config(object):
         config.read(inifile)
 
         servers_map = {}
-        master_ip = master.split(":")[0]
-        master_port = master.split(":")[1]
+        main_ip = main.split(":")[0]
+        main_port = main.split(":")[1]
         default_rest_port = 8091
         rest_username = ""
         rest_password = ""
@@ -267,8 +267,8 @@ class Config(object):
 
             server_info = Server(server_ip, server_port, rest_username, rest_password)
             servers_map[server_id] = server_info
-            if server_ip == master_ip and server_port == master_port:
-                self.master = server_info
+            if server_ip == main_ip and server_port == main_port:
+                self.main = server_info
 
         # sort the servers based on their index in the ini file
         for index,server in servers_map.iteritems():
@@ -278,7 +278,7 @@ class Config(object):
         rtn = ""
         rtn += "servers:\n"
         for s in self.servers:
-            if s == self.master:
+            if s == self.main:
                 rtn += "*" + `s` + "\n"
             else:
                 rtn += " " + `s` + "\n"
@@ -295,10 +295,10 @@ if __name__ == "__main__":
     config = Config(sys.argv)
 
     # get current vbucket state
-    original_vbuckets = config.master.vbucket_map()
+    original_vbuckets = config.main.vbucket_map()
 
     # get current servers, and current unclustered servers
-    current_servers = config.master.server_list()
+    current_servers = config.main.server_list()
     extra_servers = servers_diff(config.servers, current_servers)
 
     # determine which servers to add and which to remove
@@ -320,18 +320,18 @@ if __name__ == "__main__":
         print " " + `server`
 
     # rebalane in/out
-    config.master.rebalance(servers_add, servers_remove)
+    config.main.rebalance(servers_add, servers_remove)
 
-    # get new master if needed
-    if config.master in servers_remove:
+    # get new main if needed
+    if config.main in servers_remove:
         if servers_add:
-            config.master = servers_add[0]
+            config.main = servers_add[0]
         else:
-            config.master = servers_diff(current_servers, servers_remove + [config.master])[0]
-        print "new master:", config.master
+            config.main = servers_diff(current_servers, servers_remove + [config.main])[0]
+        print "new main:", config.main
 
     # get new vbucket state
-    new_vbuckets = config.master.vbucket_map()
+    new_vbuckets = config.main.vbucket_map()
 
     print vbucket_active_diff(original_vbuckets, new_vbuckets)
     print vbucket_replica_diff(original_vbuckets, new_vbuckets)

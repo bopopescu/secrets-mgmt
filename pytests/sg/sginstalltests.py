@@ -134,7 +134,7 @@ class SGInstallerTest(GatewayBaseTest):
                 self.assertTrue(self.is_sync_gateway_process_running(shell))
 
     def serviceInstallHelp(self):
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         self.kill_processes_gateway(shell)
         self.uninstall_gateway(shell)
         self.assertTrue(self.install_gateway(shell))
@@ -189,7 +189,7 @@ class SGInstallerTest(GatewayBaseTest):
             self.assertTrue(shell.file_exists(self.configdir, self.configfile))
 
     def serviceInstallBadParameters(self):
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         self.kill_processes_gateway(shell)
         self.uninstall_gateway(shell)
         self.assertTrue(self.install_gateway(shell))

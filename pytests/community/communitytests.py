@@ -75,7 +75,7 @@ class CommunityTests(CommunityBaseTest):
 
     def check_ldap_available(self):
         ldap_available = False
-        self.rest = RestConnection(self.master)
+        self.rest = RestConnection(self.main)
         try:
             s, c, h = self.rest.clearLDAPSettings()
             if s:
@@ -91,7 +91,7 @@ class CommunityTests(CommunityBaseTest):
         self.rest.force_eject_node()
         self.sleep(7, "wait for node reset done")
         try:
-            status = self.rest.init_node_services(hostname=self.master.ip,
+            status = self.rest.init_node_services(hostname=self.main.ip,
                                                  services=[self.services])
         except Exception, e:
             if e:
@@ -158,9 +158,9 @@ class CommunityTests(CommunityBaseTest):
         try:
             self.log.info("Initialize node with services {0}"
                                   .format(self.start_node_services))
-            status = self.rest.init_node_services(hostname=self.master.ip,
+            status = self.rest.init_node_services(hostname=self.main.ip,
                                         services=[self.start_node_services])
-            init_node = self.cluster.async_init_node(self.master,
+            init_node = self.cluster.async_init_node(self.main,
                                             services = [self.start_node_services])
         except Exception, e:
             if e:
@@ -187,14 +187,14 @@ class CommunityTests(CommunityBaseTest):
                 self.get_services_map()
                 list_nodes = self.get_nodes_from_services_map(get_all_nodes=True)
                 map = self.get_nodes_services()
-                if map[self.master.ip] == self.start_node_services and \
+                if map[self.main.ip] == self.start_node_services and \
                     map[self.servers[1].ip] == self.add_node_services:
                     self.log.info("services set correctly when node added & rebalance")
                 else:
                     self.fail("services set incorrectly when node added & rebalance. "
                         "cluster expected services: {0}; set cluster services {1} ."
                         "add node expected srv: {2}; set add node srv {3}"\
-                        .format(map[self.master.ip], self.start_node_services, \
+                        .format(map[self.main.ip], self.start_node_services, \
                          map[self.servers[1].ip], self.add_node_services))
             else:
                 if self.version not in COUCHBASE_FROM_WATSON:
@@ -222,11 +222,11 @@ class CommunityTests(CommunityBaseTest):
         """ for windows vm, ask IT to put uniq.exe at
             /cygdrive/c/Program Files (x86)/ICW/bin directory """
 
-        self.remote = RemoteMachineShellConnection(self.master)
+        self.remote = RemoteMachineShellConnection(self.main)
         """ put params items=0 in test param so that init items = 0 """
         self.remote.execute_command("{0}cbworkloadgen -n {1}:8091 -j -i 1000 " \
                                     "-u Administrator -p password" \
-                                            .format(self.bin_path, self.master.ip))
+                                            .format(self.bin_path, self.main.ip))
         """ delete backup location before run backup """
         self.remote.execute_command("rm -rf {0}*".format(self.backup_location))
         output, error = self.remote.execute_command("ls -lh {0}"
@@ -237,7 +237,7 @@ class CommunityTests(CommunityBaseTest):
         self.remote.execute_command("{0}cbbackup http://{1}:8091 {2} -m full " \
                                     "-u Administrator -p password"\
                                     .format(self.bin_path,
-                                            self.master.ip,
+                                            self.main.ip,
                                             self.backup_c_location))
         output, error = self.remote.execute_command("ls -lh {0}*/"
                                         .format(self.backup_location))
@@ -253,12 +253,12 @@ class CommunityTests(CommunityBaseTest):
                       "Expected 1000, actual: {0}".format(output[0]))
         self.remote.execute_command("{0}cbworkloadgen -n {1}:8091 -j -i 1000 "\
                                     " -u Administrator -p password --prefix=t_"
-                                    .format(self.bin_path, self.master.ip))
+                                    .format(self.bin_path, self.main.ip))
         """ do different backup mode """
         self.remote.execute_command("{0}cbbackup -u Administrator -p password "\
                                     "http://{1}:8091 {2} -m {3}"\
                                     .format(self.bin_path,
-                                            self.master.ip,
+                                            self.main.ip,
                                             self.backup_c_location,
                                             self.backup_option))
         output, error = self.remote.execute_command("ls -lh {0}"
@@ -283,7 +283,7 @@ class CommunityTests(CommunityBaseTest):
     def check_ent_backup(self):
         """ for CE version from Watson, cbbackupmgr exe file should not in bin """
         command = "cbbackupmgr"
-        self.remote = RemoteMachineShellConnection(self.master)
+        self.remote = RemoteMachineShellConnection(self.main)
         self.log.info("check if {0} in {1} directory".format(command, self.bin_path))
         found = self.remote.file_exists(self.bin_path, command)
         if found:

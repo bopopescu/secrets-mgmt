@@ -59,7 +59,7 @@ def main():
     parser.add_option('-y','--serverType', dest='serverType', default='VM')   # or could be Docker
     parser.add_option('-u','--url', dest='url', default=None)
     parser.add_option('-j','--jenkins', dest='jenkins', default=None)
-    parser.add_option('-b','--branch', dest='branch', default='master')
+    parser.add_option('-b','--branch', dest='branch', default='main')
     parser.add_option('-f', '--framework', dest='framework', default='testrunner')
 
 
@@ -174,10 +174,10 @@ def main():
                             installParameters = data['installParameters']
                         else:
                             installParameters = 'None'
-                        if 'slave' in data:
-                            slave = data['slave']
+                        if 'subordinate' in data:
+                            subordinate = data['subordinate']
                         else:
-                            slave = 'P0'
+                            subordinate = 'P0'
                         if 'owner' in data:
                             owner = data['owner']
                         else:
@@ -204,7 +204,7 @@ def main():
                             'parameters':data['parameters'],
                             'initNodes':initNodes,
                             'installParameters':installParameters,
-                            'slave': slave,
+                            'subordinate': subordinate,
                             'owner': owner,
                             'mailing_list': mailing_list
                             })
@@ -243,7 +243,7 @@ def main():
     launchString = launchStringBase + '/buildWithParameters?token=test_dispatcher&' + \
                         'version_number={0}&confFile={1}&descriptor={2}&component={3}&subcomponent={4}&' + \
                          'iniFile={5}&parameters={6}&os={7}&initNodes={' \
-                         '8}&installParameters={9}&branch={10}&slave={' \
+                         '8}&installParameters={9}&branch={10}&subordinate={' \
                          '11}&owners={12}&mailing_list={13}'
     if options.url is not None:
         launchString = launchString + '&url=' + options.url
@@ -399,7 +399,7 @@ def main():
                                                   testsToLaunch[i]['initNodes'],
                                                   testsToLaunch[i]['installParameters'],
                                                   options.branch,
-                                                  testsToLaunch[i]['slave'],
+                                                  testsToLaunch[i]['subordinate'],
                                                   urllib.quote(testsToLaunch[i]['owner']),
                                                   urllib.quote(
                                                       testsToLaunch[i]['mailing_list']))

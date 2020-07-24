@@ -62,7 +62,7 @@ class ldaptest(BaseTestCase):
         self._createLDAPUser(self.fullAdmin)
         self._createLDAPUser(self.ROAdmin)
 
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         rest.clearLDAPSettings()
 
         self.ldap_server = ServerInfo(self.ldapHost, self.ldapPort, 'root', 'couchbase')
@@ -88,7 +88,7 @@ class ldaptest(BaseTestCase):
                     "uid: " + user[0] + "\n"
                 fileName = 'name.ldif'
                 #Execute ldapadd command to add users to the system
-                shell = RemoteMachineShellConnection(self.master)
+                shell = RemoteMachineShellConnection(self.main)
                 try:
                     shell.write_remote_file("/tmp", fileName, userCreateCmmd)
                     command = "ldapadd -h " + self.ldapHost + " -p " + self.ldapPort + " -f /tmp/" + fileName + " -D " + self.ldapAdmin + " -w " + self.ldapAdminPass
@@ -110,7 +110,7 @@ class ldaptest(BaseTestCase):
         for user in ldapUserList:
             if (user[0] != ''):
                 userDeleteCmd = 'ldapdelete -h ' + self.ldapHost + " -p " + self.ldapPort + ' cn=' + user[0] + "," + self.ldapDN
-                shell = RemoteMachineShellConnection(self.master)
+                shell = RemoteMachineShellConnection(self.main)
                 try:
                     command = userDeleteCmd + " -D " + self.ldapAdmin + " -w " + self.ldapAdminPass
                     o, r = shell.execute_command(command)
@@ -127,7 +127,7 @@ class ldaptest(BaseTestCase):
 
     '''
     def _changeLdapPassRemote(self, user, password):
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         try:
             command = "ldappasswd -h " + self.ldapHost + " -s " + password + " cn=" + user + "," + self.ldapDN
             command = command + " -D " + self.ldapAdmin + " -w " + self.ldapAdminPass
@@ -295,7 +295,7 @@ class ldaptest(BaseTestCase):
     def test_addMultipleAdmin(self):
 
         #Create a REST connection
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         self._setupLDAPAuth(rest, self.authRole, self.authState, self.fullAdmin, self.ROAdmin)
 
         #Get the response and then parse the JSON object to convert it to list of users
@@ -313,7 +313,7 @@ class ldaptest(BaseTestCase):
         removeUserROAdmin = self.returnUserList(self.input.param("removeUserROAdmin", ''))
 
         #Create a REST connection and reset LDAPSetting
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
 
         # As per the role, add users first using API. Execute another command to remove users
         # and execute API.
@@ -343,7 +343,7 @@ class ldaptest(BaseTestCase):
         addUserROAdmin = self.returnUserList(self.input.param("addUserROAdmin", ''))
 
         #Create a REST connection and reset LDAPSetting
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
 
         # As per the role, add users first using API. Execute another command to remove users
         # and execute API.
@@ -369,7 +369,7 @@ class ldaptest(BaseTestCase):
     ''' Test case for checking wildcard * for roAdmin or Full Admin'''
     def test_checkWildCard(self):
         #Create a REST connection
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
 
         #Depending on the role specified as command line, pass parameters to the API
         if (self.authRole == "fullAdmin"):
@@ -414,7 +414,7 @@ class ldaptest(BaseTestCase):
             self._createLDAPUser(otherUsers)
 
         #Create a REST connection and setup LDAP Auth
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         self._setupLDAPAuth(rest, self.authRole, self.authState, self.fullAdmin, self.ROAdmin, default)
 
         # This is for special case for users that are not part of explicit FullAdmin or ROAdmin roles
@@ -447,7 +447,7 @@ class ldaptest(BaseTestCase):
             self._createLDAPUser(otherUsers)
 
         #Get the rest connection and setup LDAPAuth
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         self._setupLDAPAuth(rest, self.authRole, self.authState, self.fullAdmin, self.ROAdmin, default)
 
         #Taking care of incorrect password, behavior will be like one.
@@ -476,7 +476,7 @@ class ldaptest(BaseTestCase):
 
 
     '''
-    Cluster add nodes from master verify on other node
+    Cluster add nodes from main verify on other node
     '''
     def test_checkOnClusterAddNode(self):
 
@@ -492,7 +492,7 @@ class ldaptest(BaseTestCase):
             restNode1 = RestConnection(node1)
             rest.append(restNode1)
 
-        #Adding users from master Node
+        #Adding users from main Node
         self._setupLDAPAuth(rest[0], self.authRole, self.authState, self.fullAdmin, self.ROAdmin)
 
         #LDAP Operations for
@@ -561,7 +561,7 @@ class ldaptest(BaseTestCase):
             restNode1 = RestConnection(node1)
             rest.append(restNode1)
 
-        # Add users via master node
+        # Add users via main node
         self._setupLDAPAuth(rest[0], self.authRole, self.authState, self.fullAdmin, self.ROAdmin)
 
         #Verify that you can login from both the nodes
@@ -569,7 +569,7 @@ class ldaptest(BaseTestCase):
             roAdmins, Admins = self._parseRestResponse(rest[i].ldapRestOperationGetResponse())
             self._funcValidateResLogin(rest[i], self.authRole, self.authState, self.fullAdmin, self.ROAdmin, Admins, roAdmins)
 
-        #Remove the master node from the cluster & verify login from different node
+        #Remove the main node from the cluster & verify login from different node
         self.cluster.rebalance(self.servers, [], servs_inout)
         roAdmins, Admins = self._parseRestResponse(rest[1].ldapRestOperationGetResponse())
         self._funcValidateResLogin(rest[1], self.authRole, self.authState, self.fullAdmin, self.ROAdmin, Admins, roAdmins)
@@ -594,16 +594,16 @@ class ldaptest(BaseTestCase):
         self._setupLDAPAuth(rest[1], self.authRole, self.authState, self.fullAdmin, self.ROAdmin)
         self.cluster.rebalance(self.servers, [], servs_inout)
 
-        #Login to master and Check
+        #Login to main and Check
         roAdmins, Admins = self._parseRestResponse(rest[0].ldapRestOperationGetResponse())
         self._funcValidateResLogin(rest[0], self.authRole, self.authState, self.fullAdmin, self.ROAdmin, Admins, roAdmins)
 
 
     def test_checkInvalidISASLPW(self):
         ldapAdministrator = self.input.param("ldapAdministrator", False)
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         try:
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             self._setupLDAPAuth(rest, self.authRole, self.authState, self.fullAdmin, self.ROAdmin)
             roAdmins, Admins = self._parseRestResponse(rest.ldapRestOperationGetResponse())
             self._funcValidateResLogin(rest, self.authRole, self.authState, self.fullAdmin, self.ROAdmin, Admins, roAdmins)
@@ -625,7 +625,7 @@ class ldaptest(BaseTestCase):
 
     def test_checkPasswordChange(self):
 
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         self._setupLDAPAuth(rest, self.authRole, self.authState, self.fullAdmin, self.ROAdmin)
 
         for i, j in zip(range(len(self.fullAdmin)), range(len(self.ROAdmin))):
@@ -645,7 +645,7 @@ class ldaptest(BaseTestCase):
         removeUserAdmin = self.returnUserList(self.input.param("removeUserAdmin", ''))
         removeUserROAdmin = self.returnUserList(self.input.param("removeUserROAdmin", ''))
 
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         self._setupLDAPAuth(rest, self.authRole, self.authState, self.fullAdmin, self.ROAdmin)
 
         self._removeLdapUserRemote(removeUserAdmin)
@@ -664,7 +664,7 @@ class ldaptest(BaseTestCase):
         #Expected role to be compared with out of the command
         checkRole = self.input.param('checkRole', 'none')
 
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         self._setupLDAPAuth(rest, self.authRole, self.authState, self.fullAdmin, self.ROAdmin)
 
         status, content = rest.executeValidateCredentials(self.ROAdmin[0][0], self.ROAdmin[0][1])
@@ -672,7 +672,7 @@ class ldaptest(BaseTestCase):
         self.assertEqual(content['source'], source, 'Difference in expected and actual: expected - {0}, actual -{1}'.format(source, content['source']))
 
     def test_checkInitialState(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         content = rest.ldapRestOperationGetResponse()
         self.assertEqual(content['enabled'], False)
 
@@ -682,7 +682,7 @@ class ldaptest(BaseTestCase):
 
         loginState = self.input.param("loginState")
         #Create a REST connection
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         self._setupLDAPAuth(rest, self.authRole, self.authState, self.fullAdmin, self.ROAdmin)
 
         #Get the response and then parse the JSON object to convert it to list of users
@@ -696,7 +696,7 @@ class ldaptest(BaseTestCase):
         shell = RemoteMachineShellConnection(self.ldap_server)
         try:
 
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             self._setupLDAPAuth(rest, self.authRole, self.authState, self.fullAdmin, self.ROAdmin)
 
             #Get the response and then parse the JSON object to convert it to list of users
@@ -727,7 +727,7 @@ class ldapCLITest(CliBaseTest):
         self.ldapPass = self.input.param('ldapPass', 'password')
         self.source = self.input.param('source', None)
         if (self.source == 'saslauthd'):
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             rest.ldapUserRestOperation(True, [[self.ldapUser]], exclude=None)
 
     def tearDown(self):
@@ -754,8 +754,8 @@ class ldapCLITest(CliBaseTest):
 
 
     def test_enableDisableLdap(self):
-        rest = RestConnection(self.master)
-        remote_client = RemoteMachineShellConnection(self.master)
+        rest = RestConnection(self.main)
+        remote_client = RemoteMachineShellConnection(self.main)
         origState = rest.ldapRestOperationGetResponse()['enabled']
         cli_command = 'setting-ldap'
         options = "--ldap-enable=0"
@@ -778,7 +778,7 @@ class ldapCLITest(CliBaseTest):
         options += " --ldap-roadmins={0}".format(",".join(self.roAdmin))
         options += " --ldap-admins={0}".format(",".join(self.admin))
         options += " --ldap-default={0}".format(self.default)
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         output, error = remote_client.execute_couchbase_cli(cli_command=cli_command, \
                     options=options, cluster_host="localhost", user=self.ldapUser, password=self.ldapPass)
         tempFlag = self.validateSettings(self.enableStatus, self.admin, self.roAdmin, self.default)
@@ -786,7 +786,7 @@ class ldapCLITest(CliBaseTest):
 
 
     def validateSettings(self, status, admin, roAdmin, default):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         temproAdmins, tempAdmins = self._parseRestResponse(rest.ldapRestOperationGetResponse())
         print temproAdmins
         print tempAdmins

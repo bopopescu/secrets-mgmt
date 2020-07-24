@@ -24,21 +24,21 @@ class CreateBucketTests(BaseTestCase):
         self.bucket_type = self.input.param("bucket_type", 'sasl')
         self.bucket_size = self.quota
         self.password = 'password'
-        self.server = self.master
+        self.server = self.main
         self.rest = RestConnection(self.server)
         self.node_version = self.rest.get_nodes_version()
         self.total_items_travel_sample = 31569
         if self.node_version[:5] in COUCHBASE_FROM_WATSON:
             self.total_items_travel_sample = 31591
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         type = shell.extract_remote_info().distribution_type
         shell.disconnect()
         self.sample_path = LINUX_COUCHBASE_SAMPLE_PATH
         self.bin_path = LINUX_COUCHBASE_BIN_PATH
         if self.nonroot:
-            self.sample_path = "/home/%s%s" % (self.master.ssh_username,
+            self.sample_path = "/home/%s%s" % (self.main.ssh_username,
                                                LINUX_COUCHBASE_SAMPLE_PATH)
-            self.bin_path = "/home/%s%s" % (self.master.ssh_username,
+            self.bin_path = "/home/%s%s" % (self.main.ssh_username,
                                             LINUX_COUCHBASE_BIN_PATH)
         if type.lower() == 'windows':
             self.sample_path = WIN_COUCHBASE_SAMPLE_PATH
@@ -76,7 +76,7 @@ class CreateBucketTests(BaseTestCase):
         finally:
             try:
                 self.log.info('Will check if ns_server is running')
-                rest = RestConnection(self.master)
+                rest = RestConnection(self.main)
                 self.assertTrue(RestHelper(rest).is_ns_server_running(timeout_in_seconds=60))
             except:
                 self._reinstall(version)
@@ -91,12 +91,12 @@ class CreateBucketTests(BaseTestCase):
             if self.bucket_type == 'sasl':
                 self.cluster.create_sasl_bucket(name=self.bucket_name, password=password,bucket_params=shared_params)
                 self.buckets.append(Bucket(name=self.bucket_name, authType="sasl", saslPassword=password, num_replicas=self.num_replicas,
-                                           bucket_size=self.bucket_size, master_id=self.server))
+                                           bucket_size=self.bucket_size, main_id=self.server))
             elif self.bucket_type == 'standard':
                 self.cluster.create_standard_bucket(name=self.bucket_name, port=STANDARD_BUCKET_PORT+1,
                                                     bucket_params=shared_params)
                 self.buckets.append(Bucket(name=self.bucket_name, authType=None, saslPassword=None, num_replicas=self.num_replicas,
-                                           bucket_size=self.bucket_size, port=STANDARD_BUCKET_PORT + 1, master_id=self.server))
+                                           bucket_size=self.bucket_size, port=STANDARD_BUCKET_PORT + 1, main_id=self.server))
             elif self.bucket_type == "memcached":
                 tasks.append(self.cluster.async_create_memcached_bucket(name=self.bucket_name,
                                                                         port=STANDARD_BUCKET_PORT+1,
@@ -104,7 +104,7 @@ class CreateBucketTests(BaseTestCase):
 
                 self.buckets.append(Bucket(name=self.bucket_name, authType=None, saslPassword=None,
                                            num_replicas=self.num_replicas, bucket_size=self.bucket_size,
-                                           port=STANDARD_BUCKET_PORT + 1 , master_id=self.server, type='memcached'))
+                                           port=STANDARD_BUCKET_PORT + 1 , main_id=self.server, type='memcached'))
                 for task in tasks:
                     task.result()
             else:
@@ -143,26 +143,26 @@ class CreateBucketTests(BaseTestCase):
         status = False
 
         try:
-            status = self.rest.init_node_services(hostname=self.master.ip,
+            status = self.rest.init_node_services(hostname=self.main.ip,
                                         services= ["index,kv,n1ql"])
-            init_node = self.cluster.async_init_node(self.master,
+            init_node = self.cluster.async_init_node(self.main,
                                             services = ["index,kv,n1ql"])
         except Exception, e:
             if e:
                 print e
         self.sleep(10)
         self.log.info("Add new user after reset node! ")
-        self.add_built_in_server_user(node=self.master)
+        self.add_built_in_server_user(node=self.main)
         if status:
             if self.node_version[:5] in COUCHBASE_FROM_WATSON:
                 self.rest.set_indexer_storage_mode(storageMode="memory_optimized")
-            shell = RemoteMachineShellConnection(self.master)
+            shell = RemoteMachineShellConnection(self.main)
             shell.execute_command("""curl -g -v -u Administrator:password \
                          -X POST http://{0}:8091/sampleBuckets/install \
-                      -d  '["travel-sample"]'""".format(self.master.ip))
+                      -d  '["travel-sample"]'""".format(self.main.ip))
             shell.disconnect()
 
-        buckets = RestConnection(self.master).get_buckets()
+        buckets = RestConnection(self.main).get_buckets()
         for bucket in buckets:
             if bucket.name != "travel-sample":
                 self.fail("travel-sample bucket did not create")
@@ -171,7 +171,7 @@ class CreateBucketTests(BaseTestCase):
         end_time = time.time() + 120
         while time.time() < end_time:
             self.sleep(10)
-            num_actual = self.get_item_count(self.master,"travel-sample")
+            num_actual = self.get_item_count(self.main,"travel-sample")
             if int(num_actual) == self.total_items_travel_sample:
                 break
         self.assertTrue(int(num_actual) == self.total_items_travel_sample,
@@ -220,7 +220,7 @@ class CreateBucketTests(BaseTestCase):
             use rest to reset node to set services correctly: index,kv,n1ql """
         self.rest.force_eject_node()
 
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         set_index_storage_type = ""
         if self.node_version[:5] in COUCHBASE_FROM_WATSON:
             set_index_storage_type = " --index-storage-setting=memopt "
@@ -235,8 +235,8 @@ class CreateBucketTests(BaseTestCase):
             self.assertEqual(o[0], "SUCCESS: init/edit localhost")
 
         self.log.info("Add new user after reset node! ")
-        self.add_built_in_server_user(node=self.master)
-        shell = RemoteMachineShellConnection(self.master)
+        self.add_built_in_server_user(node=self.main)
+        shell = RemoteMachineShellConnection(self.main)
         cluster_flag = "-n"
         bucket_quota_flag = "-s"
         data_set_location_flag = " "
@@ -247,15 +247,15 @@ class CreateBucketTests(BaseTestCase):
         shell.execute_command("{0}cbdocloader -u Administrator -p password \
                       {3} {1}:{6} -b travel-sample {4} 100 {5} {2}travel-sample.zip" \
                                                       .format(self.bin_path,
-                                                       self.master.ip,
+                                                       self.main.ip,
                                                        self.sample_path,
                                                        cluster_flag,
                                                        bucket_quota_flag,
                                                        data_set_location_flag,
-                                                       self.master.port))
+                                                       self.main.port))
         shell.disconnect()
 
-        buckets = RestConnection(self.master).get_buckets()
+        buckets = RestConnection(self.main).get_buckets()
         for bucket in buckets:
             if bucket.name != "travel-sample":
                 self.fail("travel-sample bucket did not create")
@@ -264,7 +264,7 @@ class CreateBucketTests(BaseTestCase):
         end_time = time.time() + 120
         while time.time() < end_time:
             self.sleep(10)
-            num_actual = self.get_item_count(self.master,"travel-sample")
+            num_actual = self.get_item_count(self.main,"travel-sample")
             if int(num_actual) == self.total_items_travel_sample:
                 break
         self.assertTrue(int(num_actual) == self.total_items_travel_sample,
@@ -309,7 +309,7 @@ class CreateBucketTests(BaseTestCase):
             use rest to reset node to set services correctly: index,kv,n1ql """
         if self.node_version[:5] in COUCHBASE_FROM_VULCAN:
             self.rest.force_eject_node()
-            shell = RemoteMachineShellConnection(self.master)
+            shell = RemoteMachineShellConnection(self.main)
             set_index_storage_type = ""
             set_index_storage_type = " --index-storage-setting=memopt "
             options = ' --cluster-port=8091 \
@@ -320,8 +320,8 @@ class CreateBucketTests(BaseTestCase):
             self.assertEqual(o[0], 'SUCCESS: Cluster initialized')
 
             self.log.info("Add new user after reset node! ")
-            self.add_built_in_server_user(node=self.master)
-            shell = RemoteMachineShellConnection(self.master)
+            self.add_built_in_server_user(node=self.main)
+            shell = RemoteMachineShellConnection(self.main)
             bucket_type = self.input.param("bucket_type", "couchbase")
             options = ' --bucket=default \
                             --bucket-type={0} \
@@ -338,14 +338,14 @@ class CreateBucketTests(BaseTestCase):
             shell.execute_command("{0}cbdocloader -u Administrator -p password \
                           {3} {1} -b default {4} 100 {5} {2}travel-sample.zip" \
                                                           .format(self.bin_path,
-                                                           self.master.ip,
+                                                           self.main.ip,
                                                            self.sample_path,
                                                            cluster_flag,
                                                            bucket_quota_flag,
                                                            data_set_location_flag))
             shell.disconnect()
 
-            buckets = RestConnection(self.master).get_buckets()
+            buckets = RestConnection(self.main).get_buckets()
             for bucket in buckets:
                 if bucket.name != "default":
                     self.fail("default bucket did not get created")
@@ -354,7 +354,7 @@ class CreateBucketTests(BaseTestCase):
             end_time = time.time() + 120
             while time.time() < end_time:
                 self.sleep(10)
-                num_actual = self.get_item_count(self.master,"default")
+                num_actual = self.get_item_count(self.main,"default")
                 if int(num_actual) == self.total_items_travel_sample:
                     break
                 self.assertTrue(int(num_actual) == self.total_items_travel_sample,
@@ -362,8 +362,8 @@ class CreateBucketTests(BaseTestCase):
                                         self.total_items_travel_sample, num_actual))
             self.log.info("Total items %s " % num_actual)
             self.sleep(400, "waiting for docs to expire per maxttl rule")
-            self.expire_pager([self.master])
-            num_actual = self.get_item_count(self.master, "default")
+            self.expire_pager([self.main])
+            num_actual = self.get_item_count(self.main, "default")
             if int(num_actual) == 0:
                 self.fail("Item count is not 0 after maxttl has elapsed")
             else:
@@ -382,7 +382,7 @@ class CreateBucketTests(BaseTestCase):
         self.cluster.create_sasl_bucket(name=self.bucket_name, password=self.sasl_password, bucket_params=shared_params)
         self.buckets.append(Bucket(name=self.bucket_name, authType="sasl", saslPassword=self.sasl_password,
                                            num_replicas=self.num_replicas,
-                                           bucket_size=self.bucket_size, master_id=self.server))
+                                           bucket_size=self.bucket_size, main_id=self.server))
 
         self.assertTrue(BucketOperationHelper.wait_for_bucket_creation(self.bucket_name, self.rest),
                             msg='failed to start up bucket with name "{0}'.format(self.bucket_name))
@@ -393,12 +393,12 @@ class CreateBucketTests(BaseTestCase):
                             msg='bucket "{0}" was not deleted even after waiting for 30 seconds'.format(self.bucket_name))
 
     def _get_cb_version(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         version = rest.get_nodes_self().version
         return version[:version.rfind('-')]
 
     def _get_cb_os(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         return rest.get_nodes_self().os
 
     def _reinstall(self, version):

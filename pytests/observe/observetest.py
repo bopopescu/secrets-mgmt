@@ -120,9 +120,9 @@ class ObserveTests(BaseTestCase):
         mutated = False
         count = 0
         for bucket in self.buckets:
-            self.cluster.create_view(self.master, self.default_design_doc,
+            self.cluster.create_view(self.main, self.default_design_doc,
                                       self.default_view, bucket , self.wait_timeout * 2)
-            client = VBucketAwareMemcached(RestConnection(self.master), bucket)
+            client = VBucketAwareMemcached(RestConnection(self.main), bucket)
             self.max_time = timedelta(microseconds=0)
             if self.mutate_by == "multi_set":
                 key_val = self._create_multi_set_batch()
@@ -163,7 +163,7 @@ class ObserveTests(BaseTestCase):
                     self.log.info("Max Time taken for observe is :- %s" % self.max_time)
                     self.log.info("Cas Value:- %s" % (cas))
             query = {"stale" : "false", "full_set" : "true", "connection_timeout" : 600000}
-            self.cluster.query_view(self.master, "dev_Doc1", self.default_view.name, query, self.num_items, bucket, timeout=self.wait_timeout)
+            self.cluster.query_view(self.main, "dev_Doc1", self.default_view.name, query, self.num_items, bucket, timeout=self.wait_timeout)
             self.log.info("Observe Validation:- view: %s in design doc dev_Doc1 and in bucket %s" % (self.default_view, bucket))
             # check whether observe has to run with delete and delete parallel with observe or not
             if len (self.observe_with) > 0 :
@@ -184,7 +184,7 @@ class ObserveTests(BaseTestCase):
                         task.result()
 
                 query = {"stale" : "false", "full_set" : query_set, "connection_timeout" : 600000}
-                self.cluster.query_view(self.master, "dev_Doc1", self.default_view.name, query, self.num_items / 2, bucket, timeout=self.wait_timeout)
+                self.cluster.query_view(self.main, "dev_Doc1", self.default_view.name, query, self.num_items / 2, bucket, timeout=self.wait_timeout)
                 self.log.info("Observe Validation:- view: %s in design doc dev_Doc1 and in bucket %s" % (self.default_view, self.default_bucket_name))
 
         """test_observe_basic_data_load_delete will test observer basic scenario
@@ -196,7 +196,7 @@ class ObserveTests(BaseTestCase):
         self._load_doc_data_all_buckets('create', 0, self.num_items)
         # Persist all the loaded data item
         for bucket in self.buckets:
-            RebalanceHelper.wait_for_persistence(self.master, bucket)
+            RebalanceHelper.wait_for_persistence(self.main, bucket)
         rebalance = self.input.param("rebalance", "no")
         if rebalance == "in":
             self.servs_in = [self.servers[len(self.servers) - 1]]
@@ -225,7 +225,7 @@ class ObserveTests(BaseTestCase):
         keys = ["observe%s" % (i) for i in xrange(self.num_items)]
         self.key_count = 0
         self.max_time = 0
-        self.client = VBucketAwareMemcached(RestConnection(self.master), self.default_bucket_name)
+        self.client = VBucketAwareMemcached(RestConnection(self.main), self.default_bucket_name)
         for key in keys:
             self.key_count = self.key_count + 1
             self.block_for_replication(key, 0, 1)
@@ -239,7 +239,7 @@ class ObserveTests(BaseTestCase):
         self.log.info("Nodes in cluster: %s" % self.servers[:self.nodes_init])
         for bucket in self.buckets:
             self.log.info('\n\nwaiting for persistence')
-            RebalanceHelper.wait_for_persistence(self.master, bucket)
+            RebalanceHelper.wait_for_persistence(self.main, bucket)
             self.log.info('\n\n_stats_befor_warmup')
             self._stats_befor_warmup(bucket.name)
             self.log.info('\n\n_restart_memcache')

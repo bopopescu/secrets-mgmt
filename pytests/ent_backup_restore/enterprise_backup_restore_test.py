@@ -79,7 +79,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
         self.log.info("*** start to load items to all buckets")
-        self._load_all_buckets(self.master, gen, "create", self.expires)
+        self._load_all_buckets(self.main, gen, "create", self.expires)
         self.log.info("*** done to load items to all buckets")
         self.ops_type = self.input.param("ops-type", "update")
         self.expected_error = self.input.param("expected_error", None)
@@ -91,16 +91,16 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         for i in range(1, self.backupset.number_of_backups + 1):
             if self.ops_type == "update":
                 self.log.info("*** start to update items in all buckets")
-                self._load_all_buckets(self.master, gen, "update", self.expires)
+                self._load_all_buckets(self.main, gen, "update", self.expires)
                 self.log.info("*** done update items in all buckets")
             elif self.ops_type == "delete":
                 self.log.info("*** start to delete items in all buckets")
-                self._load_all_buckets(self.master, gen, "delete", self.expires)
+                self._load_all_buckets(self.main, gen, "delete", self.expires)
                 self.log.info("*** done to delete items in all buckets")
             self.sleep(10)
             self.log.info("*** start to validate backup cluster")
             self.backup_cluster_validate()
-        self.targetMaster = True
+        self.targetMain = True
         start = randrange(1, self.backupset.number_of_backups + 1)
         if start == self.backupset.number_of_backups:
             end = start
@@ -151,7 +151,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         serv_in = self.servers[self.nodes_init:self.nodes_init + self.nodes_in]
         serv_out = self.servers[self.nodes_init - self.nodes_out:self.nodes_init]
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create_validate()
         self.backupset.number_of_backups = 1
         rebalance = self.cluster.async_rebalance(self.cluster_to_backup, serv_in, serv_out)
@@ -180,7 +180,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         serv_in = self.servers[self.nodes_init:self.nodes_init + self.nodes_in]
         serv_out = self.servers[self.nodes_init - self.nodes_out:self.nodes_init]
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create_validate()
         self.backupset.number_of_backups = 1
         self.cluster.async_rebalance(self.cluster_to_backup, serv_in, serv_out)
@@ -209,7 +209,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         for x in initial_gen:
             initial_keys.append(x[0])
         self.log.info("Start to load items to all buckets")
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.ops_type = self.input.param("ops-type", "update")
         self.log.info("Create backup repo ")
         self.backup_create()
@@ -252,7 +252,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
                             end=self.num_items)
         self.log.info("Start doing ops: %s " % self.ops_type)
         if node is None:
-            node = self.master
+            node = self.main
         self._load_all_buckets(node, gen, self.ops_type, exp)
         if backup:
             self.backup_cluster_validate(repeats=repeats,
@@ -269,7 +269,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         3. Executes list command on the backupset and validates the output
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.backup_cluster_validate()
         self.backup_list_validate()
@@ -285,7 +285,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         6. Executes list command with --name, --incr-backup and --bucket-backup and validates
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self._take_n_backups(n=2)
         self.backupset.name = "backup2"
@@ -370,7 +370,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         3. Executes list command on the backupset and validates the output
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self._take_n_backups(n=25)
         status, output, message = self.backup_list()
@@ -400,7 +400,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         3. Executes compact command on the backupset and validates the output
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.backup_cluster_validate()
         self.backup_compact_validate()
@@ -417,7 +417,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         status, content = rest.set_purge_interval_and_parallel_compaction(purgeInterval)
         if status:
             self.log.info("Done set purge interval value '%s'" % purgeInterval)
-            self._load_all_buckets(self.master, gen, "create", 0)
+            self._load_all_buckets(self.main, gen, "create", 0)
             self.backup_create()
             self.backup_cluster_validate()
             self.backup_restore_validate()
@@ -432,7 +432,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         4. Restores from the compacted backup and validates it
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.backup_cluster_validate()
         self.backup_compact()
@@ -450,7 +450,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size,
                             end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.backupset.backup_compressed = False
         self.backup_cluster()
@@ -469,7 +469,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size,
                             end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         output, error = self.backup_cluster()
         if output and not self._check_output("Backup successfully completed", output):
@@ -500,7 +500,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         self.buckets = rest_conn.get_buckets()
         authentication = "-u Administrator -p password"
 
-        self._load_all_buckets(self.master, gen1, "create", 0)
+        self._load_all_buckets(self.main, gen1, "create", 0)
         self.log.info("Stop persistent")
         cluster_nodes = rest_conn.get_nodes()
         clusters = copy.deepcopy(cluster_nodes)
@@ -514,10 +514,10 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
                                    authentication))
         shell.disconnect()
         self.log.info("Load 2nd batch docs")
-        self._load_all_buckets(self.master, gen2, "create", 0)
+        self._load_all_buckets(self.main, gen2, "create", 0)
         self.log.info("Run full backup with cbbackupwrapper")
         shell = RemoteMachineShellConnection(self.backupset.backup_host)
-        backup_dir = self.tmp_path + "backup" + self.master.ip
+        backup_dir = self.tmp_path + "backup" + self.main.ip
         shell.execute_command("rm -rf %s" % backup_dir)
         shell.execute_command("mkdir %s" % backup_dir)
         shell.execute_command("cd %s;./cbbackupwrapper%s http://%s:8091 %s -m full %s"
@@ -526,7 +526,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
                                           backup_dir,
                                           authentication))
         self.log.info("Load 3rd batch docs")
-        self._load_all_buckets(self.master, gen3, "create", 0)
+        self._load_all_buckets(self.main, gen3, "create", 0)
         self.log.info("Run diff backup with cbbackupwrapper")
         output, _ = shell.execute_command("cd %s;./cbbackupwrapper%s http://%s:8091 %s -m diff %s"
                                               % (self.cli_command_location, self.cmd_ext,
@@ -553,7 +553,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=10000)
         if not self.new_replicas:
             self.fail("This test needs to pass param 'new-replicas' to run")
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.log.info("Start backup cluster")
         self.backup_cluster_validate()
@@ -585,7 +585,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
             7. Run restore to other bucket, restore should fail with error
         """
         gen = BlobGenerator("ent-backup_1", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self._take_n_backups(n=self.backupset.number_of_backups)
         status, output, message = self.backup_list()
@@ -626,12 +626,12 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
             6. Expect errors throw out
         """
         gen = BlobGenerator("ent-backup1_", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.log.info("Start doing backup")
         self.backup_create()
         self.backup_cluster()
         self.log.info("Start to delete bucket")
-        BucketOperationHelper.delete_all_buckets_or_assert([self.master], self)
+        BucketOperationHelper.delete_all_buckets_or_assert([self.main], self)
         output, _ = self.backup_restore()
         if output and "Error restoring cluster" not in output[0]:
             self.fail("Restore to non exist bucket should fail")
@@ -648,20 +648,20 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
             8. Do merge backup.  Verify backup only contain docs key 2
         """
         gen = BlobGenerator("ent-backup1_", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.log.info("Start doing backup")
         self.backup_create()
         self.backup_cluster()
         if self.bucket_delete:
             self.log.info("Start to delete bucket")
-            BucketOperationHelper.delete_all_buckets_or_assert([self.master], self)
-            BucketOperationHelper.create_bucket(serverInfo=self.master, test_case=self)
+            BucketOperationHelper.delete_all_buckets_or_assert([self.main], self)
+            BucketOperationHelper.create_bucket(serverInfo=self.main, test_case=self)
         elif self.bucket_flush:
             self.log.info("Start to flush bucket")
             self._all_buckets_flush()
         gen = BlobGenerator("ent-backup2_", "ent-backup-", self.value_size, end=self.num_items)
         self.log.info("Start to load bucket again with different key")
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_cluster()
         self.backupset.number_of_backups += 1
         status, output, message = self.backup_list()
@@ -680,7 +680,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         current_vseqno = self.get_vbucket_seqnos(self.cluster_to_backup, self.buckets,
                                                  self.skip_consistency, self.per_node)
         self.log.info("*** Start to validate data in merge backup ")
-        self.validate_backup_data(self.backupset.backup_host, [self.master],
+        self.validate_backup_data(self.backupset.backup_host, [self.main],
                                   "ent-backup", False, False, "memory",
                                   self.num_items, "ent-backup1")
         self.backup_cluster_validate(skip_backup=True)
@@ -698,7 +698,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
             Result:  2nd merge should run ok
         """
         gen = BlobGenerator("ent-backup1", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self._take_n_backups(n=self.backupset.number_of_backups)
         status, output, message = self.backup_list()
@@ -736,7 +736,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
             6. Merge backup.  Merge should fail
         """
         gen = BlobGenerator("ent-backup1", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self._take_n_backups(n=self.backupset.number_of_backups)
         status, output, message = self.backup_list()
@@ -798,15 +798,15 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         self.log.info("Load 1st batch docs")
         create_gen1 = BlobGenerator("ent-backup1", "ent-backup-", self.value_size,
                                     end=self.num_items)
-        self._load_all_buckets(self.master, create_gen1, "create", 0)
+        self._load_all_buckets(self.main, create_gen1, "create", 0)
         self.log.info("Delete half docs of 1st batch")
         delete_gen = BlobGenerator("ent-backup1", "ent-backup-", self.value_size,
                                    end=self.num_items / 2)
-        self._load_all_buckets(self.master, delete_gen, "delete", 0)
+        self._load_all_buckets(self.main, delete_gen, "delete", 0)
         self.log.info("Load 2nd batch docs")
         create_gen2 = BlobGenerator("ent-backup2", "ent-backup-", self.value_size,
                                     end=self.num_items / 2)
-        self._load_all_buckets(self.master, create_gen2, "create", 0)
+        self._load_all_buckets(self.main, create_gen2, "create", 0)
         self.log.info("Start backup")
         self.backup_create()
         self.backup_cluster()
@@ -814,9 +814,9 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         upto_seq = 100000
         self.log.info("Start compact each vbucket in bucket")
 
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         cluster_nodes = rest.get_nodes()
-        for bucket in RestConnection(self.master).get_buckets():
+        for bucket in RestConnection(self.main).get_buckets():
             found = self.get_info_in_database(self.backupset.cluster_host, bucket, "deleted")
             if found:
                 shell = RemoteMachineShellConnection(self.backupset.cluster_host)
@@ -826,12 +826,12 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
                 self.log.info("Load another docs to bucket %s " % bucket.name)
                 create_gen3 = BlobGenerator("ent-backup3", "ent-backup-", self.value_size,
                                             end=self.num_items / 4)
-                self._load_bucket(bucket, self.master, create_gen3, "create",
+                self._load_bucket(bucket, self.main, create_gen3, "create",
                                                                  self.expire_time)
                 self.backup_cluster()
                 create_gen4 = BlobGenerator("ent-backup3", "ent-backup-", self.value_size,
                                             end=self.num_items / 4)
-                self._load_bucket(bucket, self.master, create_gen4, "create",
+                self._load_bucket(bucket, self.main, create_gen4, "create",
                                                                  self.expire_time)
                 self.backup_cluster()
                 self.backupset.end = 3
@@ -860,9 +860,9 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         self.log.info("Load 1st batch docs")
         create_gen1 = BlobGenerator("ent-backup1", "ent-backup-", self.value_size,
                                     end=self.num_items)
-        self._load_all_buckets(self.master, create_gen1, "create", 0)
+        self._load_all_buckets(self.main, create_gen1, "create", 0)
         failed_persisted_bucket = []
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         cluster_nodes = rest.get_nodes()
         for bucket in self.buckets:
             ready = RebalanceHelper.wait_for_stats_on_all(self.backupset.cluster_host,
@@ -886,7 +886,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         self.log.info("Load 2nd batch docs")
         create_gen2 = BlobGenerator("ent-backup2", "ent-backup-", self.value_size,
                                     end=self.num_items)
-        self._load_all_buckets(self.master, create_gen2, "create", 0)
+        self._load_all_buckets(self.main, create_gen2, "create", 0)
         self.sleep(5)
         self.log.info("Crash cluster via kill memcached")
         for node in clusters:
@@ -920,7 +920,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         self.log.info("Load 3rd batch docs")
         create_gen3 = BlobGenerator("ent-backup3", "ent-backup-", self.value_size,
                                     end=self.num_items)
-        self._load_all_buckets(self.master, create_gen3, "create", 0)
+        self._load_all_buckets(self.main, create_gen3, "create", 0)
         self.backup_cluster()
         status, output, message = self.backup_list()
         if not status:
@@ -1007,7 +1007,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         self.log.info("Load 1st batch docs")
         create_gen1 = BlobGenerator("ent-backup", "ent-backup-", self.value_size,
                                     end=self.num_items)
-        self._load_all_buckets(self.master, create_gen1, "create", 0)
+        self._load_all_buckets(self.main, create_gen1, "create", 0)
         self.backup_create()
         verify_data = True
         output, error = self.backup_cluster()
@@ -1050,7 +1050,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
             gen = DocumentGenerator('random_keys', '{{"age": {0}}}', xrange(100),
                                     start=0, end=self.num_items)
 
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.log.info("Start backup")
         self.backup_create()
         self.backup_cluster()
@@ -1088,7 +1088,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
                                     end=self.num_items)
             index_definition = INDEX_DEFINITION
             index_name = index_definition['name'] = "age"
-            rest_fts = RestConnection(self.master)
+            rest_fts = RestConnection(self.main)
             try:
                 self.log.info("Create fts index")
                 rest_fts.create_fts_index(index_name, index_definition)
@@ -1097,7 +1097,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         else:
             gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size,
                                 end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         if self.create_views:
             self._create_views()
         self.backup_create()
@@ -1150,7 +1150,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
                                                          self.per_node)
                 self.log.info("*** Start to validate data in merge backup ")
                 result = self.validate_backup_data(self.backupset.backup_host,
-                                                   [self.master],
+                                                   [self.main],
                                                    "ent-backup", False, False, "memory",
                                                    self.num_items, None)
                 self.validate_backup_views()
@@ -1191,8 +1191,8 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
                   % (curl_path,
                      self.cmd_ext,
                      "DELETE",
-                     self.master.rest_username,
-                     self.master.rest_password,
+                     self.main.rest_username,
+                     self.main.rest_password,
                      self.backupset.cluster_host.ip,
                      self.cluster_new_user)
             output, error = shell.execute_command(cmd)
@@ -1290,7 +1290,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
                 self.fail("Buckets %s did not persisted." % failed_persisted_bucket)
 
             self.sleep(3)
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             actual_keys = rest.get_active_key_count("default")
             print "\nActual keys in default bucket: %s \n" % actual_keys
             if self.cluster_new_role in users_can_restore_all:
@@ -1329,8 +1329,8 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
                   % (curl_path,
                      self.cmd_ext,
                      "DELETE",
-                     self.master.rest_username,
-                     self.master.rest_password,
+                     self.main.rest_username,
+                     self.main.rest_password,
                      self.backupset.cluster_host.ip,
                      self.cluster_new_user)
             output, error = shell.execute_command(cmd)
@@ -1344,7 +1344,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         4. Restores to cluster host and validates
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         rest_conn = RestConnection(self.backupset.cluster_host)
         zones = rest_conn.get_zone_names().keys()
         source_zone = zones[0]
@@ -1382,7 +1382,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
             self.log.info("This firewall test does not run on windows or nonroot user")
             return
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.log.info("Enabling firewall on cluster host before backup")
         RemoteUtilHelper.enable_firewall(self.backupset.cluster_host)
@@ -1420,7 +1420,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         rest = RestConnection(self.backupset.restore_cluster_host)
         rest.force_eject_node()
 
-        master_services = self.get_services([self.backupset.cluster_host],
+        main_services = self.get_services([self.backupset.cluster_host],
                                             self.services_init, start_node=0)
         info = rest.get_nodes_self()
         if info.memoryQuota and int(info.memoryQuota) > 0:
@@ -1437,7 +1437,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         4. Restores data on to restore host - verifies if corresponding entry was created in audit log
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         audit_obj = audit(AUDITBACKUPID, self.backupset.cluster_host)
         status = audit_obj.getAuditStatus()
         self.log.info("Audit status on {0} is {1}".format(self.backupset.cluster_host.ip, status))
@@ -1498,7 +1498,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         5. Restores to restore host with lesser number of nodes (2) and validates
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         rest_conn = RestConnection(self.backupset.restore_cluster_host)
         rest_conn.add_node(self.input.clusters[0][1].rest_username, self.input.clusters[0][1].rest_password,
                            self.input.clusters[0][1].ip)
@@ -1520,7 +1520,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         4. Keeps taking backup until no space left on device error is hit
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backupset.directory = "/cbqe3043/entbackup"
         self.backup_create()
         conn = RemoteMachineShellConnection(self.backupset.backup_host)
@@ -1547,7 +1547,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size,
                             end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         if self.create_gsi:
             self.create_indexes()
         self.backup_create()
@@ -1573,7 +1573,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         4. Validates backup output
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         backup_result = self.cluster.async_backup_cluster(cluster_host=self.backupset.cluster_host,
                                                           backup_host=self.backupset.backup_host,
@@ -1599,7 +1599,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         4. Validates backup output
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         backup_result = self.cluster.async_backup_cluster(cluster_host=self.backupset.cluster_host,
                                                           backup_host=self.backupset.backup_host,
@@ -1625,7 +1625,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         4. Validates backup output
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         backup_result = self.cluster.async_backup_cluster(
                                             cluster_host=self.backupset.cluster_host,
@@ -1654,7 +1654,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         4. Waits for 200s and Validates backup error
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         try:
             backup_result = self.cluster.async_backup_cluster(
@@ -1696,7 +1696,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         4. Waits for 200s and Validates backup error
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         try:
             backup_result = self.cluster.async_backup_cluster(cluster_host=self.backupset.cluster_host,
@@ -1729,7 +1729,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         4. Waits for 200s and Validates backup error
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         try:
             conn = RemoteMachineShellConnection(self.backupset.cluster_host)
@@ -1767,7 +1767,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         4. Validates restore output
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.backup_cluster()
         rest_conn = RestConnection(self.backupset.restore_cluster_host)
@@ -1803,7 +1803,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         4. Validates restore output
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.backup_cluster()
         rest_conn = RestConnection(self.backupset.restore_cluster_host)
@@ -1837,7 +1837,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         4. Validates restore output
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.backup_cluster()
         rest_conn = RestConnection(self.backupset.restore_cluster_host)
@@ -1868,7 +1868,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         4. Waits for 200s and Validates restore output
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.backup_cluster()
         rest_conn = RestConnection(self.backupset.restore_cluster_host)
@@ -1907,7 +1907,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         4. Waits for 200s and Validates restore output
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.backup_cluster()
         rest_conn = RestConnection(self.backupset.restore_cluster_host)
@@ -1945,7 +1945,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         4. Waits for 200s and Validates restore output
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.backup_cluster()
         rest_conn = RestConnection(self.backupset.restore_cluster_host)
@@ -1985,7 +1985,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         5. Executes list command again and validates if the new merges set of backups are listed
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self._take_n_backups(n=self.backupset.number_of_backups)
         status, output, message = self.backup_list()
@@ -2039,7 +2039,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         3. Merges both the backups - restores from merged backup and validates
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self._take_n_backups(n=2)
         self.backupset.start = 1
@@ -2065,7 +2065,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         3. Takes 2 more backups - merges the new backups with already merged ones and validates
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self._take_n_backups(n=2)
         self.backupset.start = 1
@@ -2094,12 +2094,12 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
             6. Merge backup.  All backup should contain doc key1 and key2
         """
         gen = BlobGenerator("ent-backup1", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.log.info("Start doing backup")
         self.backup_create()
         self.backup_cluster()
         gen = BlobGenerator("ent-backup2", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_cluster(self.threads_count)
         self.backupset.number_of_backups += 1
         status, output, message = self.backup_list()
@@ -2121,7 +2121,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         current_vseqno = self.get_vbucket_seqnos(self.cluster_to_backup, self.buckets,
                                                  self.skip_consistency, self.per_node)
         self.log.info("*** Start to validate data in merge backup ")
-        self.validate_backup_data(self.backupset.backup_host, [self.master],
+        self.validate_backup_data(self.backupset.backup_host, [self.main],
                                   "ent-backup", False, False, "memory",
                                   self.num_items, None)
         self.backup_cluster_validate(skip_backup=True)
@@ -2136,7 +2136,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         6. Validates the old backup is deleted and new backup is created successfully
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         old_backup_name = ""
         new_backup_name = ""
@@ -2187,7 +2187,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size,
                             end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         old_backup_name = ""
         new_backup_name = ""
@@ -2239,10 +2239,10 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         4. Restore data and validate
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.backup_cluster_validate()
-        self._load_all_buckets(self.master, gen, "delete", 0)
+        self._load_all_buckets(self.main, gen, "delete", 0)
         self.backup_restore_validate(compare_uuid=False, seqno_compare_function=">=")
 
     def test_backup_restore_with_failover(self):
@@ -2256,7 +2256,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         7. Restores data and validates
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.backup_cluster_validate()
         rest = RestConnection(self.backupset.cluster_host)
@@ -2289,14 +2289,14 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         rebalance = self.cluster.async_rebalance(self.servers[:2], [self.servers[1]],
                                                  [])
         rebalance.result()
-        RestConnection(self.master).create_bucket(bucket='default', ramQuotaMB=512)
-        self.buckets = RestConnection(self.master).get_buckets()
+        RestConnection(self.main).create_bucket(bucket='default', ramQuotaMB=512)
+        self.buckets = RestConnection(self.main).get_buckets()
         self.total_buckets = len(self.buckets)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.backup_cluster_validate()
         self.sleep(5)
-        BucketOperationHelper.delete_bucket_or_assert(self.master, "default", self)
+        BucketOperationHelper.delete_bucket_or_assert(self.main, "default", self)
 
         """ Start to upgrade """
         if self.force_version_upgrade:
@@ -2309,14 +2309,14 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         self.sleep(30)
 
         """ Re-create default bucket on upgrade cluster """
-        RestConnection(self.master).create_bucket(bucket='default', ramQuotaMB=512)
+        RestConnection(self.main).create_bucket(bucket='default', ramQuotaMB=512)
         self.sleep(5)
 
         """ Only server from Spock needs build in user
             to access bucket and other tasks
         """
-        print "************** cb version: ", RestConnection(self.master).get_nodes_version()[:1]
-        if "5" <= RestConnection(self.master).get_nodes_version()[:1]:
+        print "************** cb version: ", RestConnection(self.main).get_nodes_version()[:1]
+        if "5" <= RestConnection(self.main).get_nodes_version()[:1]:
             self.add_built_in_server_user()
             for user in self.users_check_restore:
                 user_name = user.replace('[', '_').replace(']', '_')
@@ -2326,15 +2326,15 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
                              'roles': user}]
 
                 self.log.info("**** add built-in '%s' user to node %s ****" % (testuser[0]["name"],
-                                                                               self.master.ip))
-                RbacBase().create_user_source(testuser, 'builtin', self.master)
+                                                                               self.main.ip))
+                RbacBase().create_user_source(testuser, 'builtin', self.main)
 
                 self.log.info("**** add '%s' role to '%s' user ****" % (rolelist[0]["roles"],
                                                                         testuser[0]["name"]))
-                RbacBase().add_user_role(rolelist, RestConnection(self.master), 'builtin')
+                RbacBase().add_user_role(rolelist, RestConnection(self.main), 'builtin')
 
         backupsets = [self.backupset]
-        if "5" <= RestConnection(self.master).get_nodes_version()[:1]:
+        if "5" <= RestConnection(self.main).get_nodes_version()[:1]:
             for user in self.users_check_restore:
                 new_backupset = copy.deepcopy(self.backupset)
                 new_backupset.restore_cluster_host_username = user.replace('[', '_').replace(']', '_')
@@ -2368,10 +2368,10 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
                                                  [servers[int(self.nodes_init) - 1]], [])
         rebalance.result()
         self.sleep(15)
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         rest.create_bucket(bucket='default', ramQuotaMB=512)
         self.buckets = rest.get_buckets()
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         cb_version = rest.get_nodes_version()
         initial_compression_mode = "off"
         if cb_version[:5] in COUCHBASE_FROM_4DOT6:
@@ -2583,7 +2583,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         5. Restores data and validates
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.backup_cluster_validate()
         rest = RestConnection(self.backupset.cluster_host)
@@ -2600,7 +2600,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         5. Restores data and validates
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.backup_cluster_validate()
         rest = RestConnection(self.backupset.cluster_host)
@@ -3035,7 +3035,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         rebalance = self.cluster.async_rebalance(self.cluster_to_backup, [], [])
         rebalance.result()
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         default_map_func = "function (doc) {\n  emit(doc._id, doc);\n}"
         default_view_name = "test"
@@ -3098,13 +3098,13 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         gen = DocumentGenerator('test_docs', '{{"age": {0}}}', xrange(100),
                                 start=0, end=self.num_items)
         self.buckets = rest_src.get_buckets()
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
 
         cmd = "cbindex -type create -bucket default -using %s -index age -fields=age " \
               " -auth %s:%s" % (self.test_storage_mode,
-                                self.master.rest_username,
-                                self.master.rest_password)
+                                self.main.rest_username,
+                                self.main.rest_password)
         shell = RemoteMachineShellConnection(self.backupset.cluster_host)
         command = "{0}/{1}".format(self.cli_command_location, cmd)
         output, error = shell.execute_command(command)
@@ -3122,8 +3122,8 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         rebalance.result()
         self.backup_restore_validate(compare_uuid=False, seqno_compare_function=">=")
 
-        cmd = "cbindex -type list -auth %s:%s" % (self.master.rest_username,
-                                                  self.master.rest_password)
+        cmd = "cbindex -type list -auth %s:%s" % (self.main.rest_username,
+                                                  self.main.rest_password)
         shell = RemoteMachineShellConnection(self.backupset.restore_cluster_host)
         command = "{0}/{1}".format(self.cli_command_location, cmd)
         output, error = shell.execute_command(command)
@@ -3163,7 +3163,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         gen = DocumentGenerator('test_docs', '{{"Num1": {0}, "Num2": {1}}}',
                                 xrange(100), xrange(100),
                                 start=0, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         cmd = "cbindex -type create -bucket default -using forestdb -index " \
               "num1 -fields=Num1"
@@ -3230,7 +3230,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         rebalance.result()
         gen = DocumentGenerator('test_docs', '{{"age": {0}}}', xrange(100), start=0,
                                 end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         index_definition = INDEX_DEFINITION
         index_name = index_definition['name'] = "age"
@@ -3278,7 +3278,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
             if repl_id is not None:
                 self.log.info("Replication created successfully")
             gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-            tasks = self._async_load_all_buckets(self.master, gen, "create", 0)
+            tasks = self._async_load_all_buckets(self.main, gen, "create", 0)
             self.sleep(10)
             self.backup_create()
             self.backup_cluster_validate()
@@ -3296,7 +3296,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         3. Restores data and validates while warmup is on
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         NodeHelper.do_a_warm_up(self.backupset.cluster_host)
         self.sleep(30)
@@ -3307,7 +3307,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
             NodeHelper.wait_warmup_completed([self.backupset.cluster_host])
 
     def stat(self, key):
-        stats = StatsCommon.get_stats([self.master], 'default', "", key)
+        stats = StatsCommon.get_stats([self.main], 'default', "", key)
         val = stats.values()[0]
         if val.isdigit():
             val = int(val)
@@ -3326,7 +3326,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
             curr_items = self.stat('curr_items')
             gen_create = BlobGenerator('dgmkv', 'dgmkv-', doc_size, start=curr_items + 1, end=curr_items + 50000)
             try:
-                self._load_all_buckets(self.master, gen_create, "create", ttl)
+                self._load_all_buckets(self.main, gen_create, "create", ttl)
             except:
                 pass
             curr_active = self.stat('vb_active_perc_mem_resident')
@@ -3350,7 +3350,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         3. Validates backup and restore
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         rest = RestConnection(self.backupset.cluster_host)
         rest.set_auto_compaction(dbFragmentThresholdPercentage=80,
                                  dbFragmentThreshold=100,
@@ -3368,7 +3368,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         3. Validates backup and restore
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         rest = RestConnection(self.backupset.cluster_host)
         rest.update_notifications("true")
         self.backup_create()
@@ -3382,7 +3382,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         3. Validates backup and restore
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         rest = RestConnection(self.backupset.cluster_host)
         rest.set_alerts_settings('couchbase@localhost', 'root@localhost', 'user', 'pwd')
         self.backup_create()
@@ -3391,7 +3391,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
 
     def test_merge_with_crash(self):
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self._take_n_backups(n=5)
         try:
@@ -3421,7 +3421,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
 
     def test_compact_with_crash(self):
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.backup_cluster()
         status, output_before_compact, message = self.backup_list()
@@ -3454,7 +3454,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         Misc scenarios for backup and restore
         """
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backupset.name = "!@#$%^&"
         output, error = self.backup_create()
         self.assertTrue("Backup `!@#$%^` created successfully" in output[0],
@@ -3492,7 +3492,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         if "5.5" > self.cb_version[:3]:
             self.fail("This test is only for cb version 5.5 and later. ")
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self._collect_logs()
 
@@ -3507,11 +3507,11 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
         if self.replace_ttl == "expired":
             if self.bk_with_ttl:
-                self._load_all_buckets(self.master, gen, "create", int(self.bk_with_ttl))
+                self._load_all_buckets(self.main, gen, "create", int(self.bk_with_ttl))
             else:
-                self._load_all_buckets(self.master, gen, "create", 0)
+                self._load_all_buckets(self.main, gen, "create", 0)
         else:
-            self._load_all_buckets(self.master, gen, "create", 0)
+            self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.backup_cluster_validate()
         if self.bk_with_ttl:
@@ -3534,7 +3534,7 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
             self.fail("This test is only for cb version 5.5 and later. ")
         self.num_items = 1000
         gen = BlobGenerator("ent-backup", "ent-backup-", self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
         self.backup_create()
         self.backup_cluster_validate()
         if self.should_fail:
@@ -3564,17 +3564,17 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
         self.create_functions_buckets = self.input.param('create_functions_buckets', True)
         self.docs_per_day = self.input.param("doc-per-day", 1)
         self.use_memory_manager = self.input.param('use_memory_manager', True)
-        bucket_params = self._create_bucket_params(server=self.master, size=128,
+        bucket_params = self._create_bucket_params(server=self.main, size=128,
                                                        replicas=self.num_replicas)
         self.cluster.create_standard_bucket(name=self.src_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
-        self.buckets = RestConnection(self.master).get_buckets()
-        self.src_bucket = RestConnection(self.master).get_buckets()
+        self.buckets = RestConnection(self.main).get_buckets()
+        self.src_bucket = RestConnection(self.main).get_buckets()
         self.cluster.create_standard_bucket(name=self.dst_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
         self.cluster.create_standard_bucket(name=self.metadata_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
-        self.buckets = RestConnection(self.master).get_buckets()
+        self.buckets = RestConnection(self.main).get_buckets()
         self.gens_load = self.generate_docs(self.docs_per_day)
         self.expiry = 3
 
@@ -3607,13 +3607,13 @@ class EnterpriseBackupRestoreTest(EnterpriseBackupRestoreBase, NewUpgradeBaseTes
             self.fail(e)
 
         finally:
-            master_nodes = [self.backupset.cluster_host,
+            main_nodes = [self.backupset.cluster_host,
                             self.backupset.restore_cluster_host]
-            for node in master_nodes:
+            for node in main_nodes:
                 self.rest = RestConnection(node)
                 buckets = self.rest.get_buckets()
                 for bucket in buckets:
                     items = self.rest.get_active_key_count(bucket)
                 self.undeploy_and_delete_function(body)
-            self.rest = RestConnection(self.master)
+            self.rest = RestConnection(self.main)
 

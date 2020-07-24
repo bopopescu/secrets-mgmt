@@ -25,7 +25,7 @@ class auditcli(BaseTestCase):
         super(auditcli, self).setUp()
         self.r = random.Random()
         self.vbucket_count = 1024
-        self.shell = RemoteMachineShellConnection(self.master)
+        self.shell = RemoteMachineShellConnection(self.main)
         info = self.shell.extract_remote_info()
         type = info.type.lower()
         self.excluded_commands = self.input.param("excluded_commands", None)
@@ -45,7 +45,7 @@ class auditcli(BaseTestCase):
             self.command_options = self.command_options.split(";")
         TestInputSingleton.input.test_params["default_bucket"] = False
         self.eventID = self.input.param('id', None)
-        AuditTemp = audit(host=self.master)
+        AuditTemp = audit(host=self.main)
         self.ipAddress = self.getLocalIPAddress()
         self.ldapUser = self.input.param('ldapUser', 'Administrator')
         self.ldapPass = self.input.param('ldapPass', 'password')
@@ -55,7 +55,7 @@ class auditcli(BaseTestCase):
         else:
             if self.source == 'saslauthd':
                 self.auth_type = 'sasl'
-                rest = RestConnection(self.master)
+                rest = RestConnection(self.main)
                 self.setupLDAPSettings(rest)
                 #rest.ldapUserRestOperation(True, [[self.ldapUser]], exclude=None)
                 self.set_user_role(rest,self.ldapUser)
@@ -110,7 +110,7 @@ class auditcli(BaseTestCase):
 
     def testClusterEdit(self):
         options = "--server-add={0}:8091 --server-add-username=Administrator --server-add-password=password".format(self.servers[num + 1].ip)
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         output, error = remote_client.execute_couchbase_cli(cli_command='cluster-edit', options=options, cluster_host="localhost", user=self.ldapUser, password=self.ldapPass)
 
     def testAddRemoveNodes(self):
@@ -121,7 +121,7 @@ class auditcli(BaseTestCase):
         nodes_readd = self.input.param("nodes_readd", 0)
         cli_command = self.input.param("cli_command", None)
         source = self.source
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         for num in xrange(nodes_add):
             options = "--server-add={0}:8091 --server-add-username=Administrator --server-add-password=password".format(self.servers[num + 1].ip)
             output, error = remote_client.execute_couchbase_cli(cli_command='server-add', options=options, cluster_host="localhost", user=self.ldapUser, password=self.ldapPass)
@@ -130,24 +130,24 @@ class auditcli(BaseTestCase):
         if (cli_command == "server-add"):
             expectedResults = {"services":['kv'], 'port':8091, 'hostname':self.servers[num + 1].ip,
                                    'groupUUID':"0", 'node':'ns_1@' + self.servers[num + 1].ip, 'source':source,
-                                   'user':self.master.rest_username, "real_userid:user":self.ldapUser, "ip":'127.0.0.1', "remote:port":57457}
-            self.checkConfig(self.eventID, self.master, expectedResults)
-            expectedResults = {"delta_recovery_buckets":"all", 'known_nodes':["ns_1@" + self.master.ip, "ns_1@" + self.servers[num + 1].ip],
-                                    'ejected_nodes':[], 'source':'ns_server', 'source':source, 'user':self.master.rest_username,
+                                   'user':self.main.rest_username, "real_userid:user":self.ldapUser, "ip":'127.0.0.1', "remote:port":57457}
+            self.checkConfig(self.eventID, self.main, expectedResults)
+            expectedResults = {"delta_recovery_buckets":"all", 'known_nodes':["ns_1@" + self.main.ip, "ns_1@" + self.servers[num + 1].ip],
+                                    'ejected_nodes':[], 'source':'ns_server', 'source':source, 'user':self.main.rest_username,
                                     "ip":'127.0.0.1', "port":57457, "real_userid:user":self.ldapUser}
-            self.checkConfig(8200, self.master, expectedResults)
+            self.checkConfig(8200, self.main, expectedResults)
 
         if (cli_command == 'server-remove'):
             for num in xrange(nodes_rem):
                 cli_command = "rebalance"
                 options = "--server-remove={0}:8091".format(self.servers[nodes_add - num].ip)
                 output, error = remote_client.execute_couchbase_cli(cli_command=cli_command, options=options, cluster_host="localhost", user=self.ldapUser, password=self.ldapPass)
-                #expectedResults = {'node':'ns_1@' + self.servers[num + 1].ip, 'source':source, 'user':self.master.rest_username, "ip":'127.0.0.1', "port":57457}
-                #self.checkConfig(self.eventID, self.master, expectedResults)
-                expectedResults = {"delta_recovery_buckets":"all", 'known_nodes':["ns_1@" + self.master.ip, "ns_1@" + self.servers[num + 1].ip],
-                                    'ejected_nodes':["ns_1@" + self.servers[num + 1].ip], 'source':source, 'user':self.master.rest_username,
+                #expectedResults = {'node':'ns_1@' + self.servers[num + 1].ip, 'source':source, 'user':self.main.rest_username, "ip":'127.0.0.1', "port":57457}
+                #self.checkConfig(self.eventID, self.main, expectedResults)
+                expectedResults = {"delta_recovery_buckets":"all", 'known_nodes':["ns_1@" + self.main.ip, "ns_1@" + self.servers[num + 1].ip],
+                                    'ejected_nodes':["ns_1@" + self.servers[num + 1].ip], 'source':source, 'user':self.main.rest_username,
                                     "ip":'127.0.0.1', "port":57457, "real_userid:user":self.ldapUser}
-                self.checkConfig(8200, self.master, expectedResults)
+                self.checkConfig(8200, self.main, expectedResults)
 
 
         if (cli_command in ["failover"]):
@@ -157,8 +157,8 @@ class auditcli(BaseTestCase):
                 options = "--server-failover={0}:8091".format(self.servers[nodes_add - nodes_rem - num].ip)
                 options += " --force"
                 output, error = remote_client.execute_couchbase_cli(cli_command=cli_command, options=options, cluster_host="localhost", user=self.ldapUser, password=self.ldapPass)
-                expectedResults = {'source':source, "real_userid:user":self.ldapUser, 'user':self.master.rest_username, "ip":'127.0.0.1', "port":57457, 'type':'hard', 'node':'ns_1@' + self.servers[nodes_add - nodes_rem - num].ip}
-                self.checkConfig(self.eventID, self.master, expectedResults)
+                expectedResults = {'source':source, "real_userid:user":self.ldapUser, 'user':self.main.rest_username, "ip":'127.0.0.1', "port":57457, 'type':'hard', 'node':'ns_1@' + self.servers[nodes_add - nodes_rem - num].ip}
+                self.checkConfig(self.eventID, self.main, expectedResults)
 
         if (cli_command == "server-readd"):
             for num in xrange(nodes_readd):
@@ -171,8 +171,8 @@ class auditcli(BaseTestCase):
                 cli_command = "server-readd"
                 options = "--server-add={0}:8091 ".format(self.servers[nodes_add - nodes_rem - num ].ip)
                 output, error = remote_client.execute_couchbase_cli(cli_command=cli_command, options=options, cluster_host="localhost", user=self.ldapUser, password=self.ldapPass)
-                expectedResults = {'node':'ns_1@' + self.servers[nodes_add - nodes_rem - num ].ip, 'type':'full', "real_userid:user":self.ldapUser, 'source':source, 'user':self.master.rest_username, "ip":'127.0.0.1', "port":57457}
-                self.checkConfig(self.eventID, self.master, expectedResults)
+                expectedResults = {'node':'ns_1@' + self.servers[nodes_add - nodes_rem - num ].ip, 'type':'full', "real_userid:user":self.ldapUser, 'source':source, 'user':self.main.rest_username, "ip":'127.0.0.1', "port":57457}
+                self.checkConfig(self.eventID, self.main, expectedResults)
 
         remote_client.disconnect()
 
@@ -187,7 +187,7 @@ class auditcli(BaseTestCase):
         enable_flush = self.input.param("enable_flush", None)
         enable_index_replica = self.input.param("enable_index_replica", None)
 
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         self._create_bucket(remote_client, bucket=bucket_name, bucket_type=bucket_type, \
                         bucket_ramsize=bucket_ramsize, bucket_replica=bucket_replica, wait=wait, enable_flush=enable_flush, enable_index_replica=enable_index_replica)
         expectedResults = {'bucket_name':'default', 'ram_quota':209715200, 'num_replicas':1,
@@ -196,7 +196,7 @@ class auditcli(BaseTestCase):
                                 "flush_enabled":False, "num_threads":3, "source":self.source, \
                                "user":self.ldapUser, "ip":'127.0.0.1', "port":57457, 'sessionid':'', \
                                'conflict_resolution_type':'seqno','storage_mode':'couchstore'}
-        self.checkConfig(8201, self.master, expectedResults)
+        self.checkConfig(8201, self.main, expectedResults)
         remote_client.disconnect()
 
 
@@ -219,7 +219,7 @@ class auditcli(BaseTestCase):
         enable_index_replica = self.input.param("enable_index_replica", None)
         wait = self.input.param("wait", False)
 
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
 
         self._create_bucket(remote_client, bucket, bucket_type=bucket_type, bucket_ramsize=bucket_ramsize,
                             bucket_replica=bucket_replica, wait=wait, enable_flush=enable_flush, enable_index_replica=enable_index_replica)
@@ -237,19 +237,19 @@ class auditcli(BaseTestCase):
                             "flush_enabled":True, "num_threads":3, "source":self.source, \
                             "user":self.ldapUser, "ip":'127.0.0.1', "port":57457, 'sessionid':'',
                             'auth_type':self.source, 'storage_mode': 'couchstore'}
-        self.checkConfig(8202, self.master, expectedResults)
+        self.checkConfig(8202, self.main, expectedResults)
 
         cli_command = "bucket-flush --force"
         options = "--bucket={0}".format(bucket)
         if enable_flush_new is not None:
             output, error = remote_client.execute_couchbase_cli(cli_command=cli_command, options=options, cluster_host="localhost", user=self.ldapUser, password=self.ldapPass)
         expectedResults = {"bucket_name":"BBB", "source":self.source, "user":self.ldapUser, "ip":"127.0.0.1", 'port':57457}
-        self.checkConfig(8204, self.master, expectedResults)
+        self.checkConfig(8204, self.main, expectedResults)
 
         cli_command = "bucket-delete"
         output, error = remote_client.execute_couchbase_cli(cli_command=cli_command, options=options, cluster_host="localhost", user=self.ldapUser, password=self.ldapPass)
         expectedResults = {"bucket_name":"BBB", "source":self.source, "user":self.ldapUser, "ip":"127.0.0.1", "port":57457}
-        self.checkConfig(8203, self.master, expectedResults)
+        self.checkConfig(8203, self.main, expectedResults)
 
         remote_client.disconnect()
 
@@ -273,7 +273,7 @@ class auditcli(BaseTestCase):
         enable_compaction_parallel = self.input.param("enable-compaction-parallel", None)
         bucket = self.input.param("bucket", "default")
         output = self.input.param("output", '')
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         cli_command = "setting-compaction"
         options = (" --compaction-db-percentage={0}".format(compaction_db_percentage), "")[compaction_db_percentage is None]
         options += (" --compaction-db-size={0}".format(compaction_db_size), "")[compaction_db_size is None]
@@ -287,7 +287,7 @@ class auditcli(BaseTestCase):
         output, error = remote_client.execute_couchbase_cli(cli_command=cli_command, options=options, cluster_host="localhost", user=self.ldapUser, password=self.ldapPass)
         expectedResults = {"parallel_db_and_view_compaction":False, "database_fragmentation_threshold:size":10485760, "database_fragmentation_threshold:view_fragmentation_threshold":{},
                            "real_userid:source":self.source, "real_userid:user":self.ldapUser, "remote:ip":"127.0.0.1", "remote:port":60019}
-        self.checkConfig(8225, self.master, expectedResults)
+        self.checkConfig(8225, self.main, expectedResults)
         remote_client.disconnect()
 
 
@@ -302,7 +302,7 @@ class auditcli(BaseTestCase):
         setting_email_port = self.input.param("email-port", '25')
         setting_email_encrypt = self.input.param("enable-email-encrypt", 0)
 
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         cli_command = "setting-alert"
         options = (" --enable-email-alert={0}".format(setting_enable_email_alert))
         options += (" --email-recipients={0}".format(setting_email_recipients))
@@ -327,13 +327,13 @@ class auditcli(BaseTestCase):
                            "alerts":["auto_failover_node", "auto_failover_maximum_reached", "auto_failover_other_nodes_down", "auto_failover_cluster_too_small", "ip", "disk", "overhead", "ep_oom_errors", "ep_item_commit_failed"],
                            "recipients":["test@couchbase.com"], "sender":"qe@couchbase.com", "real_userid:source":self.source, "real_userid:user":self.ldapUser,
                            "remote:ip":"127.0.0.1", "port":60025}
-        self.checkConfig(8223, self.master, expectedResults)
+        self.checkConfig(8223, self.main, expectedResults)
         remote_client.disconnect()
 
     def testSettingNotification(self):
         setting_enable_notification = self.input.param("enable-notification", 1)
 
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         cli_command = "setting-notification"
         options = (" --enable-notification={0}".format(setting_enable_notification))
 
@@ -344,14 +344,14 @@ class auditcli(BaseTestCase):
         setting_enable_auto_failover = self.input.param("enable-auto-failover", 1)
         setting_auto_failover_timeout = self.input.param("auto-failover-timeout", 50)
 
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         cli_command = "setting-autofailover"
         options = (" --enable-auto-failover={0}".format(setting_enable_auto_failover))
         options += (" --auto-failover-timeout={0}".format(setting_auto_failover_timeout))
 
         output, error = remote_client.execute_couchbase_cli(cli_command=cli_command, options=options, cluster_host="localhost", user=self.ldapUser, password=self.ldapPass)
         expectedResults = {"max_nodes":1, "timeout":50, "real_userid:source":self.source, "real_userid:user":self.ldapUser, "remote:ip":"127.0.0.1", "port":60033}
-        self.checkConfig(8220, self.master, expectedResults)
+        self.checkConfig(8220, self.main, expectedResults)
         remote_client.disconnect()
 
     def testSSLManage(self):
@@ -361,23 +361,23 @@ class auditcli(BaseTestCase):
         xdcr_cert = self.input.param("xdcr-certificate", None)
         xdcr_cert = "/tmp/" + xdcr_cert
         cli_command = "ssl-manage"
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         options = "--regenerate-cert={0}".format(xdcr_cert)
         output, error = remote_client.execute_couchbase_cli(cli_command=cli_command, options=options, cluster_host="localhost", user=self.ldapUser, password=self.ldapPass)
         self.assertFalse(error, "Error thrown during CLI execution %s" % error)
         self.shell.execute_command("rm {0}".format(xdcr_cert))
         expectedResults = {"real_userid:source":self.source, "real_userid:user":self.ldapUser, "remote:ip":"127.0.0.1", "port":60035}
-        self.checkConfig(8226, self.master, expectedResults)
+        self.checkConfig(8226, self.main, expectedResults)
 
 
     """ tests for the group-manage option. group creation, renaming and deletion are tested .
         These tests require a cluster of four or more nodes. """
     def testCreateRenameDeleteGroup(self):
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         cli_command = "group-manage"
         source = self.source
         user = self.ldapUser
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
 
         if self.os == "linux":
             # create group
@@ -390,7 +390,7 @@ class auditcli(BaseTestCase):
             tempStr = rest.get_zone_uri()[expectedResults['group_name']]
             tempStr = (tempStr.split("/"))[4]
             expectedResults['uuid'] = tempStr
-            self.checkConfig(8210, self.master, expectedResults)
+            self.checkConfig(8210, self.main, expectedResults)
 
             # rename group test
             options = " --rename=group3 --group-name=group2"
@@ -401,7 +401,7 @@ class auditcli(BaseTestCase):
             expectedResults = {}
             expectedResults = {'group_name':'group3', 'source':source, 'user':user, 'ip':'127.0.0.1', 'port':1234, 'nodes':[]}
             expectedResults['uuid'] = tempStr
-            self.checkConfig(8212, self.master, expectedResults)
+            self.checkConfig(8212, self.main, expectedResults)
 
             # delete group test
             options = " --delete --group-name=group3"
@@ -412,7 +412,7 @@ class auditcli(BaseTestCase):
             expectedResults = {}
             expectedResults = {'group_name':'group3', 'source':source, 'user':user, 'ip':'127.0.0.1', 'port':1234}
             expectedResults['uuid'] = tempStr
-            self.checkConfig(8211, self.master, expectedResults)
+            self.checkConfig(8211, self.main, expectedResults)
 
 
         if self.os == "windows":
@@ -425,7 +425,7 @@ class auditcli(BaseTestCase):
             tempStr = rest.get_zone_uri()[expectedResults['group_name']]
             tempStr = (tempStr.split("/"))[4]
             expectedResults['uuid'] = tempStr
-            self.checkConfig(8210, self.master, expectedResults)
+            self.checkConfig(8210, self.main, expectedResults)
 
             # rename group test
             options = " --rename=group3 --group-name=group2"
@@ -435,7 +435,7 @@ class auditcli(BaseTestCase):
             expectedResults = {}
             expectedResults = {'group_name':'group3', 'source':source, 'user':user, 'ip':'127.0.0.1', 'port':1234, 'nodes':[]}
             expectedResults['uuid'] = tempStr
-            self.checkConfig(8212, self.master, expectedResults)
+            self.checkConfig(8212, self.main, expectedResults)
 
             # delete group test
             options = " --delete --group-name=group3"
@@ -445,7 +445,7 @@ class auditcli(BaseTestCase):
             expectedResults = {}
             expectedResults = {'group_name':'group3', 'source':source, 'user':user, 'ip':'127.0.0.1', 'port':1234}
             expectedResults['uuid'] = tempStr
-            self.checkConfig(8211, self.master, expectedResults)
+            self.checkConfig(8211, self.main, expectedResults)
 
             remote_client.disconnect()
 
@@ -461,13 +461,13 @@ class XdcrCLITest(CliBaseTest):
         self.source = self.input.param('source', 'ns_server')
         self.__user = self.input.param("ldapUser", 'Administrator')
         self.__password = self.input.param('ldapPass', 'password')
-        self.shell = RemoteMachineShellConnection(self.master)
+        self.shell = RemoteMachineShellConnection(self.main)
         info = self.shell.extract_remote_info()
         type = info.type.lower()
         if type == 'windows' and self.source == 'saslauthd':
             raise Exception(" Ldap Tests cannot run on windows");
         elif self.source == 'saslauthd':
-                rest = RestConnection(self.master)
+                rest = RestConnection(self.main)
                 self.setupLDAPSettings(rest)
                 #rest.ldapUserRestOperation(True, [[self.ldapUser]], exclude=None)
                 self.set_user_role(rest,self.ldapUser)
@@ -509,7 +509,7 @@ class XdcrCLITest(CliBaseTest):
                                                 password=password)
 
     def __xdcr_setup_create(self):
-        # xdcr_hostname=the number of server in ini file to add to master as replication
+        # xdcr_hostname=the number of server in ini file to add to main as replication
         xdcr_cluster_name = self.input.param("xdcr-cluster-name", None)
         xdcr_hostname = self.input.param("xdcr-hostname", None)
         xdcr_username = self.input.param("xdcr-username", None)
@@ -540,7 +540,7 @@ class XdcrCLITest(CliBaseTest):
         output, _, xdcr_cluster_name, xdcr_hostname, cli_command, options = self.__xdcr_setup_create()
         expectedResults = {"real_userid:source":self.source, "user":self.__user, "cluster_name":"remote",
                            "cluster_hostname":self.servers[xdcr_hostname].ip + ":8091", "is_encrypted":False}
-        self.checkConfig(16384, self.master, expectedResults)
+        self.checkConfig(16384, self.main, expectedResults)
 
         if xdcr_cluster_name:
             options = options.replace("--create ", "--edit ")
@@ -548,7 +548,7 @@ class XdcrCLITest(CliBaseTest):
             expectedResults = {"real_userid:source":self.source, "user":self.__user,
                                "cluster_name":"remote", "cluster_hostname":self.servers[xdcr_hostname].ip + ":8091",
                                "is_encrypted":False, 'encryption_type':''}
-            self.checkConfig(16385, self.master, expectedResults)
+            self.checkConfig(16385, self.main, expectedResults)
 
         if not xdcr_cluster_name:
             options = "--delete --xdcr-cluster-name=\'{0}\'".format("remote cluster")
@@ -557,7 +557,7 @@ class XdcrCLITest(CliBaseTest):
         output, _ = self.__execute_cli(cli_command=cli_command, options=options)
         expectedResults = {"real_userid:source":self.source, "user":self.__user, "cluster_name":"remote",
                            "cluster_hostname":self.servers[xdcr_hostname].ip + ":8091", "is_encrypted":False}
-        self.checkConfig(16386, self.master, expectedResults)
+        self.checkConfig(16386, self.main, expectedResults)
 
 
 
@@ -583,7 +583,7 @@ class XdcrCLITest(CliBaseTest):
         options += (" --xdcr-replication-mode=\'{0}\'".format(replication_mode), "")[replication_mode is None]
         self.bucket_size = self._get_bucket_size(self.quota, 1)
         if from_bucket:
-            bucket_params = self._create_bucket_params(server=self.master, size=self.bucket_size,
+            bucket_params = self._create_bucket_params(server=self.main, size=self.bucket_size,
                                                               replicas=self.num_replicas,
                                                               enable_replica_index=self.enable_replica_index)
             self.cluster.create_default_bucket(bucket_params)
@@ -593,9 +593,9 @@ class XdcrCLITest(CliBaseTest):
                                                               enable_replica_index=self.enable_replica_index)
             self.cluster.create_default_bucket(bucket_params)
         output, _ = self.__execute_cli(cli_command, options)
-        expectedResults = {"real_userid:source":self.source, "user":self.__user, "local_cluster_name":self.master.ip + ":8091", "source_bucket_name":"default",
+        expectedResults = {"real_userid:source":self.source, "user":self.__user, "local_cluster_name":self.main.ip + ":8091", "source_bucket_name":"default",
                            "remote_cluster_name":"remote", "target_bucket_name":"default"}
-        self.checkConfig(16387, self.master, expectedResults)
+        self.checkConfig(16387, self.main, expectedResults)
 
         self.sleep(8)
         options = "--list"
@@ -609,25 +609,25 @@ class XdcrCLITest(CliBaseTest):
                     options += (" --xdcr-replicator={0}".format(replicator))
                     output, _ = self.__execute_cli(cli_command, options)
                     # validate output message
-                    expectedResults = {"real_userid:source":self.source, "user":self.__user, "local_cluster_name":self.master.ip + ":8091", "source_bucket_name":"default",
+                    expectedResults = {"real_userid:source":self.source, "user":self.__user, "local_cluster_name":self.main.ip + ":8091", "source_bucket_name":"default",
                                                                    "remote_cluster_name":"remote", "target_bucket_name":"default"}
-                    self.checkConfig(16388, self.master, expectedResults)
+                    self.checkConfig(16388, self.main, expectedResults)
                     expectedResults = {"source_bucket_name":"default", "remote_cluster_name":"remote", "target_bucket_name":"default", "real_userid:source":"internal", "user":self.__user,
-                                                                                                           "local_cluster_name":self.master.ip + ":8091", "updated_settings:pauseRequested":True}
-                    self.checkConfig(16392, self.master, expectedResults)
+                                                                                                           "local_cluster_name":self.main.ip + ":8091", "updated_settings:pauseRequested":True}
+                    self.checkConfig(16392, self.main, expectedResults)
 
                     self.sleep(60)
                     # resume replication
                     options = "--resume"
                     options += (" --xdcr-replicator={0}".format(replicator))
                     output, _ = self.__execute_cli(cli_command, options)
-                    expectedResults = {"real_userid:source":self.source, "user":self.__user, "local_cluster_name":self.master.ip + ":8091", "source_bucket_name":"default",
+                    expectedResults = {"real_userid:source":self.source, "user":self.__user, "local_cluster_name":self.main.ip + ":8091", "source_bucket_name":"default",
                                                                    "remote_cluster_name":"remote", "target_bucket_name":"default"}
-                    self.checkConfig(16389, self.master, expectedResults)
+                    self.checkConfig(16389, self.main, expectedResults)
 
                 options = "--delete"
                 options += (" --xdcr-replicator={0}".format(replicator))
                 output, _ = self.__execute_cli(cli_command, options)
-                expectedResults = {"real_userid:source":self.source, "user":self.__user, "local_cluster_name":self.master.ip + ":8091", "source_bucket_name":"default",
+                expectedResults = {"real_userid:source":self.source, "user":self.__user, "local_cluster_name":self.main.ip + ":8091", "source_bucket_name":"default",
                                    "remote_cluster_name":"remote", "target_bucket_name":"default"}
-                self.checkConfig(16390, self.master, expectedResults)
+                self.checkConfig(16390, self.main, expectedResults)

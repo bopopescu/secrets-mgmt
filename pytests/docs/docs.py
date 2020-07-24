@@ -23,8 +23,8 @@ class DocsTests(BaseTestCase):
                                      start=0, end=self.num_items)
         self.log.info("create %s documents..." % (self.num_items))
         try:
-            self._load_all_buckets(self.master, gen_load, "create", 0)
-            self._verify_stats_all_buckets([self.master])
+            self._load_all_buckets(self.main, gen_load, "create", 0)
+            self._verify_stats_all_buckets([self.main])
         except Exception as e:
             if error:
                self.log.info("Unable to create documents as expected: %s" % str(e))
@@ -54,7 +54,7 @@ class DocsTests(BaseTestCase):
         self.log.info("Load initial data on all buckets upto 60% of each memory quota")
         gen_load = BlobGenerator('mike', 'mike-', self.value_size, start=0,
                               end=num_items)
-        self._load_all_buckets(self.master, gen_load, "create", 0)
+        self._load_all_buckets(self.main, gen_load, "create", 0)
         self.log.info("Insert new items upto high_wat_mark (75% of memory quota)")
         for bucket in self.buckets:
             if bucket.type != 'memcached':
@@ -63,13 +63,13 @@ class DocsTests(BaseTestCase):
         new_num_items = self.quota * 1024 * 0.15 / self.value_size
         gen_load = BlobGenerator('mike', 'mike-', self.value_size, start=num_items,
                                  end=new_num_items + num_items)
-        load = self.cluster.async_load_gen_docs(self.master, bucket_to_load.name, gen_load,
+        load = self.cluster.async_load_gen_docs(self.main, bucket_to_load.name, gen_load,
                                  bucket_to_load.kvs[1], 'create', compression=self.sdk_compression)
         load.result()
         end_time = time.time() + 60*60*3
         while time.time() < end_time:
             self.log.info("check memUsed")
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             for bucket in rest.get_buckets():
                 self.log.info("*****************************\
                                 bucket %s: memUsed %s\
@@ -88,12 +88,12 @@ class DocsTests(BaseTestCase):
                 gen_delete = BlobGenerator('mike', 'mike-', self.value_size, start=current_num + 6600,
                                       end=current_num + 7000)
                 tasks = []
-                tasks.append(self.cluster.async_load_gen_docs(self.master, bucket_to_load.name,
+                tasks.append(self.cluster.async_load_gen_docs(self.main, bucket_to_load.name,
                                      gen_update, bucket_to_load.kvs[1], 'update', compression=self.sdk_compression))
-                tasks.append(self.cluster.async_load_gen_docs(self.master, bucket_to_load.name,
+                tasks.append(self.cluster.async_load_gen_docs(self.main, bucket_to_load.name,
                                      gen_expire, bucket_to_load.kvs[1], 'update', exp=1,
                                                               compression=self.sdk_compression))
-                tasks.append(self.cluster.async_load_gen_docs(self.master, bucket_to_load.name,
+                tasks.append(self.cluster.async_load_gen_docs(self.main, bucket_to_load.name,
                                      gen_delete, bucket_to_load.kvs[1], 'delete', compression=self.sdk_compression))
                 for task in tasks:
                     task.result()
@@ -103,10 +103,10 @@ class DocsTests(BaseTestCase):
         last_key_to_expire = remain_keys[0.9 * len(remain_keys)][4:]
         gen_expire = BlobGenerator('mike', 'mike-', self.value_size, start=0,
                                   end=last_key_to_expire)
-        load = self.cluster.async_load_gen_docs(self.master, bucket_to_load.name,
+        load = self.cluster.async_load_gen_docs(self.main, bucket_to_load.name,
                                  gen_expire, bucket_to_load.kvs[1], 'update', exp=1, compression=self.sdk_compression)
         load.result()
         self.log.info("Insert new items or update existing items across buckets")
         gen_load = BlobGenerator('mike', 'mike-', self.value_size, start=new_num_items + num_items,
                                  end=new_num_items * 2 + num_items)
-        self._load_all_buckets(self.master, gen_load, "create", 0)
+        self._load_all_buckets(self.main, gen_load, "create", 0)

@@ -11,7 +11,7 @@ class XDCRTests(BaseUITestCase):
         super(XDCRTests, self).setUp()
         self.bucket = Bucket()
         self._initialize_nodes()
-        self.master = self.servers[0]
+        self.main = self.servers[0]
         for server in self.servers:
             rest=RestConnection(server)
             cluster_status = rest.cluster_status()
@@ -51,7 +51,7 @@ class XDCRTests(BaseUITestCase):
             rest.remove_all_remote_clusters()
         self.log.info("Sleeping for 10 seconds after cleaning up replications and remote clusters")
         time.sleep(10)
-        ClusterOperationHelper.cleanup_cluster(self.servers, master=self.master)
+        ClusterOperationHelper.cleanup_cluster(self.servers, main=self.main)
 
     def _initialize_nodes(self):
         for server in self.servers:

@@ -19,7 +19,7 @@ class LogRedactionBase(BaseTestCase):
         Sets log redaction at cluster level
         :return: None
         '''
-        rest_conn = RestConnection(self.master)
+        rest_conn = RestConnection(self.main)
         if rest_conn.set_log_redaction_level(redaction_level=self.log_redaction_level):
             self.log.info("Redaction level set successfully")
         else:
@@ -27,11 +27,11 @@ class LogRedactionBase(BaseTestCase):
 
     def start_logs_collection(self):
         '''
-        Kicks off log collection at the master node for all nodes in the cluster with set redaction level
+        Kicks off log collection at the main node for all nodes in the cluster with set redaction level
         :return: None
         '''
-        shell = RemoteMachineShellConnection(self.master)
-        command = "curl -X POST -u Administrator:password http://" + self.master.ip + ":8091/controller/startLogsCollection " \
+        shell = RemoteMachineShellConnection(self.main)
+        command = "curl -X POST -u Administrator:password http://" + self.main.ip + ":8091/controller/startLogsCollection " \
                   "-d nodes=\"*\" -d logRedactionLevel=" + self.log_redaction_level
         output, error = shell.execute_command(command=command)
         shell.log_command_output(output, error)
@@ -43,9 +43,9 @@ class LogRedactionBase(BaseTestCase):
         Monitors the log collection until it completes
         :return: final json that contains path to collected log file
         '''
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         command = "curl -X GET -u Administrator:password http://" \
-                          + self.master.ip + ":8091/pools/default/tasks"
+                          + self.main.ip + ":8091/pools/default/tasks"
         progress = 0
         status = ""
         while progress != 100 or status == "running":
@@ -74,7 +74,7 @@ class LogRedactionBase(BaseTestCase):
         '''
         if not remotepath:
             self.fail("Remote path needed to verify if log files exist")
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         if shell.file_exists(remotepath=remotepath, filename=nonredactFileName):
             self.log.info("Regular non-redacted log file exists as expected")
         else:
@@ -97,7 +97,7 @@ class LogRedactionBase(BaseTestCase):
         :param logFileName: log file being validated inside the zips
         :return:
         '''
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         command = "zipinfo " + remotepath + nonredactFileName + " | grep " + logFileName + " | awk '{print $9}'"
         output, error = shell.execute_command(command=command)
         shell.log_command_output(output, error)
@@ -158,5 +158,5 @@ class LogRedactionBase(BaseTestCase):
         prefix = "dev_"
         query = {"full_set": "true", "stale": "false", "connection_timeout": 60000}
         view = View(default_view_name, default_map_func)
-        task = self.cluster.async_create_view(self.master, default_ddoc_name, view, "default")
+        task = self.cluster.async_create_view(self.main, default_ddoc_name, view, "default")
         task.result()

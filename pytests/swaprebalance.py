@@ -60,7 +60,7 @@ class SwapRebalanceBase(unittest.TestCase):
             msg = "minimum {0} nodes required for running swap rebalance"
             self.assertTrue(len(self.servers) >= min_servers, msg=msg.format(min_servers))
 
-            self.log.info('picking server : {0} as the master'.format(serverInfo))
+            self.log.info('picking server : {0} as the main'.format(serverInfo))
             node_ram_ratio = BucketOperationHelper.base_bucket_ratio(self.servers)
             info = rest.get_nodes_self()
             rest.init_cluster(username=serverInfo.rest_username, password=serverInfo.rest_password)
@@ -152,49 +152,49 @@ class SwapRebalanceBase(unittest.TestCase):
     @staticmethod
     def _create_default_bucket(self, replica=1):
         name = "default"
-        master = self.servers[0]
-        rest = RestConnection(master)
-        helper = RestHelper(RestConnection(master))
+        main = self.servers[0]
+        rest = RestConnection(main)
+        helper = RestHelper(RestConnection(main))
         if not helper.bucket_exists(name):
             node_ram_ratio = BucketOperationHelper.base_bucket_ratio(self.servers)
             info = rest.get_nodes_self()
             available_ram = info.memoryQuota * node_ram_ratio
             rest.create_bucket(bucket=name, ramQuotaMB=int(available_ram), replicaNumber=replica)
-            ready = BucketOperationHelper.wait_for_memcached(master, name)
+            ready = BucketOperationHelper.wait_for_memcached(main, name)
             self.assertTrue(ready, msg="wait_for_memcached failed")
         self.assertTrue(helper.bucket_exists(name),
             msg="unable to create {0} bucket".format(name))
 
     @staticmethod
     def _create_multiple_buckets(self, replica=1):
-        master = self.servers[0]
-        created = BucketOperationHelper.create_multiple_buckets(master, replica, howmany=self.num_buckets)
+        main = self.servers[0]
+        created = BucketOperationHelper.create_multiple_buckets(main, replica, howmany=self.num_buckets)
         self.assertTrue(created, "unable to create multiple buckets")
 
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         buckets = rest.get_buckets()
         for bucket in buckets:
-            ready = BucketOperationHelper.wait_for_memcached(master, bucket.name)
+            ready = BucketOperationHelper.wait_for_memcached(main, bucket.name)
             self.assertTrue(ready, msg="wait_for_memcached failed")
 
     # Used for items verification active vs. replica
     @staticmethod
-    def items_verification(test, master):
-        rest = RestConnection(master)
+    def items_verification(test, main):
+        rest = RestConnection(main)
         # Verify items count across all node
         timeout = 600
         for bucket in rest.get_buckets():
-            verified = RebalanceHelper.wait_till_total_numbers_match(master, bucket.name, timeout_in_seconds=timeout)
+            verified = RebalanceHelper.wait_till_total_numbers_match(main, bucket.name, timeout_in_seconds=timeout)
             test.assertTrue(verified, "Lost items!!.. failing test in {0} secs".format(timeout))
 
     @staticmethod
-    def start_load_phase(self, master):
+    def start_load_phase(self, main):
         loaders = []
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         for bucket in rest.get_buckets():
             loader = dict()
-            loader["mcsoda"] = LoadWithMcsoda(master, self.keys_count, bucket=bucket.name,
-                                rest_password=master.rest_password, prefix=str(bucket.name), port=8091)
+            loader["mcsoda"] = LoadWithMcsoda(main, self.keys_count, bucket=bucket.name,
+                                rest_password=main.rest_password, prefix=str(bucket.name), port=8091)
             loader["mcsoda"].cfg["exit-after-creates"] = 1
             loader["mcsoda"].cfg["json"] = 0
             loader["thread"] = Thread(target=loader["mcsoda"].load_data, name='mcloader_' + bucket.name)
@@ -205,13 +205,13 @@ class SwapRebalanceBase(unittest.TestCase):
         return loaders
 
     @staticmethod
-    def start_access_phase(self, master):
+    def start_access_phase(self, main):
         loaders = []
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         for bucket in rest.get_buckets():
             loader = dict()
-            loader["mcsoda"] = LoadWithMcsoda(master, self.keys_count / 2, bucket=bucket.name,
-                    rest_password=master.rest_password, prefix=str(bucket.name), port=8091)
+            loader["mcsoda"] = LoadWithMcsoda(main, self.keys_count / 2, bucket=bucket.name,
+                    rest_password=main.rest_password, prefix=str(bucket.name), port=8091)
             loader["mcsoda"].cfg["ratio-sets"] = 0.8
             loader["mcsoda"].cfg["ratio-hot"] = 0.2
             loader["mcsoda"].cfg["ratio-creates"] = 0.5
@@ -244,13 +244,13 @@ class SwapRebalanceBase(unittest.TestCase):
             SwapRebalanceBase._create_multiple_buckets(self, replica=self.replica)
 
     @staticmethod
-    def verification_phase(test, master):
+    def verification_phase(test, main):
         # Stop loaders
         SwapRebalanceBase.stop_load(test.loaders)
         test.log.info("DONE DATA ACCESS PHASE")
 
         test.log.info("VERIFICATION PHASE")
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         servers_in_cluster = []
         nodes = rest.get_nodes()
         for server in test.servers:
@@ -258,12 +258,12 @@ class SwapRebalanceBase(unittest.TestCase):
                 if node.ip == server.ip and node.port == server.port:
                     servers_in_cluster.append(server)
         RebalanceHelper.wait_for_replication(servers_in_cluster, test.cluster_helper)
-        SwapRebalanceBase.items_verification(test, master)
+        SwapRebalanceBase.items_verification(test, main)
 
     @staticmethod
     def _common_test_body_swap_rebalance(self, do_stop_start=False):
-        master = self.servers[0]
-        rest = RestConnection(master)
+        main = self.servers[0]
+        rest = RestConnection(main)
         num_initial_servers = self.num_initial_servers
         creds = self.input.membase_settings
         intial_severs = self.servers[:num_initial_servers]
@@ -277,20 +277,20 @@ class SwapRebalanceBase(unittest.TestCase):
         self.assertTrue(status, msg="Rebalance was failed")
 
         self.log.info("DATA LOAD PHASE")
-        self.loaders = SwapRebalanceBase.start_load_phase(self, master)
+        self.loaders = SwapRebalanceBase.start_load_phase(self, main)
 
         # Wait till load phase is over
         SwapRebalanceBase.stop_load(self.loaders, do_stop=False)
         self.log.info("DONE LOAD PHASE")
 
         # Start the swap rebalance
-        current_nodes = RebalanceHelper.getOtpNodeIds(master)
+        current_nodes = RebalanceHelper.getOtpNodeIds(main)
         self.log.info("current nodes : {0}".format(current_nodes))
-        toBeEjectedNodes = RebalanceHelper.pick_nodes(master, howmany=self.num_swap)
+        toBeEjectedNodes = RebalanceHelper.pick_nodes(main, howmany=self.num_swap)
         optNodesIds = [node.id for node in toBeEjectedNodes]
 
         if self.swap_orchestrator:
-            status, content = ClusterOperationHelper.find_orchestrator(master)
+            status, content = ClusterOperationHelper.find_orchestrator(main)
             self.assertTrue(status, msg="Unable to find orchestrator: {0}:{1}".\
                 format(status, content))
             if self.num_swap is len(current_nodes):
@@ -309,11 +309,11 @@ class SwapRebalanceBase(unittest.TestCase):
 
         if self.swap_orchestrator:
             rest = RestConnection(new_swap_servers[0])
-            master = new_swap_servers[0]
+            main = new_swap_servers[0]
 
         if self.do_access:
             self.log.info("DATA ACCESS PHASE")
-            self.loaders = SwapRebalanceBase.start_access_phase(self, master)
+            self.loaders = SwapRebalanceBase.start_access_phase(self, main)
 
         self.log.info("SWAP REBALANCE PHASE")
         rest.rebalance(otpNodes=[node.id for node in rest.node_statuses()],
@@ -348,12 +348,12 @@ class SwapRebalanceBase(unittest.TestCase):
                         SwapRebalanceBase.sleep(self, 1)
         self.assertTrue(rest.monitorRebalance(),
             msg="rebalance operation failed after adding node {0}".format(optNodesIds))
-        SwapRebalanceBase.verification_phase(self, master)
+        SwapRebalanceBase.verification_phase(self, main)
 
     @staticmethod
     def _common_test_body_failed_swap_rebalance(self):
-        master = self.servers[0]
-        rest = RestConnection(master)
+        main = self.servers[0]
+        rest = RestConnection(main)
         num_initial_servers = self.num_initial_servers
         creds = self.input.membase_settings
         intial_severs = self.servers[:num_initial_servers]
@@ -367,19 +367,19 @@ class SwapRebalanceBase(unittest.TestCase):
         self.assertTrue(status, msg="Rebalance was failed")
 
         self.log.info("DATA LOAD PHASE")
-        self.loaders = SwapRebalanceBase.start_load_phase(self, master)
+        self.loaders = SwapRebalanceBase.start_load_phase(self, main)
 
         # Wait till load phase is over
         SwapRebalanceBase.stop_load(self.loaders, do_stop=False)
         self.log.info("DONE LOAD PHASE")
 
         # Start the swap rebalance
-        current_nodes = RebalanceHelper.getOtpNodeIds(master)
+        current_nodes = RebalanceHelper.getOtpNodeIds(main)
         self.log.info("current nodes : {0}".format(current_nodes))
-        toBeEjectedNodes = RebalanceHelper.pick_nodes(master, howmany=self.num_swap)
+        toBeEjectedNodes = RebalanceHelper.pick_nodes(main, howmany=self.num_swap)
         optNodesIds = [node.id for node in toBeEjectedNodes]
         if self.swap_orchestrator:
-            status, content = ClusterOperationHelper.find_orchestrator(master)
+            status, content = ClusterOperationHelper.find_orchestrator(main)
             self.assertTrue(status, msg="Unable to find orchestrator: {0}:{1}".\
             format(status, content))
             # When swapping all the nodes
@@ -399,10 +399,10 @@ class SwapRebalanceBase(unittest.TestCase):
 
         if self.swap_orchestrator:
             rest = RestConnection(new_swap_servers[0])
-            master = new_swap_servers[0]
+            main = new_swap_servers[0]
 
         self.log.info("DATA ACCESS PHASE")
-        self.loaders = SwapRebalanceBase.start_access_phase(self, master)
+        self.loaders = SwapRebalanceBase.start_access_phase(self, main)
 
         self.log.info("SWAP REBALANCE PHASE")
         rest.rebalance(otpNodes=[node.id for node in rest.node_statuses()],
@@ -418,8 +418,8 @@ class SwapRebalanceBase(unittest.TestCase):
         bucket = rest.get_buckets()[0].name
         pid = None
         if self.swap_orchestrator and not self.cluster_run:
-            # get PID via remote connection if master is a new node
-            shell = RemoteMachineShellConnection(master)
+            # get PID via remote connection if main is a new node
+            shell = RemoteMachineShellConnection(main)
             pid = shell.get_memcache_pid()
             shell.disconnect()
         else:
@@ -428,7 +428,7 @@ class SwapRebalanceBase(unittest.TestCase):
                 times = 20
             for i in xrange(times):
                 try:
-                    _mc = MemcachedClientHelper.direct_client(master, bucket)
+                    _mc = MemcachedClientHelper.direct_client(main, bucket)
                     pid = _mc.stats()["pid"]
                     break
                 except EOFError as e:
@@ -439,12 +439,12 @@ class SwapRebalanceBase(unittest.TestCase):
         command = "os:cmd(\"kill -9 {0} \")".format(pid)
         self.log.info(command)
         killed = rest.diag_eval(command)
-        self.log.info("killed {0}:{1}??  {2} ".format(master.ip, master.port, killed))
+        self.log.info("killed {0}:{1}??  {2} ".format(main.ip, main.port, killed))
         self.log.info("sleep for 10 sec after kill memcached")
         SwapRebalanceBase.sleep(self, 10)
         # we can't get stats for new node when rebalance falls
         if not self.swap_orchestrator:
-            ClusterOperationHelper._wait_warmup_completed(self, [master], bucket, wait_time=600)
+            ClusterOperationHelper._wait_warmup_completed(self, [main], bucket, wait_time=600)
         i = 0
         # we expect that rebalance will be failed
         try:
@@ -462,12 +462,12 @@ class SwapRebalanceBase(unittest.TestCase):
                             msg="rebalance operation failed after adding node {0}".format(toBeEjectedNodes))
         else:
             self.log.info("rebalance completed successfully")
-        SwapRebalanceBase.verification_phase(self, master)
+        SwapRebalanceBase.verification_phase(self, main)
 
     @staticmethod
     def _add_back_failed_node(self, do_node_cleanup=False):
-        master = self.servers[0]
-        rest = RestConnection(master)
+        main = self.servers[0]
+        rest = RestConnection(main)
         creds = self.input.membase_settings
 
         self.log.info("CREATE BUCKET PHASE")
@@ -479,16 +479,16 @@ class SwapRebalanceBase(unittest.TestCase):
         self.assertTrue(status, msg="Rebalance was failed")
 
         self.log.info("DATA LOAD PHASE")
-        self.loaders = SwapRebalanceBase.start_load_phase(self, master)
+        self.loaders = SwapRebalanceBase.start_load_phase(self, main)
 
         # Wait till load phase is over
         SwapRebalanceBase.stop_load(self.loaders, do_stop=False)
         self.log.info("DONE LOAD PHASE")
 
         # Start the swap rebalance
-        current_nodes = RebalanceHelper.getOtpNodeIds(master)
+        current_nodes = RebalanceHelper.getOtpNodeIds(main)
         self.log.info("current nodes : {0}".format(current_nodes))
-        toBeEjectedNodes = RebalanceHelper.pick_nodes(master, howmany=self.failover_factor)
+        toBeEjectedNodes = RebalanceHelper.pick_nodes(main, howmany=self.failover_factor)
         optNodesIds = [node.id for node in toBeEjectedNodes]
 
         # List of servers that will not be failed over
@@ -504,7 +504,7 @@ class SwapRebalanceBase(unittest.TestCase):
                     self.log.info("Node {0}:{1} not failed over".format(server.ip, server.port))
 
         if self.fail_orchestrator:
-            status, content = ClusterOperationHelper.find_orchestrator(master)
+            status, content = ClusterOperationHelper.find_orchestrator(main)
             self.assertTrue(status, msg="Unable to find orchestrator: {0}:{1}".\
                 format(status, content))
             # When swapping all the nodes
@@ -512,10 +512,10 @@ class SwapRebalanceBase(unittest.TestCase):
                 optNodesIds.append(content)
             else:
                 optNodesIds[0] = content
-            master = not_failed_over[-1]
+            main = not_failed_over[-1]
 
         self.log.info("DATA ACCESS PHASE")
-        self.loaders = SwapRebalanceBase.start_access_phase(self, master)
+        self.loaders = SwapRebalanceBase.start_access_phase(self, main)
 
         # Failover selected nodes
         for node in optNodesIds:
@@ -536,7 +536,7 @@ class SwapRebalanceBase(unittest.TestCase):
             pass
 
         # Make rest connection with node part of cluster
-        rest = RestConnection(master)
+        rest = RestConnection(main)
 
         # Given the optNode, find ip
         add_back_servers = []
@@ -562,12 +562,12 @@ class SwapRebalanceBase(unittest.TestCase):
         self.assertTrue(rest.monitorRebalance(),
             msg="rebalance operation failed after adding node {0}".format(add_back_servers))
 
-        SwapRebalanceBase.verification_phase(self, master)
+        SwapRebalanceBase.verification_phase(self, main)
 
     @staticmethod
     def _failover_swap_rebalance(self):
-        master = self.servers[0]
-        rest = RestConnection(master)
+        main = self.servers[0]
+        rest = RestConnection(main)
         creds = self.input.membase_settings
         num_initial_servers = self.num_initial_servers
         intial_severs = self.servers[:num_initial_servers]
@@ -581,18 +581,18 @@ class SwapRebalanceBase(unittest.TestCase):
         self.assertTrue(status, msg="Rebalance was failed")
 
         self.log.info("DATA LOAD PHASE")
-        self.loaders = SwapRebalanceBase.start_load_phase(self, master)
+        self.loaders = SwapRebalanceBase.start_load_phase(self, main)
 
         # Wait till load phase is over
         SwapRebalanceBase.stop_load(self.loaders, do_stop=False)
         self.log.info("DONE LOAD PHASE")
 
         # Start the swap rebalance
-        self.log.info("current nodes : {0}".format(RebalanceHelper.getOtpNodeIds(master)))
-        toBeEjectedNodes = RebalanceHelper.pick_nodes(master, howmany=self.failover_factor)
+        self.log.info("current nodes : {0}".format(RebalanceHelper.getOtpNodeIds(main)))
+        toBeEjectedNodes = RebalanceHelper.pick_nodes(main, howmany=self.failover_factor)
         optNodesIds = [node.id for node in toBeEjectedNodes]
         if self.fail_orchestrator:
-            status, content = ClusterOperationHelper.find_orchestrator(master)
+            status, content = ClusterOperationHelper.find_orchestrator(main)
             self.assertTrue(status, msg="Unable to find orchestrator: {0}:{1}".\
             format(status, content))
             optNodesIds[0] = content
@@ -611,10 +611,10 @@ class SwapRebalanceBase(unittest.TestCase):
 
         if self.fail_orchestrator:
             rest = RestConnection(new_swap_servers[0])
-            master = new_swap_servers[0]
+            main = new_swap_servers[0]
 
         self.log.info("DATA ACCESS PHASE")
-        self.loaders = SwapRebalanceBase.start_access_phase(self, master)
+        self.loaders = SwapRebalanceBase.start_access_phase(self, main)
 
         rest.rebalance(otpNodes=[node.id for node in rest.node_statuses()], \
             ejectedNodes=optNodesIds)
@@ -622,7 +622,7 @@ class SwapRebalanceBase(unittest.TestCase):
         self.assertTrue(rest.monitorRebalance(),
             msg="rebalance operation failed after adding node {0}".format(new_swap_servers))
 
-        SwapRebalanceBase.verification_phase(self, master)
+        SwapRebalanceBase.verification_phase(self, main)
 
 class SwapRebalanceBasicTests(unittest.TestCase):
 

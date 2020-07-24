@@ -29,17 +29,17 @@ class BucketFlushTests(BaseTestCase):
 
         if self.nodes_in:
             servs_in = self.servers[1:self.nodes_in + 1]
-            self.cluster.rebalance([self.master], servs_in, [])
+            self.cluster.rebalance([self.main], servs_in, [])
 
         if load_data:
-            self._load_all_buckets(self.master, self.gen_create, "create", 0)
+            self._load_all_buckets(self.main, self.gen_create, "create", 0)
             self.persist_and_verify()
 
     """Helper function to wait for persistence and then verify data/stats on all buckets"""
     def persist_and_verify(self):
 
         self._wait_for_stats_all_buckets(self.servers[:self.nodes_in + 1])
-        self._verify_all_buckets(self.master, max_verify=self.max_verify,timeout=360)
+        self._verify_all_buckets(self.main, max_verify=self.max_verify,timeout=360)
         self._verify_stats_all_buckets(self.servers[:self.nodes_in + 1])
 
     """Basic test for bucket flush functionality. Test loads data in bucket and then calls Flush. Verify curr_items=0 after flush.
@@ -50,7 +50,7 @@ class BucketFlushTests(BaseTestCase):
         # MB-18068 known issue with bucket flush
         time.sleep(5)
         for bucket in self.buckets:
-            self.cluster.bucket_flush(self.master, bucket)
+            self.cluster.bucket_flush(self.main, bucket)
 
         for bucket in self.buckets:
             self.cluster.wait_for_stats(self.servers[:self.nodes_in + 1], bucket, '', 'curr_items', '==', 0)
@@ -58,21 +58,21 @@ class BucketFlushTests(BaseTestCase):
     """Test case for empty bucket. Work with multiple nodes/buckets."""
     def bucketflush_empty(self):
 
-        self._load_all_buckets(self.master, self.gen_create, "delete", 0)
+        self._load_all_buckets(self.main, self.gen_create, "delete", 0)
         self.persist_and_verify()
 
         for bucket in self.buckets:
-            self.cluster.bucket_flush(self.master, bucket)
+            self.cluster.bucket_flush(self.main, bucket)
 
-        self._load_all_buckets(self.master, self.gen_create, "create", 0)
+        self._load_all_buckets(self.main, self.gen_create, "create", 0)
         self.persist_and_verify()
 
     """Test case to check client behavior with bucket flush while loading/updating/deleting data"""
     def bucketflush_with_data_ops(self):
         try:
-            tasks = self._async_load_all_buckets(self.master, self.gen_create, self.data_op, 0)
+            tasks = self._async_load_all_buckets(self.main, self.gen_create, self.data_op, 0)
             for bucket in self.buckets:
-                self.cluster.bucket_flush(self.master, bucket)
+                self.cluster.bucket_flush(self.main, bucket)
             for task in tasks:
                 task.result()
         except MemcachedError as exp:
@@ -93,11 +93,11 @@ class BucketFlushTests(BaseTestCase):
             return
         self.err = None
 
-        thread = Thread(target=self.data_ops_with_moxi, args=(self.master, self.data_op, self.buckets, self.num_items, self.use_ascii))
+        thread = Thread(target=self.data_ops_with_moxi, args=(self.main, self.data_op, self.buckets, self.num_items, self.use_ascii))
         thread.start()
 
         for bucket in self.buckets:
-            self.cluster.bucket_flush(self.master, bucket)
+            self.cluster.bucket_flush(self.main, bucket)
 
         thread.join()
         if self.err is not None:

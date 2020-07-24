@@ -27,7 +27,7 @@ class DocumentKeysTests(BaseTestCase):
     def _persist_and_verify(self):
 
         self._wait_for_stats_all_buckets(self.servers[:self.nodes_init])
-        self._verify_all_buckets(self.master, max_verify=self.max_verify)
+        self._verify_all_buckets(self.main, max_verify=self.max_verify)
         self._verify_stats_all_buckets(self.servers[:self.nodes_init])
 
     """Helper function to verify the data using view query"""
@@ -38,9 +38,9 @@ class DocumentKeysTests(BaseTestCase):
             default_view = View("View", default_map_func, None, False)
             ddoc_name = "key_ddoc"
 
-            self.create_views(self.master, ddoc_name, [default_view], bucket.name)
+            self.create_views(self.main, ddoc_name, [default_view], bucket.name)
             query = {"stale" : "false", "connection_timeout" : 60000}
-            self.cluster.query_view(self.master, ddoc_name, default_view.name, query, expected_rows, bucket=bucket.name)
+            self.cluster.query_view(self.main, ddoc_name, default_view.name, query, expected_rows, bucket=bucket.name)
 
     """Perform create/update/delete data ops on the input document key and verify"""
     def _dockey_data_ops(self, dockey="dockey"):
@@ -48,14 +48,14 @@ class DocumentKeysTests(BaseTestCase):
         gen_load = self._init_data_gen(dockey)
 
         for op in ["create", "update", "delete"]:
-            self._load_all_buckets(self.master, gen_load, op, 0)
+            self._load_all_buckets(self.main, gen_load, op, 0)
             self._persist_and_verify()
 
     """Perform verification with views after loading data"""
     def _dockey_views(self, dockey="dockey"):
 
         gen_load = self._init_data_gen(dockey)
-        self._load_all_buckets(self.master, gen_load, "create", 0)
+        self._load_all_buckets(self.main, gen_load, "create", 0)
         self._persist_and_verify()
 
         self._verify_with_views(self.num_items)
@@ -65,11 +65,11 @@ class DocumentKeysTests(BaseTestCase):
     def _dockey_tap(self, dockey="dockey"):
 
         gen_load = self._init_data_gen(dockey)
-        self._load_all_buckets(self.master, gen_load, "create", 0)
+        self._load_all_buckets(self.main, gen_load, "create", 0)
         self._persist_and_verify()
 
         #assert if there are not enough nodes to failover
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         num_nodes = len(rest.node_statuses())
         self.assertTrue(num_nodes > 1,
                             "ERROR: Not enough nodes to do failover")
@@ -87,7 +87,7 @@ class DocumentKeysTests(BaseTestCase):
         expected_rows = self.num_items
         for bucket in self.buckets:
             try:
-                client = MemcachedClientHelper.proxy_client(self.master, bucket.name)
+                client = MemcachedClientHelper.proxy_client(self.main, bucket.name)
             except Exception as ex:
                 self.log.exception("unable to create memcached client due to {0}..".format(ex))
 

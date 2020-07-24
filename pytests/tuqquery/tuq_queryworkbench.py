@@ -23,7 +23,7 @@ class QueryWorkbenchTests(BaseTestCase):
 
     def setUp(self):
         super(QueryWorkbenchTests, self).setUp()
-        server = self.master
+        server = self.main
         if self.input.tuq_client and "client" in self.input.tuq_client:
             server = self.tuq_client
         self.rest = RestConnection(server)

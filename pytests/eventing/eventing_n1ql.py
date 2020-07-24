@@ -20,12 +20,12 @@ class EventingN1QL(EventingBaseTest):
                                                        replicas=self.num_replicas)
             self.cluster.create_standard_bucket(name=self.src_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
-            self.src_bucket = RestConnection(self.master).get_buckets()
+            self.src_bucket = RestConnection(self.main).get_buckets()
             self.cluster.create_standard_bucket(name=self.dst_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
             self.cluster.create_standard_bucket(name=self.metadata_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
-            self.buckets = RestConnection(self.master).get_buckets()
+            self.buckets = RestConnection(self.main).get_buckets()
         self.gens_load = self.generate_docs(self.docs_per_day)
         self.expiry = 3
         self.n1ql_node = self.get_nodes_from_services_map(service_type="n1ql")
@@ -36,7 +36,7 @@ class EventingN1QL(EventingBaseTest):
                                       n1ql_port=self.n1ql_port,
                                       full_docs_list=self.full_docs_list,
                                       log=self.log, input=self.input,
-                                      master=self.master,
+                                      main=self.main,
                                       use_rest=True
                                       )
 
@@ -127,7 +127,7 @@ class EventingN1QL(EventingBaseTest):
     def test_n1ql_curl(self):
         n1ql_nodes = self.get_nodes_from_services_map(service_type="n1ql", get_all_nodes=True)
         self.n1ql_helper.create_primary_index(using_gsi=True, server=self.n1ql_node)
-        self.rest.create_whitelist(self.master, {"all_access": True})
+        self.rest.create_whitelist(self.main, {"all_access": True})
         self.load(self.gens_load, buckets=self.src_bucket, flag=self.item_flag, verify_data=False,
                   batch_size=self.batch_size)
         body = self.create_save_function_body(self.function_name,HANDLER_CODE.CURL,dcp_stream_boundary="from_now",
@@ -226,7 +226,7 @@ class EventingN1QL(EventingBaseTest):
     # This was moved from base class to here because http://ci-eventing.northscale.in/ was failing as it could not find
     # from pytests.security.rbacmain import rbacmain
     def verify_user_noroles(self,username):
-        status, content, header=rbacmain(self.master)._retrieve_user_roles()
+        status, content, header=rbacmain(self.main)._retrieve_user_roles()
         res = json.loads(content)
         userExist=False
         for ele in res:
@@ -255,20 +255,20 @@ class EventingN1QL(EventingBaseTest):
                                       n1ql_port=self.n1ql_port,
                                       full_docs_list=self.full_docs_list,
                                       log=self.log, input=self.input,
-                                      master=self.master,
+                                      main=self.main,
                                       use_rest=True
                                       )
         # primary index is required as we run some queries from handler code
         self.n1ql_helper.create_primary_index(using_gsi=True, server=self.n1ql_node)
         # load the data
-        self.cluster.load_gen_docs(self.master, self.src_bucket_name, gen_load_non_json, self.buckets[0].kvs[1],
+        self.cluster.load_gen_docs(self.main, self.src_bucket_name, gen_load_non_json, self.buckets[0].kvs[1],
                                    'create', compression=self.sdk_compression)
         body = self.create_save_function_body(self.function_name, HANDLER_CODE.N1QL_ITERATORS, execution_timeout=60)
         self.deploy_function(body)
         # Wait for eventing to catch up with all the update mutations and verify results
         self.verify_eventing_results(self.function_name, 100)
         # delete all the docs
-        self.cluster.load_gen_docs(self.master, self.src_bucket_name, gen_load_non_json_del, self.buckets[0].kvs[1],
+        self.cluster.load_gen_docs(self.main, self.src_bucket_name, gen_load_non_json_del, self.buckets[0].kvs[1],
                                    'delete', compression=self.sdk_compression)
         # Wait for eventing to catch up with all the delete mutations and verify results
         self.verify_eventing_results(self.function_name, 0, skip_stats_validation=True)

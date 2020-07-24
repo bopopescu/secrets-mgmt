@@ -129,8 +129,8 @@ class CBASDemoQueries(CBASBaseTest):
         query_record, dataset_record = query_details.get_query_and_dataset_details()
 
         # Delete Default bucket and load beer-sample bucket
-#         self.cluster.bucket_delete(server=self.master, bucket="default")
-        self.load_sample_buckets(servers=[self.master],
+#         self.cluster.bucket_delete(server=self.main, bucket="default")
+        self.load_sample_buckets(servers=[self.main],
                                  bucketName=dataset_record['cb_bucket_name'],
                                  total_items=self.beer_sample_docs_count)
         if "add_all_cbas_nodes" in self.input.test_params and self.input.test_params["add_all_cbas_nodes"] and len(self.cbas_servers) > 1:
@@ -154,12 +154,12 @@ class CBASDemoQueries(CBASBaseTest):
             cbas_bucket_name=dataset_record['cbas_bucket_name'],
             cb_bucket_password=self.cb_bucket_password)
         
-        num_items = self.get_item_count(self.master,dataset_record['cb_bucket_name'])
+        num_items = self.get_item_count(self.main,dataset_record['cb_bucket_name'])
         self.assertTrue(self.wait_for_ingestion_complete(["beers","breweries"], num_items),"Data ingestion couldn't complete in 300 secs")
 
         # Execute Query
         status, metrics, errors, results, _ = self.execute_statement_on_cbas(
-            query_record['query'], self.master)
+            query_record['query'], self.main)
         self.log.info('Actual Status : ' + status)
         self.log.info('Expected Status : ' + query_record['expected_status'])
         self.log.info('Actual # Hits : ' + str(metrics['resultCount']))

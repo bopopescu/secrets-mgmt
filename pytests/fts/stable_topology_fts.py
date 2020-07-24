@@ -147,7 +147,7 @@ class StableTopFTS(FTSBaseTest):
     def test_match_consistency_error(self):
         query = {"match_all": {}}
         fts_node = self._cb_cluster.get_random_fts_node()
-        service_map = RestConnection(self._cb_cluster.get_master_node()).get_nodes_services()
+        service_map = RestConnection(self._cb_cluster.get_main_node()).get_nodes_services()
         # select FTS node to shutdown
         for node_ip, services in service_map.iteritems():
             ip = node_ip.split(':')[0]
@@ -491,8 +491,8 @@ class StableTopFTS(FTSBaseTest):
     def index_query_beer_sample(self):
         #delete default bucket
         self._cb_cluster.delete_bucket("default")
-        master = self._cb_cluster.get_master_node()
-        self.load_sample_buckets(server=master, bucketName="beer-sample")
+        main = self._cb_cluster.get_main_node()
+        self.load_sample_buckets(server=main, bucketName="beer-sample")
         bucket = self._cb_cluster.get_bucket_by_name("beer-sample")
         index = self.create_index(bucket, "beer-index")
         self.wait_for_indexing_complete()
@@ -866,10 +866,10 @@ class StableTopFTS(FTSBaseTest):
     def test_doc_config(self):
         # delete default bucket
         self._cb_cluster.delete_bucket("default")
-        master = self._cb_cluster.get_master_node()
+        main = self._cb_cluster.get_main_node()
 
         # Load Travel Sample bucket and create an index
-        self.load_sample_buckets(server=master, bucketName="travel-sample")
+        self.load_sample_buckets(server=main, bucketName="travel-sample")
         bucket = self._cb_cluster.get_bucket_by_name("travel-sample")
         index = self.create_index(bucket, "travel-index")
         self.sleep(10)
@@ -1148,7 +1148,7 @@ class StableTopFTS(FTSBaseTest):
                      "{\\\"text\\\":\\\"a lazy cat and a brown cat\\\"}",
                      "{\\\"text\\\":\\\"a lazy cat\\\"}"]
 
-        self.create_test_dataset(self._master, test_data)
+        self.create_test_dataset(self._main, test_data)
         self.wait_till_items_in_bucket_equal(items=len(test_data))
         plan_params = self.construct_plan_params()
         index = self.create_index(plan_params=plan_params,
@@ -1205,7 +1205,7 @@ class StableTopFTS(FTSBaseTest):
                      "{\\\"text\\\":\\\"a lazy dog and a brown dog\\\"}",
                      "{\\\"text\\\":\\\"a lazy fox and a brown fox\\\"}"]
 
-        self.create_test_dataset(self._master, test_data)
+        self.create_test_dataset(self._main, test_data)
         self.wait_till_items_in_bucket_equal(items=len(test_data))
         plan_params = self.construct_plan_params()
         index = self.create_index(plan_params=plan_params,
@@ -1251,7 +1251,7 @@ class StableTopFTS(FTSBaseTest):
                      "{\\\"text\\\":\\\"a lazy cat\\\"}",
                      "{\\\"text\\\":\\\"a lazy cat and a brown cat\\\"}"]
 
-        self.create_test_dataset(self._master, test_data)
+        self.create_test_dataset(self._main, test_data)
         self.wait_till_items_in_bucket_equal(items=len(test_data))
         plan_params = self.construct_plan_params()
         index = self.create_index(plan_params=plan_params,
@@ -1308,7 +1308,7 @@ class StableTopFTS(FTSBaseTest):
                      "{\\\"text\\\":\\\"a lazy cat\\\"}",
                      "{\\\"text\\\":\\\"a lazy cat and a brown cat\\\"}"]
 
-        self.create_test_dataset(self._master, test_data)
+        self.create_test_dataset(self._main, test_data)
         self.wait_till_items_in_bucket_equal(items=len(test_data))
         plan_params = self.construct_plan_params()
         index = self.create_index(plan_params=plan_params,
@@ -1364,7 +1364,7 @@ class StableTopFTS(FTSBaseTest):
         test_data = ["{\\\"text\\\":\\\"a cat\\\"}",
                      "{\\\"text\\\":\\\"a lazy cat\\\"}"]
 
-        self.create_test_dataset(self._master, test_data)
+        self.create_test_dataset(self._main, test_data)
         self.wait_till_items_in_bucket_equal(items=len(test_data))
         plan_params = self.construct_plan_params()
         index = self.create_index(plan_params=plan_params,
@@ -1422,7 +1422,7 @@ class StableTopFTS(FTSBaseTest):
                      {"text":"he is weak at grammar"},
                      {"text":"sum of all the rows"}]
 
-        self.create_test_dataset(self._master, test_data)
+        self.create_test_dataset(self._main, test_data)
         self.wait_till_items_in_bucket_equal(items=len(test_data))
         index = self.create_index(bucket=self._cb_cluster.get_bucket_by_name(
                                       'default'),
@@ -1673,7 +1673,7 @@ class StableTopFTS(FTSBaseTest):
                  "size": 10000000}
 
         self.load_data()
-        cert = RestConnection(self._master).get_cluster_ceritificate()
+        cert = RestConnection(self._main).get_cluster_ceritificate()
         f = open('cert.pem', 'w')
         f.write(cert)
         f.close()
@@ -1682,7 +1682,7 @@ class StableTopFTS(FTSBaseTest):
               "-XPUT -H \"Content-Type: application/json\" "+\
               "-u Administrator:password "+\
               "https://{0}:{1}/api/index/default_idx -d ".\
-                  format(self._master.ip, fts_ssl_port) +\
+                  format(self._main.ip, fts_ssl_port) +\
               "\'{0}\'".format(json.dumps(idx))
 
         self.log.info("Running command : {0}".format(cmd))
@@ -1692,7 +1692,7 @@ class StableTopFTS(FTSBaseTest):
                     "-XPOST -H \"Content-Type: application/json\" " + \
                     "-u Administrator:password " + \
                     "https://{0}:18094/api/index/default_idx/query -d ". \
-                        format(self._master.ip, fts_ssl_port) + \
+                        format(self._main.ip, fts_ssl_port) + \
                     "\'{0}\'".format(json.dumps(qry))
             self.sleep(20, "wait for indexing to complete")
             output = subprocess.check_output(query, shell=True)
@@ -1707,7 +1707,7 @@ class StableTopFTS(FTSBaseTest):
         import couchbase
         self.load_data()
         self.create_simple_default_index()
-        master = self._cb_cluster.get_master_node()
+        main = self._cb_cluster.get_main_node()
         dic ={}
         dic['null'] = None
         dic['number'] = 12345
@@ -1718,7 +1718,7 @@ class StableTopFTS(FTSBaseTest):
         try:
             from couchbase.cluster import Cluster
             from couchbase.cluster import PasswordAuthenticator
-            cluster = Cluster('couchbase://{0}'.format(master.ip))
+            cluster = Cluster('couchbase://{0}'.format(main.ip))
             authenticator = PasswordAuthenticator('Administrator', 'password')
             cluster.authenticate(authenticator)
             cb = cluster.open_bucket('default')

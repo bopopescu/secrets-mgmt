@@ -21,12 +21,12 @@ class EventingNegative(EventingBaseTest):
                                                        replicas=self.num_replicas)
             self.cluster.create_standard_bucket(name=self.src_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
-            self.src_bucket = RestConnection(self.master).get_buckets()
+            self.src_bucket = RestConnection(self.main).get_buckets()
             self.cluster.create_standard_bucket(name=self.dst_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
             self.cluster.create_standard_bucket(name=self.metadata_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
-            self.buckets = RestConnection(self.master).get_buckets()
+            self.buckets = RestConnection(self.main).get_buckets()
         self.gens_load = self.generate_docs(self.docs_per_day)
         self.expiry = 3
 
@@ -141,12 +141,12 @@ class EventingNegative(EventingBaseTest):
 
     def test_function_where_handler_code_takes_more_time_to_execute_than_execution_timeout(self):
         # Note to Self : Never use SDK's unless you really have to. It is difficult to upgrade or maintain correct
-        # sdk versions on the slaves. Scripts will be notoriously unreliable when you run on jenkins slaves.
+        # sdk versions on the subordinates. Scripts will be notoriously unreliable when you run on jenkins subordinates.
         num_docs = 10
         values = ['1', '10']
         # create 10 non json docs on source bucket
         gen_load_non_json = JSONNonDocGenerator('non_json_docs', values, start=0, end=num_docs)
-        self.cluster.load_gen_docs(self.master, self.src_bucket_name, gen_load_non_json, self.buckets[0].kvs[1],
+        self.cluster.load_gen_docs(self.main, self.src_bucket_name, gen_load_non_json, self.buckets[0].kvs[1],
                                    'create', compression=self.sdk_compression)
         # create a function which sleeps for 5 secs and set execution_timeout to 1s
         body = self.create_save_function_body(self.function_name, HANDLER_CODE_ERROR.EXECUTION_TIME_MORE_THAN_TIMEOUT,
@@ -185,9 +185,9 @@ class EventingNegative(EventingBaseTest):
                                         end=2016 * self.docs_per_day + 1)
         gen_load_json = JsonDocGenerator('binary', op_type="create", end=2016 * self.docs_per_day)
         # load binary data on dst bucket and non json on src bucket with identical keys so that we can read them
-        self.cluster.load_gen_docs(self.master, self.src_bucket_name, gen_load_json, self.buckets[0].kvs[1], "create",
+        self.cluster.load_gen_docs(self.main, self.src_bucket_name, gen_load_json, self.buckets[0].kvs[1], "create",
                                    exp=0, flag=0, batch_size=1000, compression=self.sdk_compression)
-        self.cluster.load_gen_docs(self.master, self.dst_bucket_name, gen_load_binary, self.buckets[0].kvs[1], "create",
+        self.cluster.load_gen_docs(self.main, self.dst_bucket_name, gen_load_binary, self.buckets[0].kvs[1], "create",
                                    exp=0, flag=0, batch_size=1000, compression=self.sdk_compression)
         body = self.create_save_function_body(self.function_name, HANDLER_CODE.READ_BUCKET_OP_ON_DST)
         self.deploy_function(body)

@@ -13,7 +13,7 @@ class epctlTests(CliBaseTest):
         self.param_type = self.input.param("param_type", "set flush_param")
         self.param = self.input.param("param", "max_size")
         self.param_value = self.input.param("param_value", 1000000)
-        self.server = self.master
+        self.server = self.main
         self.rest = RestConnection(self.server)
 
     def tearDown(self):

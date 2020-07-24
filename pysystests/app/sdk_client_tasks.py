@@ -218,7 +218,7 @@ def getDirectMC(key, ip, port = 8091, bucket = "default", password = ""):
 
         vbucket = [vbucket for vbucket in vbuckets if vbucket.id == vbId]
         if len(vbucket) == 1:
-            mc_ip, mc_port = vbucket[0].master.split(":")
+            mc_ip, mc_port = vbucket[0].main.split(":")
             real_mc_client = MemcachedClient(mc_ip, int(mc_port))
             real_mc_client.sasl_auth_plain(bucket, password)
             real_mc_client.vbucket_count = len(vbuckets)

@@ -30,9 +30,9 @@ class CouchbaseCliTestWithMeta(CliBaseTest):
         if len(self.buckets) >= 2:
             self.fail("This test only runs in one bucket")
 
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         success_set_exist_item = False
-        mc = MemcachedClient(self.master.ip, 11210)
+        mc = MemcachedClient(self.main.ip, 11210)
         mc.sasl_auth_plain('Administrator', 'password')
         mc.bucket_select('bucket0')
         mc.vbucketId = 903

@@ -94,7 +94,7 @@ class rbacPermissionList():
             "getDiag":"diag;GET",
             #"getDiagVbuckets":"/diag/vbuckets:GET",
             #"getDiagAle":"diag/ale;GET",
-            #"getDiagMasterEvents":"/diag/masterEvents:GET",
+            #"getDiagMainEvents":"/diag/mainEvents:GET",
         }
         result = self._return_http_code(_cluster_admin_diag_read,username,password,host=host,port=port,httpCode=httpCode, user_role=user_role)
 

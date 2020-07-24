@@ -25,15 +25,15 @@ class HealthcheckerTests(CliBaseTest):
         gen_update = BlobGenerator('nosql', 'nosql-', self.value_size, end=(self.num_items / 2 - 1))
         gen_expire = BlobGenerator('nosql', 'nosql-', self.value_size, start=self.num_items / 2, end=(self.num_items * 3 / 4 - 1))
         gen_delete = BlobGenerator('nosql', 'nosql-', self.value_size, start=self.num_items * 3 / 4, end=self.num_items)
-        self._load_all_buckets(self.master, gen_load, "create", 0)
+        self._load_all_buckets(self.main, gen_load, "create", 0)
 
         if(self.doc_ops is not None):
             if("update" in self.doc_ops):
-                self._load_all_buckets(self.master, gen_update, "update", 0)
+                self._load_all_buckets(self.main, gen_update, "update", 0)
             if("delete" in self.doc_ops):
-                self._load_all_buckets(self.master, gen_delete, "delete", 0)
+                self._load_all_buckets(self.main, gen_delete, "delete", 0)
             if("expire" in self.doc_ops):
-                self._load_all_buckets(self.master, gen_expire, "update", self.expire_time)
+                self._load_all_buckets(self.main, gen_expire, "update", self.expire_time)
                 self.sleep(self.expire_time + 1)
         self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
 
@@ -135,7 +135,7 @@ class HealthcheckerTests(CliBaseTest):
 
     def _check_nodes_list(self, soup):
         self.log.info("Check nodes")
-        for node in RestConnection(self.master).node_statuses():
+        for node in RestConnection(self.main).node_statuses():
             is_checked = False
             for section in soup.findAll('section'):
                 if section.get('id') == 'cluster-overview':

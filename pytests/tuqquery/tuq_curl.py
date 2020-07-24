@@ -33,23 +33,23 @@ class QueryCurlTests(QueryTests):
     def setUp(self):
         super(QueryCurlTests, self).setUp()
         self.log.info("==============  QueryCurlTests setup has started ==============")
-        self.shell = RemoteMachineShellConnection(self.master)
+        self.shell = RemoteMachineShellConnection(self.main)
         self.info = self.shell.extract_remote_info()
         if self.info.type.lower() == 'windows':
             self.curl_path = "%scurl" % self.path
         else:
             self.curl_path = "curl"
-        self.rest = RestConnection(self.master)
+        self.rest = RestConnection(self.main)
         self.cbqpath = '%scbq' % self.path + " -e %s:%s -q -u %s -p %s" \
-                                             % (self.master.ip, self.n1ql_port, self.rest.username, self.rest.password)
-        self.query_service_url = "'http://%s:%s/query/service'" % (self.master.ip,self.n1ql_port)
+                                             % (self.main.ip, self.n1ql_port, self.rest.username, self.rest.password)
+        self.query_service_url = "'http://%s:%s/query/service'" % (self.main.ip,self.n1ql_port)
         self.api_port = self.input.param("api_port", 8094)
         self.load_sample = self.input.param("load_sample", False)
         self.create_users = self.input.param("create_users", False)
         self.full_access = self.input.param("full_access", True)
         self.run_cbq_query('delete from system:prepareds')
         if self.full_access:
-            self.rest.create_whitelist(self.master, {"all_access": True})
+            self.rest.create_whitelist(self.main, {"all_access": True})
         self.log.info("==============  QueryCurlTests setup has completed ==============")
         self.log_config_info()
 
@@ -76,7 +76,7 @@ class QueryCurlTests(QueryTests):
             testuser = [{'id': 'no_curl', 'name': 'no_curl', 'password': 'password'},
                         {'id': 'curl', 'name': 'curl', 'password': 'password'},
                         {'id': 'curl_no_insert', 'name': 'curl_no_insert', 'password': 'password'}]
-            RbacBase().create_user_source(testuser, 'builtin', self.master)
+            RbacBase().create_user_source(testuser, 'builtin', self.main)
 
             noncurl_permissions = 'bucket_full_access[*]:query_select[*]:query_update[*]:' \
                                   'query_insert[*]:query_delete[*]:query_manage_index[*]:' \
@@ -122,7 +122,7 @@ class QueryCurlTests(QueryTests):
 
     '''Basic test for using GET in curl'''
     def test_GET(self):
-        url = "'http://%s:%s/pools/default/buckets/default'" % (self.master.ip,self.master.port)
+        url = "'http://%s:%s/pools/default/buckets/default'" % (self.main.ip,self.main.port)
         query = "select curl("+ url +",{'user':'%s:%s'})"  % (self.username,self.password)
         curl = self.shell.execute_commands_inside(self.cbqpath,query,'', '', '', '', '')
         json_curl = self.convert_to_json(curl)
@@ -200,7 +200,7 @@ class QueryCurlTests(QueryTests):
 
     '''Test if you can join using curl as one of the buckets to be joined'''
     def test_curl_join(self):
-        url = "'http://%s:%s/api/index/beers/query'" % (self.master.ip,self.api_port)
+        url = "'http://%s:%s/api/index/beers/query'" % (self.main.ip,self.api_port)
         select_query = "select ARRAY x.id for x in b1.result.hits end as hits, b1.result.total_hits as total," \
                        "array_length(b1.result.hits), b "
         from_query = "from (select curl("+ url +", "
@@ -305,7 +305,7 @@ class QueryCurlTests(QueryTests):
 
     '''Test a n1ql curl query containing the use of FTS'''
     def test_basic_fts_curl(self):
-        url = "'http://%s:%s/api/index/beers/query'" % (self.master.ip,self.api_port)
+        url = "'http://%s:%s/api/index/beers/query'" % (self.main.ip,self.api_port)
         select_query = "select result.total_hits, array_length(result.hits) "
         from_query = "from curl("+ url +", "
         options = "{'header':'Content-Type: application/json', " \
@@ -691,7 +691,7 @@ class QueryCurlTests(QueryTests):
         limit = 5
         n1ql_query = 'select * from default limit %s' % limit
         invalid_json_error = 'Errorevaluatingprojection.-cause:InvalidJSONendpointhttp:' \
-                             '//%s:%s/query/service'%(self.master.ip,self.n1ql_port)
+                             '//%s:%s/query/service'%(self.main.ip,self.n1ql_port)
 
         options = "{'data' : 'statement=%s', 'user':'%s:%s'}" \
                   % (n1ql_query, self.username, self.password)
@@ -926,7 +926,7 @@ class QueryCurlTests(QueryTests):
     def test_curl_access(self):
         error_msg = "UserdoesnothavecredentialstorunqueriesusingtheCURL()function." \
                     "Addrolequery_external_accesstoallowthequerytorun."
-        cbqpath = '%scbq' % self.path + " -e %s:%s -u 'no_curl' -p 'password' -q " %(self.master.ip,
+        cbqpath = '%scbq' % self.path + " -e %s:%s -u 'no_curl' -p 'password' -q " %(self.main.ip,
                                                                                      self.n1ql_port)
         # The query that curl will send to couchbase
         n1ql_query = 'select * from default limit 5'
@@ -937,7 +937,7 @@ class QueryCurlTests(QueryTests):
         json_curl = self.convert_to_json(curl)
         self.assertEqual(json_curl['errors'][0]['msg'], error_msg)
 
-        cbqpath = '%scbq' % self.path + " -e %s:%s -u 'curl' -p 'password' -q " % (self.master.ip,
+        cbqpath = '%scbq' % self.path + " -e %s:%s -u 'curl' -p 'password' -q " % (self.main.ip,
                                                                                    self.n1ql_port)
         query = "select curl("+ self.query_service_url +\
                 ", {'data' : 'statement=%s','user':'curl:password'})" % (n1ql_query)
@@ -950,11 +950,11 @@ class QueryCurlTests(QueryTests):
     '''Test if curl can be used to grant roles without the correct permissions'''
     def test_curl_grant_role(self):
         error_msg = "Errorevaluatingprojection.-cause:InvalidJSONendpointhttp://%s:%s/" \
-                    "settings/rbac/users/local/intuser" % (self.master.ip,self.master.port)
-        cbqpath = '%scbq' % self.path + " -e %s:%s -u 'curl' -p 'password' -q " % (self.master.ip,
+                    "settings/rbac/users/local/intuser" % (self.main.ip,self.main.port)
+        cbqpath = '%scbq' % self.path + " -e %s:%s -u 'curl' -p 'password' -q " % (self.main.ip,
                                                                                    self.n1ql_port)
         query = "select curl('http://%s:%s/settings/rbac/users/local/intuser' " \
-                % (self.master.ip,self.master.port) +\
+                % (self.main.ip,self.main.port) +\
                 ", {'data' : 'name=TestInternalUser&roles=data_reader[default]&password=pwintuser'" \
                 ",'user':'curl:password','request':'POST'})"
         curl = self.shell.execute_commands_inside(cbqpath,query,'', '', '', '', '')
@@ -963,7 +963,7 @@ class QueryCurlTests(QueryTests):
 
         error_msg = "Errorevaluatingprojection.-cause:CURLonlysupportsGETandPOSTrequests."
         query = "select curl('http://%s:%s/settings/rbac/users/local/intuser' " \
-                % (self.master.ip,self.master.port) +\
+                % (self.main.ip,self.main.port) +\
                 ", {'data' : 'name=Test Internal User&roles=data_reader[default]&password=pwintuser'" \
                 ",'user':'curl:password','request':'PUT'})"
         curl = self.shell.execute_commands_inside(cbqpath,query,'', '', '', '', '')
@@ -979,7 +979,7 @@ class QueryCurlTests(QueryTests):
         error_msg2 = "UserdoesnothavecredentialstorunqueriesusingtheCURL()function.Addrole" \
                     "query_external_accesstoallowthequerytorun."
 
-        cbqpath = '%scbq' % self.path + " -e %s:%s -u 'no_curl' -p 'password' -q " %(self.master.ip,
+        cbqpath = '%scbq' % self.path + " -e %s:%s -u 'no_curl' -p 'password' -q " %(self.main.ip,
                                                                                      self.n1ql_port)
         n1ql_query = 'select * from \`beer-sample\` limit 1'
         insert_query ="insert into default (key UUID(), value curl_result.results[0].\`beer-sample\`) "
@@ -992,7 +992,7 @@ class QueryCurlTests(QueryTests):
                         or json_curl['errors'][0]['msg'] == error_msg2)
 
         cbqpath = '%scbq' % self.path + " -e %s:%s -u 'curl_no_insert' -p 'password' -q " % \
-                                        (self.master.ip, self.n1ql_port)
+                                        (self.main.ip, self.n1ql_port)
         options = "{'data' : 'statement=%s','user':'curl_no_insert:password'}) curl_result " \
                   % (n1ql_query)
         returning ="returning meta().id, * "
@@ -1001,7 +1001,7 @@ class QueryCurlTests(QueryTests):
         self.assertEqual(json_curl['errors'][0]['msg'],error_msg)
 
         cbqpath = '%scbq' % self.path + " -e %s:%s -q -u 'no_curl' -p 'password'" % \
-                                        (self.master.ip, self.n1ql_port)
+                                        (self.main.ip, self.n1ql_port)
         n1ql_query = 'select * from \`beer-sample\` limit 1'
         insert_query ="insert into default (key UUID(), value curl_result.results[0].\`beer-sample\`) "
         query = "select curl("+ self.query_service_url +", "
@@ -1018,7 +1018,7 @@ class QueryCurlTests(QueryTests):
         error_msg = "UserdoesnothavecredentialstorunINSERTqueriesonthedefaultbucket." \
                     "Addrolequery_insertondefaulttoallowthequerytorun."
         cbqpath = '%scbq' % self.path + " -e %s:%s -u 'curl_no_insert' -p 'password' -q " % \
-                                        (self.master.ip, self.n1ql_port)
+                                        (self.main.ip, self.n1ql_port)
         curl_query = "select curl("+ self.query_service_url+ ", "
         options = "{'data':'statement=insert into default (key UUID(), value result) select result " \
                   "from curl(\\\"https://jira.atlassian.com/rest/api/latest/issue/JRA-9\\\") result " \

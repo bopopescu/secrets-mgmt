@@ -6,7 +6,7 @@ import re
 class SimpleQueryRequests(BaseTestCase):
     def setUp(self):
         super(SimpleQueryRequests, self).setUp()
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         type = shell.extract_remote_info().distribution_type
         self.log.info(type)
         shell.disconnect()
@@ -15,7 +15,7 @@ class SimpleQueryRequests(BaseTestCase):
             self.is_linux = True
 
     def test_simple_ui_request(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         passed = True
         self.log.info("GET " + rest.query_baseUrl)
         status, content, header = rest._http_request(rest.query_baseUrl)

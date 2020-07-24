@@ -19,22 +19,22 @@ class NegativeRebalanceTests(RebalanceBaseTest):
 
     def pass_no_arguments(self):
         try:
-            self.rest = RestConnection(self.master)
+            self.rest = RestConnection(self.main)
             status = self.rest.rebalance(otpNodes=[], ejectedNodes=[])
             self.assertFalse(status," Rebalance did not fail as expected")
         except Exception, ex:
             self.assertTrue(("empty_known_nodes" in str(ex)),"Rebalance did not fail as expected, got an unexpected exception {0}".format(ex))
 
     def add_no_nodes(self):
-        self.rest = RestConnection(self.master)
-        nodes = self.get_nodes(self.master)
+        self.rest = RestConnection(self.main)
+        nodes = self.get_nodes(self.main)
         status = self.rest.rebalance(otpNodes=nodes, ejectedNodes=[])
         self.assertTrue(status," Rebalance did not fail as expected")
 
     def remove_all_nodes(self):
         try:
-            self.rest = RestConnection(self.master)
-            nodes = self.get_nodes(self.master)
+            self.rest = RestConnection(self.main)
+            nodes = self.get_nodes(self.main)
             status = self.rest.rebalance(otpNodes=nodes, ejectedNodes=nodes)
             self.assertTrue(status," Rebalance did not fail as expected")
         except Exception, ex:
@@ -42,7 +42,7 @@ class NegativeRebalanceTests(RebalanceBaseTest):
 
     def pass_non_existant_nodes(self):
         try:
-            self.rest = RestConnection(self.master)
+            self.rest = RestConnection(self.main)
             status = self.rest.rebalance(otpNodes=['non-existant'], ejectedNodes=['non-existant'])
             self.assertFalse(status," Rebalance did not fail as expected")
         except Exception, ex:
@@ -50,9 +50,9 @@ class NegativeRebalanceTests(RebalanceBaseTest):
 
     def non_existant_recovery_bucket(self):
         try:
-            self.rest = RestConnection(self.master)
-            nodes = self.get_nodes(self.master)
-            chosen = RebalanceHelper.pick_nodes(self.master, howmany=1)
+            self.rest = RestConnection(self.main)
+            nodes = self.get_nodes(self.main)
+            chosen = RebalanceHelper.pick_nodes(self.main, howmany=1)
             # Mark Node for failover
             success_failed_over = self.rest.fail_over(chosen[0].id, graceful=False)
             # Mark Node for full recovery
@@ -65,9 +65,9 @@ class NegativeRebalanceTests(RebalanceBaseTest):
 
     def not_ready_for_recovery(self):
         try:
-            self.rest = RestConnection(self.master)
-            nodes = self.get_nodes(self.master)
-            chosen = RebalanceHelper.pick_nodes(self.master, howmany=1)
+            self.rest = RestConnection(self.main)
+            nodes = self.get_nodes(self.main)
+            chosen = RebalanceHelper.pick_nodes(self.main, howmany=1)
             # Mark Node for failover
             success_failed_over = self.rest.fail_over(chosen[0].id, graceful=False)
             self.stop_server(self.servers[1])
@@ -81,8 +81,8 @@ class NegativeRebalanceTests(RebalanceBaseTest):
 
     def node_down_cannot_rebalance(self):
         try:
-            self.rest = RestConnection(self.master)
-            nodes = self.get_nodes(self.master)
+            self.rest = RestConnection(self.main)
+            nodes = self.get_nodes(self.main)
             self.stop_server(self.servers[1])
             status = self.rest.rebalance(otpNodes=nodes, ejectedNodes=nodes[1:])
             self.assertFalse(status," Rebalance did not fail as expected ")
@@ -90,22 +90,22 @@ class NegativeRebalanceTests(RebalanceBaseTest):
             self.start_server(self.servers[1])
 
     def rebalance_running_cannot_rebalance(self):
-        self.rest = RestConnection(self.master)
-        nodes = self.get_nodes(self.master)
+        self.rest = RestConnection(self.main)
+        nodes = self.get_nodes(self.main)
         status = self.rest.rebalance(otpNodes=nodes, ejectedNodes=nodes[1:])
         status = self.rest.rebalance(otpNodes=nodes, ejectedNodes=nodes[1:])
         self.assertFalse(status,"Rebalance did not fail as expected ")
 
     def rebalance_graceful_failover_running_cannot_rebalance(self):
-        self.rest = RestConnection(self.master)
-        nodes = self.get_nodes(self.master)
-        chosen = RebalanceHelper.pick_nodes(self.master, howmany=1)
+        self.rest = RestConnection(self.main)
+        nodes = self.get_nodes(self.main)
+        chosen = RebalanceHelper.pick_nodes(self.main, howmany=1)
         success_failed_over = self.rest.fail_over(chosen[0].id, graceful=True)
         status = self.rest.rebalance(otpNodes=nodes,ejectedNodes=nodes[1:])
         self.assertFalse(status," Rebalance did not fail as expected ")
 
     def get_nodes(self,server):
-        self.rest = RestConnection(self.master)
+        self.rest = RestConnection(self.main)
         nodes = self.rest.node_statuses()
         nodes = [node.id for node in nodes]
         return nodes

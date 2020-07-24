@@ -8,7 +8,7 @@ import re
 class SimpleRequests(BaseTestCase):
     def setUp(self):
         super(SimpleRequests, self).setUp()
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         type = shell.extract_remote_info().distribution_type
         shell.disconnect()
         self.is_linux = False
@@ -16,7 +16,7 @@ class SimpleRequests(BaseTestCase):
             self.is_linux = True
 
     def test_simple_ui_request(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         passed = True
         for api in ["", "versions", "pools", "pools/default", "pools/nodes", "pools/default/overviewStats",
                     "pools/default/buckets", "pools/default/buckets/@query/stats", "pools/default/nodeServices",

@@ -18,7 +18,7 @@ class QueryN1QLBackfillTests(QueryTests):
         self.set_backfill_directory = self.input.param("set_backfill_directory", True)
         self.change_directory = self.input.param("change_directory", False)
         self.reset_settings = self.input.param("reset_settings", False)
-        self.curl_url = "http://%s:%s/settings/querySettings" % (self.master.ip, self.master.port)
+        self.curl_url = "http://%s:%s/settings/querySettings" % (self.main.ip, self.main.port)
         self.log.info("==============  QueryN1QLBackfillTests setup has completed ==============")
         self.log_config_info()
 

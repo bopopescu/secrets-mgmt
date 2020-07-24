@@ -105,7 +105,7 @@ class portscan(BaseTestCase):
         self.get_the_testssl_script(self.TEST_SSL_FILENAME)
         command = "ns_config:set(ssl_minimum_protocol, 'tlsv1.2')"
         self.log.info("posting: %s" % command)
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         res = rest.diag_eval(command)
 
 
@@ -144,7 +144,7 @@ class portscan(BaseTestCase):
         for i in self.ports_to_check:
             check_count = 0
             self.log.info('Testing port {0}'.format(i))
-            cmd  = self.TEST_SSL_FILENAME + ' --color 0 {0}:{1}'.format( self.master.ip, i)
+            cmd  = self.TEST_SSL_FILENAME + ' --color 0 {0}:{1}'.format( self.main.ip, i)
             print 'cmd is', cmd
             res = os.popen(cmd).read().split('\n')
             for r in res:

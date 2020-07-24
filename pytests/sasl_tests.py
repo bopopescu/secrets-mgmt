@@ -30,11 +30,11 @@ class SaslTest(BaseTestCase):
                                                                 bucket,
                                                                 password))
         ret = None
-        nodes = RestConnection(self.master).get_nodes()
+        nodes = RestConnection(self.main).get_nodes()
         for n in nodes:
-            if n.ip == self.master.ip and n.port == self.master.port:
+            if n.ip == self.main.ip and n.port == self.main.port:
                 node = n
-        client = MemcachedClient(self.master.ip, node.memcached)
+        client = MemcachedClient(self.main.ip, node.memcached)
         try:
             if self.auth_mech == "PLAIN":
                 ret = client.sasl_auth_plain(bucket, password)[2]
@@ -50,11 +50,11 @@ class SaslTest(BaseTestCase):
             ['SCRAM-SHA512', 'SCRAM-SHA1', 'SCRAM-SHA256', 'PLAIN']
     """
     def test_list_mechs(self):
-        nodes = RestConnection(self.master).get_nodes()
+        nodes = RestConnection(self.main).get_nodes()
         for n in nodes:
-            if n.ip == self.master.ip and n.port == self.master.port:
+            if n.ip == self.main.ip and n.port == self.main.port:
                 node = n
-        client = MemcachedClient(self.master.ip, node.memcached)
+        client = MemcachedClient(self.main.ip, node.memcached)
         mechs = list(client.sasl_mechanisms())
         self.log.info("Start check mech types")
         assert "SCRAM-SHA1" in mechs
@@ -67,7 +67,7 @@ class SaslTest(BaseTestCase):
     def test_basic_valid(self):
         buckets = { "bucket1" : "password",
                     "bucket2" : "password" }
-        self.create_pwd_buckets(self.master, buckets)
+        self.create_pwd_buckets(self.main, buckets)
 
         for bucket in buckets:
             assert self.do_auth("Administrator", buckets[bucket]) == AUTH_SUCCESS
@@ -85,7 +85,7 @@ class SaslTest(BaseTestCase):
     user provides a partial password then authenication will fail"""
     def test_auth_incomplete_password(self):
         buckets = { "bucket1" : "password1" }
-        self.create_pwd_buckets(self.master, buckets)
+        self.create_pwd_buckets(self.main, buckets)
 
         for bucket in buckets:
             assert AUTH_FAILURE in self.do_auth(bucket, "")
@@ -100,7 +100,7 @@ class SaslTest(BaseTestCase):
     user provides a partial bucket name then authenication will fail"""
     def test_auth_incomplete_bucket(self):
         buckets = { "bucket1" : "password1" }
-        self.create_pwd_buckets(self.master, buckets)
+        self.create_pwd_buckets(self.main, buckets)
 
         assert AUTH_FAILURE in self.do_auth("", "password1")
         assert AUTH_FAILURE in self.do_auth("buck", "password1")
@@ -114,7 +114,7 @@ class SaslTest(BaseTestCase):
     mechanisms and this test chaeck some of those cases."""
     def test_auth_null_character_tests(self):
         buckets = { "bucket1" : "password1" }
-        self.create_pwd_buckets(self.master, buckets)
+        self.create_pwd_buckets(self.main, buckets)
 
         assert AUTH_FAILURE in self.do_auth("\0Administrator", "password1")
         assert AUTH_FAILURE in self.do_auth("\0\0\0Administrator", "password1")
@@ -155,7 +155,7 @@ class SaslTest(BaseTestCase):
         invalid_pass = self.input.param("invalid_pass", [])
         if invalid_pass:
             invalid_pass = invalid_pass.split(";")
-        self._create_sasl_buckets(self.master, buckets_num, bucket_size=100,
+        self._create_sasl_buckets(self.main, buckets_num, bucket_size=100,
                                                     password=valid_password)
         if self.input.param("include_restart", False):
             self.restart_server(self.servers[:self.nodes_init])

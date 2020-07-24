@@ -68,7 +68,7 @@ class LWWStatsTests(BaseTestCase):
         # bucket is created with lww in base test case using the LWW parameter
         client = MemcachedClientHelper.direct_client(self.servers[0],
                                                      self.buckets[0])
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         self.assertTrue( rest.set_cas_drift_threshold(self.buckets[0],
                                                       100000, 200000),
                         'Unable to set the CAS drift threshold')
@@ -118,7 +118,7 @@ class LWWStatsTests(BaseTestCase):
         self.log.info('The poisoned CAS is {0}'.format(poisoned_cas))
         # do lots of mutations to set the max CAS for all vbuckets
         gen_load  = BlobGenerator('key-for-cas-test', 'value-for-cas-test-', self.value_size, end=10000)
-        self._load_all_buckets(self.master, gen_load, "create", 0)
+        self._load_all_buckets(self.main, gen_load, "create", 0)
         # move the clock back again and verify the CAS stays large
         self.assertTrue(  shell.change_system_time( -LWWStatsTests.ONE_HOUR_IN_SECONDS ), 'Failed to change the clock')
         output, error = shell.execute_command('date')
@@ -160,7 +160,7 @@ class LWWStatsTests(BaseTestCase):
              'For {0} CAS has not decreased. Current CAS {1} poisoned CAS {2}'.format('key-after-resetting cas', set_cas_after_reset_max_cas, poisoned_cas))
         # do a bunch of sets and verify the CAS is small - this is really only one set, need to do more
         gen_load  = BlobGenerator('key-for-cas-test-after-cas-is-reset', 'value-for-cas-test-', self.value_size, end=1000)
-        self._load_all_buckets(self.master, gen_load, "create", 0)
+        self._load_all_buckets(self.main, gen_load, "create", 0)
         gen_load.reset()
         while gen_load.has_next():
             key, value = gen_load.next()
@@ -297,7 +297,7 @@ class LWWStatsTests(BaseTestCase):
 
         # do a bunch of mutations to set the max cas
         gen_load  = BlobGenerator('key-for-cas-test-logical-ticks', 'value-for-cas-test-', self.value_size, end=10000)
-        self._load_all_buckets(self.master, gen_load, "create", 0)
+        self._load_all_buckets(self.main, gen_load, "create", 0)
 
         vbucket_stats = mc_client.stats('vbucket-details')
         base_total_logical_clock_ticks = 0
@@ -313,7 +313,7 @@ class LWWStatsTests(BaseTestCase):
         # do more mutations
         NUMBER_OF_MUTATIONS = 10000
         gen_load  = BlobGenerator('key-for-cas-test-logical-ticks', 'value-for-cas-test-', self.value_size, end=NUMBER_OF_MUTATIONS)
-        self._load_all_buckets(self.master, gen_load, "create", 0)
+        self._load_all_buckets(self.main, gen_load, "create", 0)
 
         vbucket_stats = mc_client.stats('vbucket-details')
         time.sleep(30)

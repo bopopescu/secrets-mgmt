@@ -17,16 +17,16 @@ class WarmUpClusterTest(unittest.TestCase):
     membase = None
     shell = None
     remote_tmp_folder = None
-    master = None
+    main = None
 
     def setUp(self):
         self.log = logger.Logger.get_logger()
-        self.master = TestInputSingleton.input.servers[0]
+        self.main = TestInputSingleton.input.servers[0]
         self.input = TestInputSingleton.input
         self.servers = self.input.servers
         self.num_of_docs = self.input.param("num_of_docs", 1000)
 
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         for server in self.servers:
             rest.init_cluster(server.rest_username, server.rest_password)
 
@@ -41,8 +41,8 @@ class WarmUpClusterTest(unittest.TestCase):
         self._create_default_bucket()
 
         #Rebalance the nodes
-        ClusterOperationHelper.begin_rebalance_in(self.master, self.servers)
-        ClusterOperationHelper.end_rebalance(self.master)
+        ClusterOperationHelper.begin_rebalance_in(self.main, self.servers)
+        ClusterOperationHelper.end_rebalance(self.main)
         self._log_start()
 
     def tearDown(self):
@@ -52,14 +52,14 @@ class WarmUpClusterTest(unittest.TestCase):
 
     def _create_default_bucket(self):
         name = "default"
-        master = self.master
-        rest = RestConnection(master)
-        helper = RestHelper(RestConnection(master))
+        main = self.main
+        rest = RestConnection(main)
+        helper = RestHelper(RestConnection(main))
         node_ram_ratio = BucketOperationHelper.base_bucket_ratio(TestInputSingleton.input.servers)
         info = rest.get_nodes_self()
         available_ram = info.memoryQuota * node_ram_ratio
         rest.create_bucket(bucket=name, ramQuotaMB=int(available_ram))
-        ready = BucketOperationHelper.wait_for_memcached(master, name)
+        ready = BucketOperationHelper.wait_for_memcached(main, name)
         self.assertTrue(ready, msg="wait_for_memcached failed")
         self.assertTrue(helper.bucket_exists(name),
             msg="unable to create {0} bucket".format(name))
@@ -81,7 +81,7 @@ class WarmUpClusterTest(unittest.TestCase):
             pass
 
     def _insert_data(self, howmany):
-        self.onenodemc = MemcachedClientHelper.proxy_client(self.master, "default")
+        self.onenodemc = MemcachedClientHelper.proxy_client(self.main, "default")
         items = ["{0}-{1}".format(str(uuid.uuid4()), i) for i in range(0, howmany)]
         try:
             for item in items:
@@ -98,9 +98,9 @@ class WarmUpClusterTest(unittest.TestCase):
         self.servers = self.input.servers
         self._insert_data(howmany)
 
-        RebalanceHelper.wait_for_persistence(self.master, "default")
+        RebalanceHelper.wait_for_persistence(self.main, "default")
         time.sleep(5)
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
 
         map = {}
         #collect curr_items from all nodes

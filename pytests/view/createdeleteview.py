@@ -86,7 +86,7 @@ class CreateDeleteViewTests(BaseTestCase):
                     #create view objects as per num_views_per_ddoc
                     view_list = self.make_default_views(prefix_view, num_views_per_ddoc)
                 #create view in the database
-                self.create_views(self.master, design_doc_name, view_list, bucket, self.wait_timeout * 2, check_replication=check_replication)
+                self.create_views(self.main, design_doc_name, view_list, bucket, self.wait_timeout * 2, check_replication=check_replication)
                 #store the created views in internal dictionary
                 ddoc_view_map[design_doc_name] = view_list
             #store the ddoc-view dict per bucket
@@ -105,10 +105,10 @@ class CreateDeleteViewTests(BaseTestCase):
                         for view_count in xrange(num_views_per_ddoc):
                             #create new View object to be updated
                             updated_view = View(view_list[start_pos_for_mutation + view_count].name, self.updated_map_func, None, False)
-                            self.cluster.create_view(self.master, ddoc_name, updated_view, bucket, self.wait_timeout * 2, check_replication=check_replication)
+                            self.cluster.create_view(self.main, ddoc_name, updated_view, bucket, self.wait_timeout * 2, check_replication=check_replication)
                     else:
                         #update the existing design doc(rev gets updated with this call)
-                        self.cluster.create_view(self.master, ddoc_name, None, bucket, self.wait_timeout * 2, check_replication=check_replication)
+                        self.cluster.create_view(self.main, ddoc_name, None, bucket, self.wait_timeout * 2, check_replication=check_replication)
                     ddoc_map_loop_cnt += 1
         elif ddoc_op_type == "delete":
             self.log.info("Processing Delete DDoc Operation On Bucket {0}".format(bucket))
@@ -122,12 +122,12 @@ class CreateDeleteViewTests(BaseTestCase):
                     if test_with_view:
                         for view_count in xrange(num_views_per_ddoc):
                             #iterate and update all the views as per num_views_per_ddoc
-                            self.cluster.delete_view(self.master, ddoc_name, view_list[start_pos_for_mutation + view_count], bucket, self.wait_timeout * 2)
+                            self.cluster.delete_view(self.main, ddoc_name, view_list[start_pos_for_mutation + view_count], bucket, self.wait_timeout * 2)
                         #store the updated view list
                         ddoc_view_map[ddoc_name] = view_list[:start_pos_for_mutation] + view_list[start_pos_for_mutation + num_views_per_ddoc:]
                     else:
                         #delete the design doc
-                        self.cluster.delete_view(self.master, ddoc_name, None, bucket, self.wait_timeout * 2)
+                        self.cluster.delete_view(self.main, ddoc_name, None, bucket, self.wait_timeout * 2)
                         #remove the ddoc_view_map
                         del ddoc_view_map[ddoc_name]
                     ddoc_map_loop_cnt += 1
@@ -170,7 +170,7 @@ class CreateDeleteViewTests(BaseTestCase):
                     #create view objects as per num_views_per_ddoc
                     view_list = self.make_default_views(prefix_view, num_views_per_ddoc)
                 #create view in the database
-                tasks = self.async_create_views(self.master, design_doc_name, view_list, bucket, check_replication=check_replication)
+                tasks = self.async_create_views(self.main, design_doc_name, view_list, bucket, check_replication=check_replication)
                 #store the created views in internal dictionary
                 ddoc_view_map[design_doc_name] = view_list
             #store the ddoc-view dict per bucket
@@ -191,11 +191,11 @@ class CreateDeleteViewTests(BaseTestCase):
                         for view_count in xrange(num_views_per_ddoc):
                             #create new View object to be updated
                             updated_view = View(view_list[start_pos_for_mutation + view_count].name, self.updated_map_func, None, False)
-                            t_ = self.cluster.async_create_view(self.master, ddoc_name, updated_view, bucket, check_replication=check_replication)
+                            t_ = self.cluster.async_create_view(self.main, ddoc_name, updated_view, bucket, check_replication=check_replication)
                             tasks.append(t_)
                     else:
                         #update the existing design doc(rev gets updated with this call)
-                        t_ = self.cluster.async_create_view(self.master, ddoc_name, None, bucket, check_replication=check_replication)
+                        t_ = self.cluster.async_create_view(self.main, ddoc_name, None, bucket, check_replication=check_replication)
                         tasks.append(t_)
                     ddoc_map_loop_cnt += 1
             return tasks
@@ -212,13 +212,13 @@ class CreateDeleteViewTests(BaseTestCase):
                     if test_with_view:
                         for view_count in xrange(num_views_per_ddoc):
                             #iterate and update all the views as per num_views_per_ddoc
-                            t_ = self.cluster.async_delete_view(self.master, ddoc_name, view_list[start_pos_for_mutation + view_count], bucket)
+                            t_ = self.cluster.async_delete_view(self.main, ddoc_name, view_list[start_pos_for_mutation + view_count], bucket)
                             tasks.append(t_)
                         #store the updated view list
                         ddoc_view_map[ddoc_name] = view_list[:start_pos_for_mutation] + view_list[start_pos_for_mutation + num_views_per_ddoc:]
                     else:
                         #delete the design doc
-                        t_ = self.cluster.async_delete_view(self.master, ddoc_name, None, bucket)
+                        t_ = self.cluster.async_delete_view(self.main, ddoc_name, None, bucket)
                         tasks.append(t_)
                         #remove the ddoc_view_map
                         del ddoc_view_map[ddoc_name]
@@ -239,7 +239,7 @@ class CreateDeleteViewTests(BaseTestCase):
         None. Fails the test on validation error"""
     def _verify_ddoc_ops_all_buckets(self):
         self.log.info("DDoc Validation Started")
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         #Iterate over all the DDocs/Views stored in the internal dictionary
         for bucket, self.ddoc_view_map in self.bucket_ddoc_map.items():
             for ddoc_name, view_list in self.ddoc_view_map.items():
@@ -265,14 +265,14 @@ class CreateDeleteViewTests(BaseTestCase):
     Returns:
         None. Fails the test on data validation error"""
     def _verify_ddoc_data_all_buckets(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         query = {"stale" : "false", "full_set" : "true", "connection_timeout" : 60000}
         for bucket, self.ddoc_view_map in self.bucket_ddoc_map.items():
             num_items = sum([len(kv_store) for kv_store in bucket.kvs.values()])
             self.log.info("DDoc Data Validation Started on bucket {0}. Expected Data Items {1}".format(bucket, num_items))
             for ddoc_name, view_list in self.ddoc_view_map.items():
                 for view in view_list:
-                    result = self.cluster.query_view(self.master, ddoc_name, view.name, query, num_items, bucket)
+                    result = self.cluster.query_view(self.main, ddoc_name, view.name, query, num_items, bucket)
                     if not result:
                         self.fail("DDoc Data Validation Error: View - {0} in Design Doc - {1} and Bucket - {2}".format(view.name, ddoc_name, bucket))
         self.log.info("DDoc Data Validation Successful")
@@ -288,7 +288,7 @@ class CreateDeleteViewTests(BaseTestCase):
             view = View(view_name, self.default_map_func, None)
             with self.assertRaises(DesignDocCreationException):
                 self.cluster.create_view(
-                    self.master, self.default_design_doc_name, view,
+                    self.main, self.default_design_doc_name, view,
                     'default', self.wait_timeout * 2)
                 self.fail("server allowed creation of invalid "
                                "view named `{0}`".format(view_name))
@@ -306,7 +306,7 @@ class CreateDeleteViewTests(BaseTestCase):
         for view in views:
             try:
                 self.cluster.create_view(
-                    self.master, self.default_design_doc_name, view,
+                    self.main, self.default_design_doc_name, view,
                     'default', self.wait_timeout * 2)
             except DesignDocCreationException:
                 pass
@@ -318,7 +318,7 @@ class CreateDeleteViewTests(BaseTestCase):
         for bucket in self.buckets:
             for i in xrange(2):
                 self._execute_ddoc_ops('create', True, 1, 1, bucket=bucket)
-        self._wait_for_stats_all_buckets([self.master])
+        self._wait_for_stats_all_buckets([self.main])
         self._verify_ddoc_ops_all_buckets()
         self._verify_ddoc_data_all_buckets()
 
@@ -329,7 +329,7 @@ class CreateDeleteViewTests(BaseTestCase):
                 tasks = self._async_execute_ddoc_ops('create', True, 1, 1, bucket=bucket)
         for task in tasks:
             task.result(self.wait_timeout * 2)
-        self._wait_for_stats_all_buckets([self.master])
+        self._wait_for_stats_all_buckets([self.main])
         self._verify_ddoc_ops_all_buckets()
         self._verify_ddoc_data_all_buckets()
 
@@ -342,12 +342,12 @@ class CreateDeleteViewTests(BaseTestCase):
         map_fun = self._get_complex_map(get_compile)
         view = View("View1", map_fun, None, False)
         if get_compile:
-            self.cluster.create_view(self.master, self.default_design_doc_name, view, 'default', self.wait_timeout * 2)
-            self._wait_for_stats_all_buckets([self.master])
-            self.cluster.query_view(self.master, self.default_design_doc_name, view.name, query)
+            self.cluster.create_view(self.main, self.default_design_doc_name, view, 'default', self.wait_timeout * 2)
+            self._wait_for_stats_all_buckets([self.main])
+            self.cluster.query_view(self.main, self.default_design_doc_name, view.name, query)
         else:
             try:
-                self.cluster.create_view(self.master, self.default_design_doc_name, view, 'default', self.wait_timeout * 2)
+                self.cluster.create_view(self.main, self.default_design_doc_name, view, 'default', self.wait_timeout * 2)
             except DesignDocCreationException:
                 pass
             else:
@@ -362,7 +362,7 @@ class CreateDeleteViewTests(BaseTestCase):
                 self._execute_ddoc_ops(self.ddoc_ops, self.test_with_view,
                                        self.num_ddocs / 2, self.num_views_per_ddoc / 2, bucket=bucket)
 
-        self._wait_for_stats_all_buckets([self.master])
+        self._wait_for_stats_all_buckets([self.main])
         self._verify_ddoc_ops_all_buckets()
         self._verify_ddoc_data_all_buckets()
 
@@ -381,7 +381,7 @@ class CreateDeleteViewTests(BaseTestCase):
         for task in create_tasks + tasks:
             task.result(self.wait_timeout * 2)
 
-        self._wait_for_stats_all_buckets([self.master])
+        self._wait_for_stats_all_buckets([self.main])
         self._verify_ddoc_ops_all_buckets()
         self._verify_ddoc_data_all_buckets()
 
@@ -417,7 +417,7 @@ class CreateDeleteViewTests(BaseTestCase):
         max_verify = None
         if self.num_items > 500000:
             max_verify = 100000
-        self._verify_all_buckets(server=self.master, timeout=self.wait_timeout * 15 if not self.dgm_run else None, max_verify=max_verify)
+        self._verify_all_buckets(server=self.main, timeout=self.wait_timeout * 15 if not self.dgm_run else None, max_verify=max_verify)
         self._verify_stats_all_buckets(self.servers[:self.nodes_in + 1], timeout=self.wait_timeout if not self.dgm_run else None)
         self._verify_ddoc_ops_all_buckets()
         if self.test_with_view:
@@ -447,7 +447,7 @@ class CreateDeleteViewTests(BaseTestCase):
             max_verify = None
             if self.num_items > 500000:
                 max_verify = 100000
-            self._verify_all_buckets(server=self.master, timeout=self.wait_timeout * 15 if not self.dgm_run else None, max_verify=max_verify)
+            self._verify_all_buckets(server=self.main, timeout=self.wait_timeout * 15 if not self.dgm_run else None, max_verify=max_verify)
             self._verify_stats_all_buckets(self.servers[:i], timeout=self.wait_timeout if not self.dgm_run else None)
             self._verify_ddoc_ops_all_buckets()
             if self.test_with_view:
@@ -485,7 +485,7 @@ class CreateDeleteViewTests(BaseTestCase):
         max_verify = None
         if self.num_items > 500000:
             max_verify = 100000
-        self._verify_all_buckets(server=self.master, timeout=self.wait_timeout * 15 if not self.dgm_run else None, max_verify=max_verify)
+        self._verify_all_buckets(server=self.main, timeout=self.wait_timeout * 15 if not self.dgm_run else None, max_verify=max_verify)
         self._verify_stats_all_buckets(servs_after_rebal, timeout=self.wait_timeout if not self.dgm_run else None)
         self._verify_ddoc_ops_all_buckets()
         if self.test_with_view:
@@ -519,15 +519,15 @@ class CreateDeleteViewTests(BaseTestCase):
         self.disable_compaction()
 
         for view in ddoc.views:
-            self.cluster.create_view(self.master, ddoc.name, view, bucket=self.default_bucket_name)
+            self.cluster.create_view(self.main, ddoc.name, view, bucket=self.default_bucket_name)
 
         generator = self._load_doc_data_all_buckets()
-        RebalanceHelper.wait_for_persistence(self.master, self.default_bucket_name)
+        RebalanceHelper.wait_for_persistence(self.main, self.default_bucket_name)
 
         # generate load until fragmentation reached
-        rebalance = self.cluster.async_rebalance([self.master], self.servers[1:self.nodes_in + 1], [])
+        rebalance = self.cluster.async_rebalance([self.main], self.servers[1:self.nodes_in + 1], [])
         while rebalance.state != "FINISHED":
-            fragmentation_monitor = self.cluster.async_monitor_view_fragmentation(self.master,
+            fragmentation_monitor = self.cluster.async_monitor_view_fragmentation(self.main,
                              prefix + ddoc_name, fragmentation_value, self.default_bucket_name)
             end_time = time.time() + self.wait_timeout * 30
             while fragmentation_monitor.state != "FINISHED" and end_time > time.time():
@@ -535,11 +535,11 @@ class CreateDeleteViewTests(BaseTestCase):
                 self._load_doc_data_all_buckets("update", gen_load=generator)
                 for view in ddoc.views:
                     # run queries to create indexes
-                    self.cluster.query_view(self.master, prefix + ddoc_name, view.name, query)
+                    self.cluster.query_view(self.main, prefix + ddoc_name, view.name, query)
             if end_time < time.time() and fragmentation_monitor.state != "FINISHED":
                 self.fail("impossible to reach compaction value after %s sec" % (self.wait_timeout * 20))
             fragmentation_monitor.result()
-            compaction_task = self.cluster.async_compact_view(self.master, prefix + ddoc_name,
+            compaction_task = self.cluster.async_compact_view(self.main, prefix + ddoc_name,
                                                               self.default_bucket_name, with_rebalance=True)
             result = compaction_task.result(self.wait_timeout * 10)
             self.assertTrue(result, "Compaction didn't finished correctly. Please check diags")
@@ -551,10 +551,10 @@ class CreateDeleteViewTests(BaseTestCase):
         # load initial documents
         self._load_doc_data_all_buckets()
 
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         for node in self.servers[1:]:
             self.log.info("adding node {0}:{1} to cluster".format(node.ip, node.port))
-            rest.add_node(self.master.rest_username, self.master.rest_password, node.ip, node.port)
+            rest.add_node(self.main.rest_username, self.main.rest_password, node.ip, node.port)
 
         for bucket in self.buckets:
             self._execute_ddoc_ops("create", self.test_with_view, self.num_ddocs, self.num_views_per_ddoc, bucket=bucket)
@@ -584,10 +584,10 @@ class CreateDeleteViewTests(BaseTestCase):
                 #update delete the same ddocs
                 tasks_ddoc = self._async_execute_ddoc_ops(self.ddoc_ops, self.test_with_view, self.num_ddocs / 2, self.num_views_per_ddoc / 2, "dev_test", "v1", bucket=bucket, check_replication=False)
 
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         for node in self.servers[1:]:
             self.log.info("adding node {0}:{1} to cluster".format(node.ip, node.port))
-            rest.add_node(self.master.rest_username, self.master.rest_password, node.ip, node.port)
+            rest.add_node(self.main.rest_username, self.main.rest_password, node.ip, node.port)
 
         for task in tasks_ddoc:
             task.result(self.wait_timeout * 2)
@@ -690,11 +690,11 @@ class CreateDeleteViewTests(BaseTestCase):
                 self._execute_ddoc_ops(self.ddoc_ops, self.test_with_view, self.num_ddocs / 2, self.num_views_per_ddoc / 2, "dev_test", "v2")
         self._verify_ddoc_ops_all_buckets()
 
-    """Remove the master node while doing design doc/view operations."""
-    def ddoc_ops_removing_master(self):
+    """Remove the main node while doing design doc/view operations."""
+    def ddoc_ops_removing_main(self):
         #assert if there is only 1 node
         self.assertTrue(self.num_servers > 1,
-                            "ERROR: Need atleast 2 servers to remove master")
+                            "ERROR: Need atleast 2 servers to remove main")
 
         self.log.info("create a cluster of all the available servers")
         self.cluster.rebalance(self.servers[:self.num_servers],
@@ -716,15 +716,15 @@ class CreateDeleteViewTests(BaseTestCase):
                 #update delete the same ddocs
                 tasks_ddoc = self._async_execute_ddoc_ops(self.ddoc_ops, self.test_with_view, self.num_ddocs / 2, self.num_views_per_ddoc / 2, "dev_test", "v1", bucket=bucket)
 
-        self.log.info("rebalance out the master node")
+        self.log.info("rebalance out the main node")
         self.cluster.rebalance(self.servers[:self.num_servers], [], self.servers[:1])
 
         for task in tasks_ddoc:
             task.result(self.wait_timeout * 2)
 
-        #update the server list as master is no longer there
+        #update the server list as main is no longer there
         self.servers = self.servers[1:]
-        self.master = self.servers[1]
+        self.main = self.servers[1]
 
         #wait for persistence before verification
         self._wait_for_stats_all_buckets(self.servers)
@@ -751,7 +751,7 @@ class CreateDeleteViewTests(BaseTestCase):
         # start fragmentation monitor
         for bucket, ddoc_view_map in self.bucket_ddoc_map.items():
             for ddoc_name, view_list in ddoc_view_map.items():
-                fragmentation_monitor = self.cluster.async_monitor_view_fragmentation(self.master,
+                fragmentation_monitor = self.cluster.async_monitor_view_fragmentation(self.main,
                                                                                       ddoc_name,
                                                                                       self.fragmentation_value,
                                                                                       bucket.name)
@@ -762,12 +762,12 @@ class CreateDeleteViewTests(BaseTestCase):
                     for view in view_list:
                         # run queries to create indexes
                         query = {"stale" : "false", "full_set" : "true"}
-                        self.cluster.query_view(self.master, ddoc_name, view.name, query, bucket=bucket)
+                        self.cluster.query_view(self.main, ddoc_name, view.name, query, bucket=bucket)
                 fragmentation_monitor.result()
 
                 # compact ddoc and make sure fragmentation is less than high_mark
                 # will throw exception if failed
-                compaction_task = self.cluster.async_compact_view(self.master, ddoc_name, bucket=bucket.name)
+                compaction_task = self.cluster.async_compact_view(self.main, ddoc_name, bucket=bucket.name)
 
                 #create more ddocs, update/delete existing depending on the ddoc_ops type
                 if self.ddoc_ops == "create":
@@ -800,7 +800,7 @@ class CreateDeleteViewTests(BaseTestCase):
         for bucket, self.ddoc_view_map in self.bucket_ddoc_map.items():
             for ddoc_name, view_list in self.ddoc_view_map.items():
                 for view in view_list:
-                    query_ops.append(self.cluster.async_query_view(self.master, ddoc_name, view.name, query))
+                    query_ops.append(self.cluster.async_query_view(self.main, ddoc_name, view.name, query))
 
         #create more ddocs, update/delete existing depending on the ddoc_ops type
         for bucket in self.buckets:
@@ -837,7 +837,7 @@ class CreateDeleteViewTests(BaseTestCase):
                               "endkey" : key,
                               "stale" : "false", "connection_timeout" : 60000}
 
-            result = self.cluster.query_view(self.master, 'ddoc_big_int', 'view_big_int', query_negative, num_items)
+            result = self.cluster.query_view(self.main, 'ddoc_big_int', 'view_big_int', query_negative, num_items)
             if not result:
                 self.fail("View query for big int(positive test) didn't return expected result")
             self.log.info("View query for big int(positive test) Successful")
@@ -855,7 +855,7 @@ class CreateDeleteViewTests(BaseTestCase):
                               "endkey" : key,
                               "stale" : "false", "connection_timeout" : 60000}
 
-            result = self.cluster.query_view(self.master, 'ddoc_big_int', 'view_big_int', query_negative, 0)
+            result = self.cluster.query_view(self.main, 'ddoc_big_int', 'view_big_int', query_negative, 0)
             if not result:
                 self.fail("View query for big int(negative test) didn't return expected result")
             self.log.info("View query for big int(negative test) Successful")
@@ -872,13 +872,13 @@ class CreateDeleteViewTests(BaseTestCase):
         gen_load = DocumentGenerator('test_docs', template, docId, conversationId, timestamp, msg, start=0, end=num_items)
 
         self.log.info("Inserting json data into bucket")
-        self._load_all_buckets(self.master, gen_load, "create", 0)
-        self._wait_for_stats_all_buckets([self.master])
+        self._load_all_buckets(self.main, gen_load, "create", 0)
+        self._wait_for_stats_all_buckets([self.main])
 
         map_fn = 'function (doc) {emit([doc.conversationId, doc.timestamp], doc);}'
         view = [View('view_big_int', map_fn, dev_view=False)]
 
-        self.create_views(self.master, 'ddoc_big_int', view)
+        self.create_views(self.main, 'ddoc_big_int', view)
 
     def _execute_boot_op(self, server):
         try:
@@ -935,7 +935,7 @@ class CreateDeleteViewTests(BaseTestCase):
                 for ddoc_name, view_list in self.ddoc_view_map.items():
                     for view in view_list:
                         query = {"stale" : "false", "full_set" : "true"}
-                        tasks.append(self.cluster.async_query_view(self.master, ddoc_name, view.name, query))
+                        tasks.append(self.cluster.async_query_view(self.main, ddoc_name, view.name, query))
         server = self.servers[1]
         self._execute_boot_op(server)
         for task in tasks:
@@ -961,9 +961,9 @@ class CreateDeleteViewTests(BaseTestCase):
                                options={"updateMinChanges":0, "replicaUpdateMinChanges":0})]
         for ddoc in ddocs:
             for view in ddoc.views:
-                self.cluster.create_view(self.master, ddoc.name, view, bucket=self.default_bucket_name)
+                self.cluster.create_view(self.main, ddoc.name, view, bucket=self.default_bucket_name)
                 prefix = ("", "dev_")[ddoc.views[0].dev_view]
-                self.cluster.query_view(self.master, prefix + ddoc.name, view.name,
+                self.cluster.query_view(self.main, prefix + ddoc.name, view.name,
                                         {"stale" : "false", "full_set" : "true"}, self.num_items, bucket=self.default_bucket_name)
         try:
             self.cluster.delete_view(self.servers[0], ddocs[1].name, ddocs[1].views[0])
@@ -971,7 +971,7 @@ class CreateDeleteViewTests(BaseTestCase):
             self.cluster.shutdown()
             self.fail(e)
 
-        result = self.cluster.query_view(self.master, ddocs[0].name, ddocs[0].views[0].name,
+        result = self.cluster.query_view(self.main, ddocs[0].name, ddocs[0].views[0].name,
                                          {"stale" : "ok", "full_set" : "true"}, self.num_items, bucket=self.default_bucket_name)
         if not result:
                 self.fail("View query didn't return expected result")
@@ -994,7 +994,7 @@ class CreateDeleteViewTests(BaseTestCase):
         threads = []
         for view in views:
             try:
-                self.cluster.create_view(self.master, self.default_design_doc_name, view, 'default', self.wait_timeout * 2)
+                self.cluster.create_view(self.main, self.default_design_doc_name, view, 'default', self.wait_timeout * 2)
                 time.sleep(20)
                 threads.append(Thread(target=self.open_nc_conn, name="nc_thread", args=(view.name, port,)))
                 threads.append(Thread(target=rest.ddoc_compaction, name="comp_thread", args=(self.default_design_doc_name, self.default_bucket_name,)))
@@ -1041,11 +1041,11 @@ class CreateDeleteViewTests(BaseTestCase):
                                                dev_view=False)])
 
         for view in ddoc.views:
-            self.cluster.create_view(self.master, ddoc.name, view, bucket=self.default_bucket_name)
+            self.cluster.create_view(self.main, ddoc.name, view, bucket=self.default_bucket_name)
 
         self._load_doc_data_all_buckets()
 
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         query = {"stale" : "false", "full_set" : "true", "connection_timeout" : 60000}
 
         result = rest.query_view(ddoc_name, 'viewA', self.default_bucket_name, query)
@@ -1081,11 +1081,11 @@ class CreateDeleteViewTests(BaseTestCase):
                                                dev_view=False)])
 
         for view in ddoc.views:
-            self.cluster.create_view(self.master, ddoc.name, view, bucket=self.default_bucket_name)
+            self.cluster.create_view(self.main, ddoc.name, view, bucket=self.default_bucket_name)
 
         self._load_doc_data_all_buckets()
 
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         query = {"stale" : "false", "full_set" : "true", "connection_timeout" : 60000}
 
         result = rest.query_view(ddoc_name, 'view', self.default_bucket_name, query)
@@ -1097,7 +1097,7 @@ class CreateDeleteViewTests(BaseTestCase):
 
         zip_file = "%s.zip" % (self.input.param("file_name", "collectInfo"))
         try:
-            self.shell = RemoteMachineShellConnection(self.master)
+            self.shell = RemoteMachineShellConnection(self.main)
             self.shell.execute_cbcollect_info(zip_file)
             if self.shell.extract_remote_info().type.lower() != "windows":
                 command = "unzip %s" % (zip_file)
@@ -1109,12 +1109,12 @@ class CreateDeleteViewTests(BaseTestCase):
                 output, _ = self.shell.execute_command(cmd)
             else:
                 cmd = "curl -0 http://{1}:{2}@{0}:8091/diag 2>/dev/null | grep 'Approaching full disk warning.'".format(
-                                                    self.src_master.ip,
-                                                    self.src_master.rest_username,
-                                                    self.src_master.rest_password)
+                                                    self.src_main.ip,
+                                                    self.src_main.rest_username,
+                                                    self.src_main.rest_password)
                 output, _ = self.shell.execute_command(cmd)
-            self.assertEquals(len(output), 0, "View engine errors found in %s" % self.master.ip)
-            self.log.info("No View engine errors in %s" % self.master.ip)
+            self.assertEquals(len(output), 0, "View engine errors found in %s" % self.main.ip)
+            self.log.info("No View engine errors in %s" % self.main.ip)
 
             self.shell.delete_files(zip_file)
             self.shell.delete_files("cbcollect_info*")

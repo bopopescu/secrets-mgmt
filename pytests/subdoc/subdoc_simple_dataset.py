@@ -7,7 +7,7 @@ import random
 class SubdocSimpleDataset(SubdocBaseTest):
     def setUp(self):
         super(SubdocSimpleDataset, self).setUp()
-        self.client = self.direct_client(self.master, self.buckets[0])
+        self.client = self.direct_client(self.main, self.buckets[0])
 
     def tearDown(self):
         super(SubdocSimpleDataset, self).tearDown()

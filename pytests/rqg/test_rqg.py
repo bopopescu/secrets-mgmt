@@ -98,7 +98,7 @@ class RQGTests(BaseTestCase):
         self.query_helper = QueryHelper()
         self.keyword_list = self.query_helper._read_keywords_from_file("b/resources/rqg/n1ql_info/keywords.txt")
         self._initialize_n1ql_helper()
-        self.rest = RestConnection(self.master)
+        self.rest = RestConnection(self.main)
         self.indexer_memQuota = self.input.param("indexer_memQuota", 1024)
         if self.initial_loading_to_cb:
             self._initialize_cluster_setup()
@@ -407,7 +407,7 @@ class RQGTests(BaseTestCase):
                 self.n1ql_helper.run_cbq_query(query=query, server=self.n1ql_server, query_params={'timeout': '900s'})
         if self.drop_bucket:
             for bucket in self.buckets:
-                BucketOperationHelper.delete_bucket_or_assert(serverInfo=self.master, bucket=bucket)
+                BucketOperationHelper.delete_bucket_or_assert(serverInfo=self.main, bucket=bucket)
         # Analyze the results for the failure and assert on the run
         success, summary, result = self._test_result_analysis(result_queue)
         self.log.info(result)
@@ -1200,8 +1200,8 @@ class RQGTests(BaseTestCase):
             os.system("curl -X POST  http://Administrator:password@{1}:8091/pools/default -d memoryQuota={0} -d indexMemoryQuota={2}".format(self.ram_quota, self.n1ql_server.ip, self.indexer_memQuota))
             self.sleep(10)
         if self.change_bucket_properties:
-            shell = RemoteMachineShellConnection(self.master)
-            shell.execute_command("curl -X POST -u {0}:{1} -d maxBucketCount=25 http://{2}:{3}/internalSettings".format(self.user_cluster, self.password_cluster, self.master.ip, self.master.port))
+            shell = RemoteMachineShellConnection(self.main)
+            shell.execute_command("curl -X POST -u {0}:{1} -d maxBucketCount=25 http://{2}:{3}/internalSettings".format(self.user_cluster, self.password_cluster, self.main.ip, self.main.port))
             self.sleep(10, "Updating maxBucket count to 15")
         self._build_indexes()
 
@@ -1263,7 +1263,7 @@ class RQGTests(BaseTestCase):
                 self.n1ql_helper.create_partitioned_primary_index(using_gsi=using_gsi, server=self.n1ql_server)
 
     def _load_data_in_buckets_using_mc_bin_client(self, bucket, data_set):
-        client = VBucketAwareMemcached(RestConnection(self.master), bucket)
+        client = VBucketAwareMemcached(RestConnection(self.main), bucket)
         try:
             for key in data_set.keys():
                 client.set(key, 0, 0, json.dumps(data_set[key]))
@@ -1294,7 +1294,7 @@ class RQGTests(BaseTestCase):
             self.log.info(ex)
 
     def _load_data_in_buckets_using_mc_bin_client_json(self, bucket, data_set):
-        client = VBucketAwareMemcached(RestConnection(self.master), bucket)
+        client = VBucketAwareMemcached(RestConnection(self.main), bucket)
         try:
             for key in data_set.keys():
                 client.set(key.encode("utf8"), 0, 0, json.dumps(data_set[key]))
@@ -1304,10 +1304,10 @@ class RQGTests(BaseTestCase):
 
     def _load_data_in_buckets(self, bucket_name, data_set):
         scheme = "couchbase"
-        host = self.master.ip
-        if self.master.ip == "127.0.0.1":
+        host = self.main.ip
+        if self.main.ip == "127.0.0.1":
             scheme = "http"
-            host = "{0}:{1}".format(self.master.ip, self.master.port)
+            host = "{0}:{1}".format(self.main.ip, self.main.port)
         client = SDKClient(scheme=scheme, hosts=[host], bucket=bucket_name)
         client.upsert_multi(data_set)
         client.close()
@@ -1315,7 +1315,7 @@ class RQGTests(BaseTestCase):
     def _initialize_n1ql_helper(self):
         self.n1ql_helper = N1QLHelper(version="sherlock", shell=None, max_verify=self.max_verify,
                                       buckets=self.buckets, item_flag=None, n1ql_port=self.n1ql_server.n1ql_port,
-                                      full_docs_list=[], log=self.log, input=self.input, master=self.master,
+                                      full_docs_list=[], log=self.log, input=self.input, main=self.main,
                                       database=self.database, use_rest=self.use_rest)
 
     def _initialize_mysql_client(self):
@@ -1780,7 +1780,7 @@ class RQGTests(BaseTestCase):
             self.rest.delete_bucket(bucket.name)
         self.buckets = []
         # Create New Buckets
-        self._create_buckets(self.master, bucket_list, server_id=None, bucket_size=None)
+        self._create_buckets(self.main, bucket_list, server_id=None, bucket_size=None)
         # Wait till the buckets are up
         self.sleep(15)
         # Read Data from mysql database and populate the couchbase server
@@ -1809,8 +1809,8 @@ class RQGTests(BaseTestCase):
             bucket_size = None
 
         if self.change_bucket_properties:
-            shell = RemoteMachineShellConnection(self.master)
-            shell.execute_command("curl -X POST -u {0}:{1} -d maxBucketCount=25 http://{2}:{3}/internalSettings".format(self.user_cluster, self.password_cluster, self.master.ip, self.master.port))
+            shell = RemoteMachineShellConnection(self.main)
+            shell.execute_command("curl -X POST -u {0}:{1} -d maxBucketCount=25 http://{2}:{3}/internalSettings".format(self.user_cluster, self.password_cluster, self.main.ip, self.main.port))
             self.sleep(10, "Updating maxBucket count to 25")
         # Pull information about tables from mysql database and interpret them as no-sql dbs
         table_key_map = self.client._get_primary_key_map_for_tables()
@@ -1827,7 +1827,7 @@ class RQGTests(BaseTestCase):
                     break
 
         # Create New Buckets
-        self._create_buckets(self.master, new_bucket_list, server_id=None, bucket_size=bucket_size)
+        self._create_buckets(self.main, new_bucket_list, server_id=None, bucket_size=bucket_size)
         self.log.info("buckets created")
 
         # Wait till the buckets are up

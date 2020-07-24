@@ -15,9 +15,9 @@ class XDCRViewTests(XDCRNewBaseTest, CreateDeleteViewTests):
         self.test_with_view = True
         self.updated_map_func = 'function (doc) { emit(null, doc);}'
         self.src_cluster = self.get_cb_cluster_by_name('C1')
-        self.src_master = self.src_cluster.get_master_node()
+        self.src_main = self.src_cluster.get_main_node()
         self.dest_cluster = self.get_cb_cluster_by_name('C2')
-        self.dest_master = self.dest_cluster.get_master_node()
+        self.dest_main = self.dest_cluster.get_main_node()
         self.defaul_map_func = "function (doc) {\n  emit(doc._id, doc);\n}"
         self.default_view_name = "default_view"
         self.default_view = View(self.default_view_name, self.defaul_map_func, None)
@@ -32,13 +32,13 @@ class XDCRViewTests(XDCRNewBaseTest, CreateDeleteViewTests):
             for ddoc_name, view_list in self.ddoc_view_map.items():
                 try:
                     for view in view_list:
-                            self.cluster.query_view(self.master, ddoc_name, view.name, query, exp_items, bucket)
+                            self.cluster.query_view(self.main, ddoc_name, view.name, query, exp_items, bucket)
                 except QueryViewException:
                     self.fail("Error occurred querying view")
 
     def _run_ddoc_ops(self, cluster, view_ops):
         tasks = []
-        master = cluster.get_master_node();
+        main = cluster.get_main_node();
         buckets = cluster.get_buckets();
         if view_ops in ["update", "delete"]:
             for bucket in buckets:
@@ -50,15 +50,15 @@ class XDCRViewTests(XDCRNewBaseTest, CreateDeleteViewTests):
             for bucket, self.ddoc_view_map in self.bucket_ddoc_map.items():
                 for ddoc_name, view_list in self.ddoc_view_map.items():                                                                      
                     for view in view_list:
-                        tasks.append(self.cluster.async_query_view(master, ddoc_name, view.name, query))
+                        tasks.append(self.cluster.async_query_view(main, ddoc_name, view.name, query))
         return tasks
 
     def _verify_views(self, verify_src):
-        srv_list = [self.dest_master]
+        srv_list = [self.dest_main]
         if verify_src == True:
-            srv_list.append(self.src_master)
+            srv_list.append(self.src_main)
         for server in srv_list:
-            self.master = server
+            self.main = server
             self._verify_ddoc_ops_all_buckets()
             self._verify_ddoc_data_all_buckets()
 
@@ -67,7 +67,7 @@ class XDCRViewTests(XDCRNewBaseTest, CreateDeleteViewTests):
         self.setup_xdcr_and_load()
         for cluster in [self.src_cluster, self.dest_cluster]:
             buckets = cluster.get_buckets()
-            self.master = cluster.get_master_node()
+            self.main = cluster.get_main_node()
             self.wait_timeout = self._wait_timeout;
             for bucket in buckets:
                 self._execute_ddoc_ops("create", self.test_with_view, self.num_ddocs, self.num_views_per_ddoc, "dev_test", "v1", bucket=bucket)

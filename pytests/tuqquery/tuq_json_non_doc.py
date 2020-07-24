@@ -11,7 +11,7 @@ class JSONNonDocTests(QueryTests):
             self.value_type = self.input.param("value_type", "int")
             self.gens_load = self.gen_docs(type='json_non_docs', values_type=self.value_type)
             for bucket in self.buckets:
-                self.cluster.bucket_flush(self.master, bucket=bucket,
+                self.cluster.bucket_flush(self.main, bucket=bucket,
                                       timeout=self.wait_timeout * 5)
             self.load(self.gens_load)
         except:

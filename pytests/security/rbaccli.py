@@ -44,7 +44,7 @@ class rbacclitest(rbacTest):
     def execute_admin_role_manage(self, options):
         cli_command = 'user-manage'
         options = options
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         output, error = remote_client.execute_couchbase_cli(cli_command=cli_command, \
                     options=options, cluster_host="localhost", user=self.ldapUser, password=self.ldapPass)
         return output, error
@@ -52,7 +52,7 @@ class rbacclitest(rbacTest):
     def execute_password_policy(self, options):
         cli_command = 'setting-password-policy'
         options = options
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         output, error = remote_client.execute_couchbase_cli(cli_command=cli_command, \
                     options=options, cluster_host="localhost", user=self.ldapUser, password=self.ldapPass)
         return output, error

@@ -189,8 +189,8 @@ class QueryAutoPrepareTests(QueryTests):
     def test_add_node_no_rebalance(self):
         services_in = ["index", "n1ql", "kv"]
         # rebalance in a node
-        rest = RestConnection(self.master)
-        rest.add_node(self.master.rest_username, self.master.rest_password, self.servers[self.nodes_init].ip,
+        rest = RestConnection(self.main)
+        rest.add_node(self.main.rest_username, self.main.rest_password, self.servers[self.nodes_init].ip,
                       self.servers[self.nodes_init].port, services=services_in)
         self.sleep(30)
         self.run_cbq_query(query="PREPARE p1 from select * from default limit 5", server=self.servers[0])

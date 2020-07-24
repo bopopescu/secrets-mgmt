@@ -19,8 +19,8 @@ class MoxiTests(unittest.TestCase):
         self.log = logger.Logger().get_logger()
         self.input = TestInputSingleton.input
         self.servers = self.input.servers
-        self.master = self.servers[0]
-        self.ip = self.master.ip
+        self.main = self.servers[0]
+        self.ip = self.main.ip
         self.finished = False
         self.keys = []
         self.keycount = 0
@@ -28,21 +28,21 @@ class MoxiTests(unittest.TestCase):
 
         self.cleanup()
 
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         info = rest.get_nodes_self()
         self.port = info.moxi+1
 
-        rest.init_cluster(username=self.master.rest_username,
-                          password=self.master.rest_password)
+        rest.init_cluster(username=self.main.rest_username,
+                          password=self.main.rest_password)
         rest.init_cluster_memoryQuota(memoryQuota=info.mcdMemoryReserved)
-        created = BucketOperationHelper.create_multiple_buckets(self.master,
+        created = BucketOperationHelper.create_multiple_buckets(self.main,
                                                                 replica=1,
                                                                 bucket_ram_ratio=(2.0 / 3.0),
                                                                 howmany=10,
                                                                 sasl=False)
         self.assertTrue(created, "bucket creation failed")
 
-        ready = BucketOperationHelper.wait_for_memcached(self.master, "bucket-0")
+        ready = BucketOperationHelper.wait_for_memcached(self.main, "bucket-0")
         self.assertTrue(ready, "wait_for_memcached failed")
 
 
@@ -52,7 +52,7 @@ class MoxiTests(unittest.TestCase):
 
 
     def cleanup(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         rest.stop_rebalance()
         BucketOperationHelper.delete_all_buckets_or_assert(self.servers, self)
         for server in self.servers:
@@ -91,7 +91,7 @@ class MoxiTests(unittest.TestCase):
 
         self.log.info("stopping load and rebalance")
 
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         rest.stop_rebalance()
 
         for thread in threads:
@@ -123,14 +123,14 @@ class MoxiTests(unittest.TestCase):
 
     def rebalance(self):
         while not self.finished:
-            ClusterOperationHelper.begin_rebalance_in(self.master, self.servers)
-            ClusterOperationHelper.end_rebalance(self.master)
+            ClusterOperationHelper.begin_rebalance_in(self.main, self.servers)
+            ClusterOperationHelper.end_rebalance(self.main)
             if not self.finished:
-                ClusterOperationHelper.begin_rebalance_out(self.master, self.servers[-1:])
-                ClusterOperationHelper.end_rebalance(self.master)
+                ClusterOperationHelper.begin_rebalance_out(self.main, self.servers[-1:])
+                ClusterOperationHelper.end_rebalance(self.main)
 
     def watch_moxi(self):
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         moxi_pid_start, _ = shell.execute_command("pgrep moxi")
         while not self.finished:
             moxi_pid, _ = shell.execute_command("pgrep moxi")

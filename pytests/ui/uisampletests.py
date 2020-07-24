@@ -39,7 +39,7 @@ class BucketTests(BaseUITestCase):
         super(BucketTests, self).setUp()
         self.helper = BaseHelper(self)
         self.helper.login()
-        self.master =self.servers[0]
+        self.main =self.servers[0]
 
     def tearDown(self):
         super(BucketTests, self).tearDown()
@@ -489,7 +489,7 @@ class RebalanceProgressTests(BaseUITestCase):
 class GracefullFailoverTests(BaseUITestCase):
     def setUp(self):
         super(GracefullFailoverTests, self).setUp()
-        self.master = self.servers[0]
+        self.main = self.servers[0]
         try:
             self.nodes_init = self.input.param("nodes_init", 2)
             self.rebalance = self.input.param("rebalance", False)
@@ -524,7 +524,7 @@ class GracefullFailoverTests(BaseUITestCase):
                 self.cluster.shutdown()
 
     def _deinitialize_api(self):
-        ClusterOperationHelper.cleanup_cluster(self.servers, master=self.master)
+        ClusterOperationHelper.cleanup_cluster(self.servers, main=self.main)
 
     def _initialize_nodes(self):
         for server in self.servers:

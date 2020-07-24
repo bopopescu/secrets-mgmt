@@ -10,9 +10,9 @@ class ObserveXdcrTest(XDCRNewBaseTest):
     def setUp(self):
         super(ObserveXdcrTest, self).setUp()
         self.src_cluster = self.get_cb_cluster_by_name('C1')
-        self.src_master = self.src_cluster.get_master_node()
+        self.src_main = self.src_cluster.get_main_node()
         self.dest_cluster = self.get_cb_cluster_by_name('C2')
-        self.dest_master = self.dest_cluster.get_master_node()
+        self.dest_main = self.dest_cluster.get_main_node()
 
         # Variables defined for _run_observe() in observetest.
         self.observe_with = self._input.param("observe_with", "")
@@ -34,9 +34,9 @@ class ObserveXdcrTest(XDCRNewBaseTest):
         gen_load = BlobGenerator('observe', 'observe', 1024, end=self.num_items)
         self.src_cluster.load_all_buckets_from_generator(gen_load)
         self.verify_results()
-        self.master = self.src_master
+        self.main = self.src_main
         self.buckets = self.src_cluster.get_buckets()
         ObserveTests._run_observe(self)
-        self.master = self.dest_master
+        self.main = self.dest_main
         self.buckets = self.dest_cluster.get_buckets()
         ObserveTests._run_observe(self)

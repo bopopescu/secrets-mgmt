@@ -29,7 +29,7 @@ class CheckpointTests(BaseTestCase):
         servers_in = [self.servers[i + 1] for i in range(self.num_servers - 1)]
         self.cluster.rebalance(self.servers[:1], servers_in, [])
         self.bucket = self.buckets[0]
-        self.master = self._get_server_by_state(self.servers[:self.num_servers], self.bucket, ACTIVE)
+        self.main = self._get_server_by_state(self.servers[:self.num_servers], self.bucket, ACTIVE)
         if self.num_servers > 1:
             self.replica1 = self._get_server_by_state(self.servers[:self.num_servers], self.bucket, REPLICA1)
         if self.num_servers > 2:
@@ -47,10 +47,10 @@ class CheckpointTests(BaseTestCase):
         stat_key = 'vb_0:open_checkpoint_id'
 
         self._set_checkpoint_size(self.servers[:self.num_servers], self.bucket, str(self.checkpoint_size))
-        chk_stats = StatsCommon.get_stats([self.master], self.bucket, param, stat_key)
+        chk_stats = StatsCommon.get_stats([self.main], self.bucket, param, stat_key)
 
         generate_load = BlobGenerator('nosql', 'nosql-', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, generate_load, "create", 0, 1, 0, True, batch_size=self.checkpoint_size, pause_secs=5, timeout_secs=180)
+        self._load_all_buckets(self.main, generate_load, "create", 0, 1, 0, True, batch_size=self.checkpoint_size, pause_secs=5, timeout_secs=180)
         self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
 
         self._verify_checkpoint_id(param, stat_key, chk_stats)
@@ -65,17 +65,17 @@ class CheckpointTests(BaseTestCase):
         self._set_checkpoint_timeout(self.servers[:self.num_servers], self.bucket, str(self.timeout))
 
         generate_load = BlobGenerator('nosql', 'nosql-', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, generate_load, "create", 0, 1, 0, True, batch_size=self.checkpoint_size, pause_secs=5, timeout_secs=180)
+        self._load_all_buckets(self.main, generate_load, "create", 0, 1, 0, True, batch_size=self.checkpoint_size, pause_secs=5, timeout_secs=180)
         self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
 
-        chk_stats = StatsCommon.get_stats([self.master], self.bucket, param, stat_key)
+        chk_stats = StatsCommon.get_stats([self.main], self.bucket, param, stat_key)
         self.log.info("Sleeping for {0} seconds)".format(self.timeout + 5))
         time.sleep(self.timeout + 5)
         self._verify_checkpoint_id(param, stat_key, chk_stats)
         self._verify_stats_all_buckets(self.servers[:self.num_servers])
 
     def checkpoint_replication_pause(self):
-        """With 3 replicas load data. pause replication to R2. Let checkpoints close on Master and R1.
+        """With 3 replicas load data. pause replication to R2. Let checkpoints close on Main and R1.
         Restart replication of R2 and R3, backfill should not be seen on R1 and R2."""
 
         param = 'checkpoint'
@@ -89,14 +89,14 @@ class CheckpointTests(BaseTestCase):
         generate_load = BlobGenerator('nosql', 'nosql-', self.value_size, end=self.num_items)
         data_load_thread = Thread(target=self._load_all_buckets,
                                   name="load_data",
-                                  args=(self.master, generate_load, "create", 0, 1, 0, True, self.checkpoint_size, 5, 180))
+                                  args=(self.main, generate_load, "create", 0, 1, 0, True, self.checkpoint_size, 5, 180))
         data_load_thread.start()
         self._stop_replication(self.replica2, self.bucket)
 
-        m_stats = StatsCommon.get_stats([self.master], self.bucket, param, stat_key)
+        m_stats = StatsCommon.get_stats([self.main], self.bucket, param, stat_key)
         chk_pnt = int(m_stats[m_stats.keys()[0]]) + 2
         tasks = []
-        tasks.append(self.cluster.async_wait_for_stats([self.master], self.bucket, param, stat_key,
+        tasks.append(self.cluster.async_wait_for_stats([self.main], self.bucket, param, stat_key,
                                                        '>=', chk_pnt))
         tasks.append(self.cluster.async_wait_for_stats([self.replica1], self.bucket, param, stat_key,
                                                        '>=', chk_pnt))
@@ -115,8 +115,8 @@ class CheckpointTests(BaseTestCase):
         self._verify_backfill_happen(self.replica2, self.replica3, prev_backfill_timestamp_R2)
 
     def checkpoint_collapse(self):
-        """With 3 replicas, stop replication on R2, let Master and R1 close checkpoint.
-        Run load until a new checkpoint is created on Master and R1.
+        """With 3 replicas, stop replication on R2, let Main and R1 close checkpoint.
+        Run load until a new checkpoint is created on Main and R1.
         Wait till checkpoints merge on R1. Restart replication of R2.
         Checkpoint should advance to the latest on R2."""
 
@@ -130,13 +130,13 @@ class CheckpointTests(BaseTestCase):
         generate_load = BlobGenerator('nosql', 'nosql-', self.value_size, end=self.num_items)
         data_load_thread = Thread(target=self._load_all_buckets,
                                   name="load_data",
-                                  args=(self.master, generate_load, "create", 0, 1, 0, True, self.checkpoint_size, 5, 180))
+                                  args=(self.main, generate_load, "create", 0, 1, 0, True, self.checkpoint_size, 5, 180))
         data_load_thread.start()
-        m_stats = StatsCommon.get_stats([self.master], self.bucket, param, stat_key)
+        m_stats = StatsCommon.get_stats([self.main], self.bucket, param, stat_key)
 
         tasks = []
         chk_pnt = int(m_stats[m_stats.keys()[0]]) + 2
-        tasks.append(self.cluster.async_wait_for_stats([self.master], self.bucket, param, stat_key,
+        tasks.append(self.cluster.async_wait_for_stats([self.main], self.bucket, param, stat_key,
                                                        '>=', chk_pnt))
         tasks.append(self.cluster.async_wait_for_stats([self.replica1], self.bucket, param, stat_key,
                                                        '>=', chk_pnt))
@@ -163,7 +163,7 @@ class CheckpointTests(BaseTestCase):
         self._verify_stats_all_buckets(self.servers[:self.num_servers])
 
     def checkpoint_deduplication(self):
-        """Disable replication of R1. Load N items to master, then mutate some of them.
+        """Disable replication of R1. Load N items to main, then mutate some of them.
         Restart replication of R1, only N items should be in stats. In this test, we can
         only load number of items <= checkpoint_size to observe deduplication"""
 
@@ -176,12 +176,12 @@ class CheckpointTests(BaseTestCase):
 
         generate_load = BlobGenerator('nosql', 'nosql-', self.value_size, end=self.num_items)
         generate_update = BlobGenerator('nosql', 'sql-', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, generate_load, "create", 0, 1, 0, True, batch_size=self.checkpoint_size, pause_secs=5, timeout_secs=180)
-        self._wait_for_stats_all_buckets([self.master, self.replica2, self.replica3])
-        m_stats = StatsCommon.get_stats([self.master], self.bucket, param, stat_key_id)
+        self._load_all_buckets(self.main, generate_load, "create", 0, 1, 0, True, batch_size=self.checkpoint_size, pause_secs=5, timeout_secs=180)
+        self._wait_for_stats_all_buckets([self.main, self.replica2, self.replica3])
+        m_stats = StatsCommon.get_stats([self.main], self.bucket, param, stat_key_id)
         data_load_thread = Thread(target=self._load_all_buckets,
                                   name="load_data",
-                                  args=(self.master, generate_update, "update", 0, 1, 0, True, self.checkpoint_size, 5, 180))
+                                  args=(self.main, generate_update, "update", 0, 1, 0, True, self.checkpoint_size, 5, 180))
         data_load_thread.start()
         self._start_replication(self.replica1, self.bucket)
         data_load_thread.join()
@@ -190,11 +190,11 @@ class CheckpointTests(BaseTestCase):
         timeout = 60 if (self.num_items * .001) < 60 else self.num_items * .001
         time.sleep(timeout)
         tasks = []
-        tasks.append(self.cluster.async_wait_for_stats([self.master], self.bucket, param,
+        tasks.append(self.cluster.async_wait_for_stats([self.main], self.bucket, param,
                                                        stat_key, '==', self.num_items))
         tasks.append(self.cluster.async_wait_for_stats([self.replica1], self.bucket, param,
                                                        stat_key, '==', self.num_items))
-        tasks.append(self.cluster.async_wait_for_stats([self.master], self.bucket, param,
+        tasks.append(self.cluster.async_wait_for_stats([self.main], self.bucket, param,
                                                        stat_key_id, '==', chk_pnt))
         tasks.append(self.cluster.async_wait_for_stats([self.replica1], self.bucket, param,
                                                        stat_key_id, '==', chk_pnt))
@@ -207,24 +207,24 @@ class CheckpointTests(BaseTestCase):
 
         self._verify_stats_all_buckets(self.servers[:self.num_servers])
 
-    def checkpoint_failover_master(self):
-        """Load N items. During the load, failover Master.
+    def checkpoint_failover_main(self):
+        """Load N items. During the load, failover Main.
         Verify backfill doesn't happen on R1, R2."""
 
         param = 'checkpoint'
         stat_key = 'vb_0:open_checkpoint_id'
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         nodes = rest.node_statuses()
         failover_node = None
         for node in nodes:
-            if node.id.find(self.master.ip) >= 0:
+            if node.id.find(self.main.ip) >= 0:
                 failover_node = node
 
         self._set_checkpoint_size(self.servers[:self.num_servers], self.bucket, self.checkpoint_size)
         generate_load = BlobGenerator('nosql', 'nosql-', self.value_size, end=self.num_items)
         data_load_thread = Thread(target=self._load_all_buckets,
                                   name="load_data",
-                                  args=(self.master, generate_load, "create", 0, 1, 0, True, self.checkpoint_size, 5, 180))
+                                  args=(self.main, generate_load, "create", 0, 1, 0, True, self.checkpoint_size, 5, 180))
         data_load_thread.start()
         time.sleep(5)
         prev_backfill_timestamp_R1 = self._get_backfill_timestamp(self.replica1, self.replica2)
@@ -236,14 +236,14 @@ class CheckpointTests(BaseTestCase):
             #try again in 60 seconds
             time.sleep(75)
             failed_over = rest.fail_over(failover_node.id)
-        self.assertTrue(failed_over, "unable to failover node %s" % (self.master.ip))
+        self.assertTrue(failed_over, "unable to failover node %s" % (self.main.ip))
         self.log.info("failed over node : {0}".format(failover_node.id))
         data_load_thread.join()
 
         self._verify_backfill_happen(self.replica1, self.replica2, prev_backfill_timestamp_R1)
         self._verify_backfill_happen(self.replica2, self.replica3, prev_backfill_timestamp_R2)
-        self.cluster.rebalance(self.servers[:self.num_servers], [], [self.master])
-        self.cluster.rebalance(self.servers[1:self.num_servers], [self.master], [])
+        self.cluster.rebalance(self.servers[:self.num_servers], [], [self.main])
+        self.cluster.rebalance(self.servers[1:self.num_servers], [self.main], [])
 
     def checkpoint_replication_pause_failover(self):
         """Load N items. Stop replication R3. Load N' more items.
@@ -251,7 +251,7 @@ class CheckpointTests(BaseTestCase):
 
         param = 'checkpoint'
         stat_key = 'vb_0:open_checkpoint_id'
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         nodes = rest.node_statuses()
         failover_node = None
         for node in nodes:
@@ -260,16 +260,16 @@ class CheckpointTests(BaseTestCase):
 
         self._set_checkpoint_size(self.servers[:self.num_servers], self.bucket, self.checkpoint_size)
         generate_load_one = BlobGenerator('nosql', 'nosql-', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, generate_load_one, "create", 0, 1, 0, True, batch_size=self.checkpoint_size, pause_secs=5, timeout_secs=180)
+        self._load_all_buckets(self.main, generate_load_one, "create", 0, 1, 0, True, batch_size=self.checkpoint_size, pause_secs=5, timeout_secs=180)
         self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
         prev_backfill_timestamp_R1 = self._get_backfill_timestamp(self.replica1, self.replica2)
-        m_stats = StatsCommon.get_stats([self.master], self.bucket, param, stat_key)
+        m_stats = StatsCommon.get_stats([self.main], self.bucket, param, stat_key)
         self._stop_replication(self.replica3, self.bucket)
 
         generate_load_two = BlobGenerator('sqlite', 'sqlite-', self.value_size, end=self.num_items)
         data_load_thread = Thread(target=self._load_all_buckets,
                                           name="load_data",
-                                          args=(self.master, generate_load_two, "create", 0, 1, 0, True, self.checkpoint_size, 5, 180))
+                                          args=(self.main, generate_load_two, "create", 0, 1, 0, True, self.checkpoint_size, 5, 180))
         data_load_thread.start()
 
         failed_over = rest.fail_over(failover_node.id)
@@ -284,13 +284,13 @@ class CheckpointTests(BaseTestCase):
         self._start_replication(self.replica3, self.bucket)
 
         self.servers = []
-        self.servers = [self.master, self.replica1, self.replica3]
+        self.servers = [self.main, self.replica1, self.replica3]
         self.num_servers = len(self.servers)
         self._verify_checkpoint_id(param, stat_key, m_stats)
         self._verify_stats_all_buckets(self.servers[:self.num_servers])
         self._verify_backfill_happen(self.replica1, self.replica2, prev_backfill_timestamp_R1)
-        self.cluster.rebalance([self.master, self.replica1, self.replica2, self.replica3], [], [self.replica2])
-        self.cluster.rebalance([self.master, self.replica1, self.replica3], [self.replica2], [])
+        self.cluster.rebalance([self.main, self.replica1, self.replica2, self.replica3], [], [self.replica2])
+        self.cluster.rebalance([self.main, self.replica1, self.replica3], [self.replica2], [])
 
     def checkpoint_server_down(self):
         """Load N items. Shut down server R2. Then Restart R2 and
@@ -298,19 +298,19 @@ class CheckpointTests(BaseTestCase):
 
         param = 'checkpoint'
         stat_key = 'vb_0:open_checkpoint_id'
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
 
         self._set_checkpoint_size(self.servers[:self.num_servers], self.bucket, self.checkpoint_size)
         generate_load_one = BlobGenerator('nosql', 'nosql-', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, generate_load_one, "create", 0, 1, 0, True, batch_size=self.checkpoint_size, pause_secs=5, timeout_secs=180)
+        self._load_all_buckets(self.main, generate_load_one, "create", 0, 1, 0, True, batch_size=self.checkpoint_size, pause_secs=5, timeout_secs=180)
         self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
         prev_backfill_timestamp_R1 = self._get_backfill_timestamp(self.replica1, self.replica2)
         prev_backfill_timestamp_R2 = self._get_backfill_timestamp(self.replica2, self.replica3)
 
-        m_stats = StatsCommon.get_stats([self.master], self.bucket, param, stat_key)
+        m_stats = StatsCommon.get_stats([self.main], self.bucket, param, stat_key)
         self._stop_server(self.replica2)
         time.sleep(5)
-        data_load_thread = Thread(target=self._load_data_use_workloadgen, name="load_data", args=(self.master,))
+        data_load_thread = Thread(target=self._load_data_use_workloadgen, name="load_data", args=(self.main,))
         data_load_thread.start()
         data_load_thread.join()
         self._start_server(self.replica2)
@@ -323,10 +323,10 @@ class CheckpointTests(BaseTestCase):
     def _verify_checkpoint_id(self, param, stat_key, m_stats):
         timeout = 60 if (self.num_items * .001) < 60 else self.num_items * .001
 
-        #verify checkpiont id increases on master node
+        #verify checkpiont id increases on main node
         chk_pnt = int(m_stats[m_stats.keys()[0]])
         tasks = []
-        tasks.append(self.cluster.async_wait_for_stats([self.master], self.bucket, param, stat_key, '>', chk_pnt))
+        tasks.append(self.cluster.async_wait_for_stats([self.main], self.bucket, param, stat_key, '>', chk_pnt))
         for task in tasks:
             try:
                 task.result(timeout)
@@ -334,8 +334,8 @@ class CheckpointTests(BaseTestCase):
                 self.fail("New checkpoint not created")
 
         time.sleep(timeout / 10)
-        # verify Master and all replicas are in sync with checkpoint ids
-        m_stats = StatsCommon.get_stats([self.master], self.bucket, param, stat_key)
+        # verify Main and all replicas are in sync with checkpoint ids
+        m_stats = StatsCommon.get_stats([self.main], self.bucket, param, stat_key)
         chk_pnt = int(m_stats[m_stats.keys()[0]])
         tasks = []
         for server in self.servers:
@@ -344,7 +344,7 @@ class CheckpointTests(BaseTestCase):
             try:
                 task.result(timeout)
             except TimeoutError:
-                self.fail("Master and all replicas are NOT in sync with checkpoint ids")
+                self.fail("Main and all replicas are NOT in sync with checkpoint ids")
 
     def _get_backfill_timestamp(self, server, replica_server):
         param = 'tap'
@@ -407,7 +407,7 @@ class CheckpointTests(BaseTestCase):
         vbuckets = rest.get_vbuckets(bucket)[0]
         addr = None
         if vb_state == ACTIVE:
-            addr = vbuckets.master
+            addr = vbuckets.main
         elif vb_state == REPLICA1:
             addr = vbuckets.replica[0].encode("ascii", "ignore")
         elif vb_state == REPLICA2:

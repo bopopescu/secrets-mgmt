@@ -36,7 +36,7 @@ class CBASClusterManagement(CBASBaseTest):
         nodes_before = len(self.rest.get_nodes_data_from_cluster())
         added = 0
         for node in self.cbas_servers:
-            if node.ip != self.master.ip:
+            if node.ip != self.main.ip:
                 self.add_node(node=node,rebalance=True)
                 added += 1
         nodes_after = len(self.rest.get_nodes_data_from_cluster())
@@ -82,7 +82,7 @@ class CBASClusterManagement(CBASBaseTest):
                         ["n1ql","cbas","fts"]
                         ]
         for cbas_server in self.servers:
-            if cbas_server.ip == self.master.ip:
+            if cbas_server.ip == self.main.ip:
                 continue
             from random import randint
             service = service_list[randint(0, len(service_list)-1)]
@@ -112,14 +112,14 @@ class CBASClusterManagement(CBASBaseTest):
                         "analytics,query,fts":["cbas","n1ql","fts"],
                         }
         for cbas_server in self.cbas_servers:
-            if cbas_server.ip == self.master.ip:
+            if cbas_server.ip == self.main.ip:
                 continue
             import random
             service = random.choice(service_list.keys())
-            self.log.info("Adding %s to the cluster with services %s to cluster %s"%(cbas_server,service,self.master))
+            self.log.info("Adding %s to the cluster with services %s to cluster %s"%(cbas_server,service,self.main))
             
-            stdout, stderr, result = CouchbaseCLI(self.master, self.master.rest_username, self.master.rest_password).server_add(cbas_server.ip+":"+cbas_server.port, cbas_server.rest_username, cbas_server.rest_password, None, service, None)
-            self.assertTrue(result, "Server %s is not added to the cluster %s . Error: %s"%(cbas_server,self.master,stdout+stderr))
+            stdout, stderr, result = CouchbaseCLI(self.main, self.main.rest_username, self.main.rest_password).server_add(cbas_server.ip+":"+cbas_server.port, cbas_server.rest_username, cbas_server.rest_password, None, service, None)
+            self.assertTrue(result, "Server %s is not added to the cluster %s . Error: %s"%(cbas_server,self.main,stdout+stderr))
             self.rebalance()
             
             '''Check for the correct services alloted to the nodes.'''
@@ -134,16 +134,16 @@ class CBASClusterManagement(CBASBaseTest):
         
         to_remove = []
         for cbas_server in self.cbas_servers:
-            if cbas_server.ip == self.master.ip:
+            if cbas_server.ip == self.main.ip:
                 continue
             else:
                 to_remove.append(cbas_server.ip)
-        self.log.info("Removing: %s from the cluster: %s"%(to_remove,self.master))
-        stdout, stderr, result = CouchbaseCLI(self.master, self.master.rest_username, self.master.rest_password).rebalance(",".join(to_remove))
+        self.log.info("Removing: %s from the cluster: %s"%(to_remove,self.main))
+        stdout, stderr, result = CouchbaseCLI(self.main, self.main.rest_username, self.main.rest_password).rebalance(",".join(to_remove))
         if not result:
             self.log.info(15*"#"+"THIS IS A BUG: MB-24968. REMOVE THIS TRY-CATCH ONCE BUG IS FIXED."+15*"#")
-            stdout, stderr, result = CouchbaseCLI(self.master, self.master.rest_username, self.master.rest_password).rebalance(",".join(to_remove))
-        self.assertTrue(result, "Server %s are not removed from the cluster %s . Console Output: %s , Error: %s"%(to_remove,self.master,stdout,stderr))
+            stdout, stderr, result = CouchbaseCLI(self.main, self.main.rest_username, self.main.rest_password).rebalance(",".join(to_remove))
+        self.assertTrue(result, "Server %s are not removed from the cluster %s . Console Output: %s , Error: %s"%(to_remove,self.main,stdout,stderr))
 
     def test_add_another_cbas_node_rebalance(self):
         set_up_cbas = False
@@ -153,12 +153,12 @@ class CBASClusterManagement(CBASBaseTest):
         self.create_default_bucket()
         self.perform_doc_ops_in_all_cb_buckets(test_docs, "create", 0, test_docs)
 
-        if self.cbas_node.ip == self.master.ip:
+        if self.cbas_node.ip == self.main.ip:
             set_up_cbas = self.setup_cbas_bucket_dataset_connect("default", docs_to_verify)
             wait_for_rebalance = False
         i = 1
         for cbas_server in self.cbas_servers:
-            if cbas_server.ip == self.master.ip:
+            if cbas_server.ip == self.main.ip:
                 continue
             from random import randint
             service = ["kv","cbas"]
@@ -244,12 +244,12 @@ class CBASClusterManagement(CBASBaseTest):
         self.create_default_bucket()
         self.perform_doc_ops_in_all_cb_buckets(self.num_items, "create", 0, self.num_items)
         
-        if self.cbas_node.ip == self.master.ip:
+        if self.cbas_node.ip == self.main.ip:
             set_up_cbas = self.setup_cbas_bucket_dataset_connect("default", self.num_items)
             self._run_concurrent_queries(query,"immediate",1000,RestConnection(self.cbas_node))
             
         for node in self.cbas_servers:
-            if node.ip != self.master.ip:
+            if node.ip != self.main.ip:
                 self.add_node(node=node)
                 if not set_up_cbas:
                     set_up_cbas = self.setup_cbas_bucket_dataset_connect("default", self.num_items)
@@ -512,7 +512,7 @@ class CBASClusterManagement(CBASBaseTest):
         self.setup_cbas_bucket_dataset_connect(self.cb_bucket_name, self.travel_sample_docs_count)
             
     def test_create_bucket_with_default_port(self):
-        query = "create bucket " + self.cbas_bucket_name + " with {\"name\":\"" + self.cb_bucket_name + "\",\"nodes\":\"" + self.master.ip + ":" +"8091" +"\"};"
+        query = "create bucket " + self.cbas_bucket_name + " with {\"name\":\"" + self.cb_bucket_name + "\",\"nodes\":\"" + self.main.ip + ":" +"8091" +"\"};"
         self.load_sample_buckets(bucketName=self.cb_bucket_name, total_items=self.travel_sample_docs_count)
         self.add_node(self.cbas_servers[0], services=["cbas"])
         result = self.execute_statement_on_cbas_via_rest(query, "immediate")[0]

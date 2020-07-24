@@ -22,12 +22,12 @@ class QueryTests(BaseTestCase):
         if self.input.tuq_client and "client" in self.input.tuq_client:
             self.shell = RemoteMachineShellConnection(self.input.tuq_client["client"])
         else:
-            self.shell = RemoteMachineShellConnection(self.master)
+            self.shell = RemoteMachineShellConnection(self.main)
         if not self._testMethodName == 'suite_setUp' and self.input.param("cbq_version", "sherlock") != 'sherlock':
-            self._start_command_line_query(self.master)
+            self._start_command_line_query(self.main)
         self.use_rest = self.input.param("use_rest", True)
         self.max_verify = self.input.param("max_verify", None)
-        self.buckets = RestConnection(self.master).get_buckets()
+        self.buckets = RestConnection(self.main).get_buckets()
         self.docs_per_day = self.input.param("doc-per-day", 49)
         self.item_flag = self.input.param("item_flag", 4042322160)
         self.n1ql_port = self.input.param("n1ql_port", 8093)
@@ -41,7 +41,7 @@ class QueryTests(BaseTestCase):
         self.named_prepare = self.input.param("named_prepare", None)
         self.skip_primary_index = self.input.param("skip_primary_index",False)
         self.scan_consistency = self.input.param("scan_consistency", 'REQUEST_PLUS')
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         type = shell.extract_remote_info().distribution_type
         self.path = testconstants.LINUX_COUCHBASE_BIN_PATH
         if type.lower() == 'windows':
@@ -55,14 +55,14 @@ class QueryTests(BaseTestCase):
             self.gsi_type = None
         if self.input.param("reload_data", False):
             if self.analytics:
-                self.cluster.rebalance([self.master, self.cbas_node], [], [self.cbas_node], services=['cbas'])
+                self.cluster.rebalance([self.main, self.cbas_node], [], [self.cbas_node], services=['cbas'])
             for bucket in self.buckets:
-                self.cluster.bucket_flush(self.master, bucket=bucket,
+                self.cluster.bucket_flush(self.main, bucket=bucket,
                                           timeout=self.wait_timeout * 5)
             self.gens_load = self.generate_docs(self.docs_per_day)
             self.load(self.gens_load, flag=self.item_flag)
             if self.analytics:
-                self.cluster.rebalance([self.master, self.cbas_node], [self.cbas_node], [], services=['cbas'])
+                self.cluster.rebalance([self.main, self.cbas_node], [self.cbas_node], [], services=['cbas'])
         self.gens_load = self.generate_docs(self.docs_per_day)
         if self.input.param("gomaxprocs", None):
             self.configure_gomaxprocs()
@@ -77,10 +77,10 @@ class QueryTests(BaseTestCase):
         try:
             self.load(self.gens_load, flag=self.item_flag)
             if not self.input.param("skip_build_tuq", True):
-                self._build_tuq(self.master)
+                self._build_tuq(self.main)
             self.skip_buckets_handle = True
             if (self.analytics):
-                self.cluster.rebalance([self.master, self.cbas_node], [self.cbas_node], [], services=['cbas'])
+                self.cluster.rebalance([self.main, self.cbas_node], [self.cbas_node], [], services=['cbas'])
                 self.setup_analytics()
                 self.sleep(30,'wait for analytics setup')
         except:
@@ -126,7 +126,7 @@ class QueryTests(BaseTestCase):
         bucket_password = "password"
         for bucket in self.buckets:
             data += 'create bucket {0} with {{"bucket":"{0}","nodes":"{1}"}} ;'.format(
-                bucket.name, self.master.ip)
+                bucket.name, self.main.ip)
             data += 'create shadow dataset {1} on {0}; '.format(bucket.name,
                                                                 bucket.name + "_shadow")
             data += 'connect bucket {0} with {{"username":"{1}","password":"{2}"}};'.format(
@@ -232,7 +232,7 @@ class QueryTests(BaseTestCase):
         if query is None:
             query = self.query
         if server is None:
-           server = self.master
+           server = self.main
            if server.ip == "127.0.0.1":
             self.n1ql_port = server.n1ql_port
         else:
@@ -473,12 +473,12 @@ class QueryTests(BaseTestCase):
         max_proc = self.input.param("gomaxprocs", None)
         cmd = "export GOMAXPROCS=%s" % max_proc
         for server in self.servers:
-            shell_connection = RemoteMachineShellConnection(self.master)
+            shell_connection = RemoteMachineShellConnection(self.main)
             shell_connection.execute_command(cmd)
 
     def create_primary_index_for_3_0_and_greater(self):
         self.log.info("CREATE PRIMARY INDEX using %s" % self.primary_indx_type)
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         versions = rest.get_nodes_versions()
         if versions[0].startswith("4") or versions[0].startswith("3") or versions[0].startswith("5"):
             for bucket in self.buckets:

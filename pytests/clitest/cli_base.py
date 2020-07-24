@@ -36,14 +36,14 @@ class CliBaseTest(BaseTestCase):
         if self.clusters_dic:
             if len(self.clusters_dic) > 1:
                 self.dest_nodes = self.clusters_dic[1]
-                self.dest_master = self.dest_nodes[0]
+                self.dest_main = self.dest_nodes[0]
             elif len(self.clusters_dic) == 1:
                 self.log.error("=== need 2 cluster to setup xdcr in ini file ===")
         else:
             self.log.error("**** Cluster config is setup in ini file. ****")
-        self.shell = RemoteMachineShellConnection(self.master)
+        self.shell = RemoteMachineShellConnection(self.main)
         if not self.skip_init_check_cbserver:
-            self.rest = RestConnection(self.master)
+            self.rest = RestConnection(self.main)
             self.cb_version = self.rest.get_nodes_version()
             """ cli output message """
             self.cli_bucket_create_msg = "SUCCESS: Bucket created"
@@ -88,11 +88,11 @@ class CliBaseTest(BaseTestCase):
         self.full_v = None
         self.short_v = None
         self.build_number = None
-        cmd =  'curl -g %s:8091/diag/eval -u Administrator:password ' % self.master.ip
+        cmd =  'curl -g %s:8091/diag/eval -u Administrator:password ' % self.main.ip
         cmd += '-d "path_config:component_path(bin)."'
         bin_path  = subprocess.check_output(cmd, shell=True)
         if "bin" not in bin_path:
-            self.fail("Check if cb server install on %s" % self.master.ip)
+            self.fail("Check if cb server install on %s" % self.main.ip)
         else:
             self.cli_command_path = bin_path.replace('"','') + "/"
         self.root_path = LINUX_ROOT_PATH
@@ -108,13 +108,13 @@ class CliBaseTest(BaseTestCase):
         self.base_cb_path = LINUX_CB_PATH
         """ non root path """
         if self.nonroot:
-            self.sample_files_path = "/home/%s%s" % (self.master.ssh_username,
+            self.sample_files_path = "/home/%s%s" % (self.main.ssh_username,
                                                      LINUX_COUCHBASE_SAMPLE_PATH)
-            self.log_path = "/home/%s%s" % (self.master.ssh_username,
+            self.log_path = "/home/%s%s" % (self.main.ssh_username,
                                             LINUX_COUCHBASE_LOGS_PATH)
-            self.base_cb_path = "/home/%s%s" % (self.master.ssh_username,
+            self.base_cb_path = "/home/%s%s" % (self.main.ssh_username,
                                                 LINUX_CB_PATH)
-            self.root_path = "/home/%s/" % self.master.ssh_username
+            self.root_path = "/home/%s/" % self.main.ssh_username
         if type == 'windows':
             self.os = 'windows'
             self.cmd_ext = ".exe"
@@ -175,7 +175,7 @@ class CliBaseTest(BaseTestCase):
         if self.clusters_dic:
             if len(self.clusters_dic) > 1:
                 self.dest_nodes = self.clusters_dic[1]
-                self.dest_master = self.dest_nodes[0]
+                self.dest_main = self.dest_nodes[0]
                 if self.dest_nodes and len(self.dest_nodes) > 1:
                     self.log.info("======== clean up destination cluster =======")
                     rest = RestConnection(self.dest_nodes[0])
@@ -873,7 +873,7 @@ class CliBaseTest(BaseTestCase):
     def verify_gsi_compact_settings(self, compact_mode, compact_percent,
                                     compact_interval,
                                     from_period, to_period, enable_abort):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         settings = rest.get_auto_compaction_settings()
         ac = settings["autoCompactionSettings"]["indexFragmentationThreshold"]
         cc = settings["autoCompactionSettings"]["indexCircularCompaction"]

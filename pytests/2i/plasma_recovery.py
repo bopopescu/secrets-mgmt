@@ -132,7 +132,7 @@ class SecondaryIndexingPlasmaDGMRecoveryTests(BaseSecondaryIndexingTests):
             self.nodes_in_list = [extra_nodes[0]]
             self.nodes_out_dist = "kv:1"
             self.services_in = ["kv"]
-            self.targetMaster = False
+            self.targetMain = False
             self.generate_map_nodes_out_dist()
             pre_recovery_tasks = self.async_run_operations(phase="before")
             self._run_tasks([pre_recovery_tasks])
@@ -181,7 +181,7 @@ class SecondaryIndexingPlasmaDGMRecoveryTests(BaseSecondaryIndexingTests):
                 self.servers[:self.nodes_init],
                 self.nodes_in_list,
                 self.nodes_out_list, services=self.services_in)
-            stopped = RestConnection(self.master).stop_rebalance(
+            stopped = RestConnection(self.main).stop_rebalance(
                 wait_timeout=self.wait_timeout / 3)
             self.assertTrue(stopped, msg="Unable to stop rebalance")
             rebalance.result()
@@ -290,7 +290,7 @@ class SecondaryIndexingPlasmaDGMRecoveryTests(BaseSecondaryIndexingTests):
             self._create_replica_indexes()
             servr_out = self.nodes_out_list
             failover_task = self.cluster.async_failover(
-                [self.master],
+                [self.main],
                 failover_nodes=servr_out,
                 graceful=self.graceful)
             mid_recovery_tasks = self.async_run_operations(phase="in_between")
@@ -298,7 +298,7 @@ class SecondaryIndexingPlasmaDGMRecoveryTests(BaseSecondaryIndexingTests):
             if self.graceful:
                 # Check if rebalance is still running
                 msg = "graceful failover failed for nodes"
-                check_rblnc = RestConnection(self.master).monitorRebalance(
+                check_rblnc = RestConnection(self.main).monitorRebalance(
                     stop_if_loop=True)
                 self.assertTrue(check_rblnc, msg=msg)
             self._run_tasks([kvOps_tasks, mid_recovery_tasks])
@@ -318,10 +318,10 @@ class SecondaryIndexingPlasmaDGMRecoveryTests(BaseSecondaryIndexingTests):
 
     def test_failover_add_back(self):
         try:
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             recoveryType = self.input.param("recoveryType", "full")
             servr_out = self.nodes_out_list
-            failover_task =self.cluster.async_failover([self.master],
+            failover_task =self.cluster.async_failover([self.main],
                     failover_nodes=servr_out, graceful=self.graceful)
             failover_task.result()
             pre_recovery_tasks = self.async_run_operations(phase="before")
@@ -365,7 +365,7 @@ class SecondaryIndexingPlasmaDGMRecoveryTests(BaseSecondaryIndexingTests):
         :return:
         """
         self._calculate_scan_vector()
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         recoveryType = self.input.param("recoveryType", "full")
         indexer_out = int(self.input.param("nodes_out", 0))
         nodes = self.get_nodes_from_services_map(service_type="index",
@@ -381,7 +381,7 @@ class SecondaryIndexingPlasmaDGMRecoveryTests(BaseSecondaryIndexingTests):
             self._create_replica_indexes()
             servr_out = nodes[:indexer_out]
             failover_task =self.cluster.async_failover(
-                [self.master], failover_nodes=servr_out,
+                [self.main], failover_nodes=servr_out,
                 graceful=self.graceful)
             failover_task.result()
             nodes_all = rest.node_statuses()
@@ -455,7 +455,7 @@ class SecondaryIndexingPlasmaDGMRecoveryTests(BaseSecondaryIndexingTests):
         self._start_disk_writes_for_plasma()
         kvOps_tasks = self._run_kvops_tasks()
         autofailover_timeout = 30
-        conn = RestConnection(self.master)
+        conn = RestConnection(self.main)
         status = conn.update_autofailover_settings(True, autofailover_timeout)
         self.assertTrue(status, 'failed to change autofailover_settings!')
         try:
@@ -537,7 +537,7 @@ class SecondaryIndexingPlasmaDGMRecoveryTests(BaseSecondaryIndexingTests):
         compact_tasks = []
         for bucket in self.buckets:
             compact_tasks.append(self.cluster.async_compact_bucket(
-                self.master, bucket))
+                self.main, bucket))
         mid_recovery_tasks = self.async_run_operations(phase="in_between")
         self._run_tasks([kvOps_tasks, mid_recovery_tasks])
         for task in compact_tasks:
@@ -576,7 +576,7 @@ class SecondaryIndexingPlasmaDGMRecoveryTests(BaseSecondaryIndexingTests):
         try:
             for bucket in self.buckets:
                 log.info("Flushing bucket {0}...".format(bucket.name))
-                rest = RestConnection(self.master)
+                rest = RestConnection(self.main)
                 rest.flush_bucket(bucket.name)
                 count = 0
                 while rest.get_bucket_status(bucket.name) != "healthy" and \
@@ -733,7 +733,7 @@ class SecondaryIndexingPlasmaDGMRecoveryTests(BaseSecondaryIndexingTests):
 
     def _find_index_lost_when_indexer_down(self):
         lost_indexes = []
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         index_map = rest.get_index_status()
         log.info("index_map: {0}".format(index_map))
         for index_node in self.index_nodes_out:

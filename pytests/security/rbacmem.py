@@ -22,63 +22,63 @@ from couchbase_helper.documentgenerator import BlobGenerator
 class dataRoles():
 
     @staticmethod
-    def _datareader_role_master():
+    def _datareader_role_main():
         per_set = {
             "name": "Data Reader Role",
             "permissionSet": "read!True,write!False,statsRead!False,ReadMeta!True,WriteMeta!False,ReadXattr!True,WriteXattr!False"}
         return per_set
 
     @staticmethod
-    def _datareaderwrite_role_master():
+    def _datareaderwrite_role_main():
         per_set = {
             "name": "Data Reader Writer Role",
             "permissionSet": "read!False,write!True,statsRead!False,ReadMeta!False,WriteMeta!False,ReadXattr!False,WriteXattr!True"}
         return per_set
 
     @staticmethod
-    def _view_admin_role_master():
+    def _view_admin_role_main():
         per_set = {
             "name": "View Admin Role",
             "permissionSet": "read!True,write!False,statsRead!False,ReadMeta!True,WriteMeta!False"}
         return per_set
 
     @staticmethod
-    def _replication_admin_role_master():
+    def _replication_admin_role_main():
         per_set = {
             "name": "Replication Admin Role",
             "permissionSet": "read!True,write!False,statsRead!False,ReadMeta!True,WriteMeta!False"}
         return per_set
 
     @staticmethod
-    def _bucket_admin_role_master():
+    def _bucket_admin_role_main():
         per_set = {
             "name": "Bucket Admin Role",
             "permissionSet": "read!True,write!True,statsRead!True,ReadMeta!True,WriteMeta!True"}
         return per_set
 
     @staticmethod
-    def _cluster_admin_role_master():
+    def _cluster_admin_role_main():
         per_set = {
             "name": "Cluster Admin Role",
             "permissionSet": "read!True,write!True,statsRead!True,ReadMeta!True,WriteMeta!True"}
         return per_set
 
     @staticmethod
-    def _full_admin_role_master():
+    def _full_admin_role_main():
         per_set = {
             "name": "Full Admin Role",
             "permissionSet": "read!True,write!True,statsRead!True,ReadMeta!True,WriteMeta!True"}
         return per_set
 
     @staticmethod
-    def _dcp_data_reader_role_master():
+    def _dcp_data_reader_role_main():
         per_set = {
             "name": "DCP Data Reader Role",
             "permissionSet": "read!True,write!False,statsRead!False,ReadMeta!True,WriteMeta!False"}
         return per_set
 
     @staticmethod
-    def _read_only_role_master():
+    def _read_only_role_main():
         per_set = {
             "name": "Read Only Role",
             "permissionSet": "read!False,write!False,statsRead!False,ReadMeta!False,WriteMeta!False"}
@@ -92,14 +92,14 @@ class dataRoles():
         return per_set
 
     @staticmethod
-    def _data_backup_master():
+    def _data_backup_main():
         per_set = {
             "name": "Data Backup",
             "permissionSet": "read!True,write!True,statsRead!True,ReadMeta!False,WriteMeta!False"}
         return per_set
 
     @staticmethod
-    def _data_monitoring_master():
+    def _data_monitoring_main():
         per_set = {
             "name": "Data Monitoring",
             "permissionSet": "read!False,write!False,statsRead!True,ReadMeta!False,WriteMeta!False"}
@@ -114,58 +114,58 @@ class dataRoles():
 
     @staticmethod
     def _return_permission_set(role=None):
-        return_role_master = []
+        return_role_main = []
         return_role_expected = []
         return_role_expected_negative = []
         return_role_hierarchy = dataRoles._get_role_hierarchy()
 
         if role == "data_reader":
-            return_role_master = dataRoles._datareader_role_master()
+            return_role_main = dataRoles._datareader_role_main()
 
         if role == "data_writer":
-            return_role_master = dataRoles._datareaderwrite_role_master()
+            return_role_main = dataRoles._datareaderwrite_role_main()
 
         if role == "views_admin":
-            return_role_master = dataRoles._view_admin_role_master()
+            return_role_main = dataRoles._view_admin_role_main()
 
         if role == "replication_admin":
-            return_role_master = dataRoles._replication_admin_role_master()
+            return_role_main = dataRoles._replication_admin_role_main()
 
         if role == "bucket_admin":
-            return_role_master = dataRoles._bucket_admin_role_master()
+            return_role_main = dataRoles._bucket_admin_role_main()
 
         if role == "cluster_admin":
-            return_role_master = dataRoles._cluster_admin_role_master()
+            return_role_main = dataRoles._cluster_admin_role_main()
 
         if role == "admin":
-            return_role_master = dataRoles._full_admin_role_master()
+            return_role_main = dataRoles._full_admin_role_main()
 
         if role == "readonly":
-            return_role_master = dataRoles._read_only_role_master()
+            return_role_main = dataRoles._read_only_role_main()
 
         if role == "readonly":
-            return_role_master = dataRoles._read_only_role_master()
+            return_role_main = dataRoles._read_only_role_main()
 
         if role == "data_dcp_reader":
-            return_role_master = dataRoles._dcp_data_reader_role_master()
+            return_role_main = dataRoles._dcp_data_reader_role_main()
 
         if role == "data_backup":
-            return_role_master = dataRoles._data_backup_master()
+            return_role_main = dataRoles._data_backup_main()
 
         if role == "data_monitoring":
-            return_role_master = dataRoles._data_monitoring_master()
+            return_role_main = dataRoles._data_monitoring_main()
 
         if role == "no_bucket_access":
-            return_role_master = dataRoles._no_bucket_access()
+            return_role_main = dataRoles._no_bucket_access()
 
-        return return_role_master
+        return return_role_main
 
 
 class RbacTestMemcached(BaseTestCase):
 
     def setUp(self):
         super(RbacTestMemcached, self).setUp()
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         self.auth_type = self.input.param('auth_type','builtin')
         self.user_id = self.input.param("user_id",None)
         self.user_role = self.input.param("user_role",None)
@@ -182,12 +182,12 @@ class RbacTestMemcached(BaseTestCase):
         if self.no_bucket_access:
             rest.create_bucket(bucket=self.no_access_bucket_name, ramQuotaMB=100, lww=True)
         if self.auth_type == 'ldap':
-            rbacmain(self.master, 'builtin')._delete_user('cbadminbucket')
+            rbacmain(self.main, 'builtin')._delete_user('cbadminbucket')
         if self.auth_type == 'ldap':
             rbacmain().setup_auth_mechanism(self.servers,'ldap',rest)
             for user in self.ldap_users:
                 testuser = [{'id': user[0], 'name': user[0], 'password': user[1]}]
-                RbacBase().create_user_source(testuser, 'ldap', self.master)
+                RbacBase().create_user_source(testuser, 'ldap', self.main)
                 self.sleep(10)
         elif self.auth_type == "pam":
             rbacmain().setup_auth_mechanism(self.servers,'pam', rest)
@@ -196,7 +196,7 @@ class RbacTestMemcached(BaseTestCase):
         elif self.auth_type == "builtin":
             for user in self.ldap_users:
                 testuser = [{'id': user[0], 'name': user[0], 'password': user[1]}]
-                RbacBase().create_user_source(testuser, 'builtin', self.master)
+                RbacBase().create_user_source(testuser, 'builtin', self.main)
                 self.sleep(10)
 
     def _return_roles(self,user_role):
@@ -215,7 +215,7 @@ class RbacTestMemcached(BaseTestCase):
         return final_roles
 
     def _assign_user_role(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         final_role = self._return_roles(self.user_role)
         for user in self.ldap_users:
             final_user_role = [{'id': user[0], 'name': user[0], 'roles': final_role}]
@@ -236,23 +236,23 @@ class RbacTestMemcached(BaseTestCase):
             temp_action = action.split("!")
             for users in self.ldap_users:
                     if self.no_bucket_access:
-                        mc, result = TestMemcachedClient().connection(self.master.ip, self.no_access_bucket_name, users[0], users[1])
+                        mc, result = TestMemcachedClient().connection(self.main.ip, self.no_access_bucket_name, users[0], users[1])
                     else:
-                        mc, result = TestMemcachedClient().connection(self.master.ip, self.bucket_name, users[0], users[1])
-                        sdk_conn, result = TestSDK().connection(self.master.ip, self.bucket_name, users[0],\
+                        mc, result = TestMemcachedClient().connection(self.main.ip, self.bucket_name, users[0], users[1])
+                        sdk_conn, result = TestSDK().connection(self.main.ip, self.bucket_name, users[0],\
                                                                       users[1])
                     if (result):
                         result_action = None
                         if temp_action[0] == 'write':
                             result_action = TestMemcachedClient().write_data(mc)
                         elif temp_action[0] == 'read':
-                            result_action = TestMemcachedClient().read_data(self.master.ip, mc, self.bucket_name)
+                            result_action = TestMemcachedClient().read_data(self.main.ip, mc, self.bucket_name)
                         elif temp_action[0] == 'statsRead':
                             result_action = TestMemcachedClient().read_stats(mc)
                         elif temp_action[0] == 'ReadMeta':
-                            result_action = TestMemcachedClient().get_meta(self.master.ip, mc, self.bucket_name)
+                            result_action = TestMemcachedClient().get_meta(self.main.ip, mc, self.bucket_name)
                         elif temp_action[0] == 'WriteMeta':
-                            result_action = TestMemcachedClient().set_meta(self.master.ip, mc, self.bucket_name)
+                            result_action = TestMemcachedClient().set_meta(self.main.ip, mc, self.bucket_name)
                         elif temp_action[0] == 'WriteXattr':
                             if self.no_bucket_access:
                                 self.log.info ("No access to bucket via SDK")
@@ -264,7 +264,7 @@ class RbacTestMemcached(BaseTestCase):
                                 self.log.info ("No access to bucket via SDK")
                                 result_action = True
                             else:
-                                result_action = TestSDK().get_xattr(self.master.ip, sdk_conn, self.bucket_name)
+                                result_action = TestSDK().get_xattr(self.main.ip, sdk_conn, self.bucket_name)
                         self.log.info ("Result of action - {0} is {1}".format(action, result_action))
                         if temp_action[1] == 'False':
                             self.assertFalse(result_action)

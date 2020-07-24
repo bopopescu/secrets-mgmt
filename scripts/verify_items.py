@@ -20,9 +20,9 @@ def usage(err=None):
         err_code = 1
         print "Error:", err
         print
-    print "./verify_.py -m <master> -f <file>"
+    print "./verify_.py -m <main> -f <file>"
     print ""
-    print " master             the master node rest interface"
+    print " main             the main node rest interface"
     print " file               file to write out the kvstore to"
     print ""
     print "./verify_items -m Administrator:password@10.1.2.99:8091 -f kvstore"
@@ -66,12 +66,12 @@ class KVStore(object):
 class Config(object):
     def __init__(self, argv):
         # defaults
-        self.master = None
+        self.main = None
         self.filename = None
         self.bucket = 'default'
 
         try:
-            (opts, args) = getopt.getopt(argv, 'hm:f:b:', ['help', 'master=', 'file=', 'bucket='])
+            (opts, args) = getopt.getopt(argv, 'hm:f:b:', ['help', 'main=', 'file=', 'bucket='])
         except IndexError:
             usage()
         except getopt.GetoptError, err:
@@ -80,20 +80,20 @@ class Config(object):
         for o, a in opts:
             if o == "-h" or o == "--help":
                 usage()
-            if o == "-m" or o == "--master":
-                master_list = re.split('[:@]', a)
-                self.master = {}
-                self.master["username"] = master_list[0]
-                self.master["password"] = master_list[1]
-                self.master["ip"] = master_list[2]
-                self.master["port"] = master_list[3]
+            if o == "-m" or o == "--main":
+                main_list = re.split('[:@]', a)
+                self.main = {}
+                self.main["username"] = main_list[0]
+                self.main["password"] = main_list[1]
+                self.main["ip"] = main_list[2]
+                self.main["port"] = main_list[3]
             if o == "-f" or o == "--file":
                 self.filename = a
             if o == "-b" or o == "--bucket":
                 self.bucket = a
 
-        if not self.master:
-            usage("missing master")
+        if not self.main:
+            usage("missing main")
         if not self.filename:
             usage("missing file")
 
@@ -125,7 +125,7 @@ if __name__ == "__main__":
 
     kv = KVStore(config.filename)
 
-    rest = RestConnection(config.master)
+    rest = RestConnection(config.main)
     awareness = VBucketAwareMemcached(rest, config.bucket)
 
     undeleted = 0

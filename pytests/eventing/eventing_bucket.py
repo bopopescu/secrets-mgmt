@@ -23,12 +23,12 @@ class EventingBucket(EventingBaseTest):
                                                        replicas=self.num_replicas)
             self.cluster.create_standard_bucket(name=self.src_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
-            self.src_bucket = RestConnection(self.master).get_buckets()
+            self.src_bucket = RestConnection(self.main).get_buckets()
             self.cluster.create_standard_bucket(name=self.dst_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
             self.cluster.create_standard_bucket(name=self.metadata_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
-            self.buckets = RestConnection(self.master).get_buckets()
+            self.buckets = RestConnection(self.main).get_buckets()
         self.gens_load = self.generate_docs(self.docs_per_day)
         self.expiry = 3
         handler_code = self.input.param('handler_code', 'bucket_op')
@@ -48,7 +48,7 @@ class EventingBucket(EventingBaseTest):
                                           n1ql_port=self.n1ql_port,
                                           full_docs_list=self.full_docs_list,
                                           log=self.log, input=self.input,
-                                          master=self.master,
+                                          main=self.main,
                                           use_rest=True
                                           )
             self.n1ql_helper.create_primary_index(using_gsi=True, server=self.n1ql_node)
@@ -86,7 +86,7 @@ class EventingBucket(EventingBaseTest):
             pass
         body = self.create_save_function_body(self.function_name, self.handler_code)
         self.deploy_function(body)
-        stats_src = RestConnection(self.master).get_bucket_stats(bucket=self.src_bucket_name)
+        stats_src = RestConnection(self.main).get_bucket_stats(bucket=self.src_bucket_name)
         # Wait for eventing to catch up with all the update mutations and verify results
         self.verify_eventing_results(self.function_name, stats_src["curr_items"], skip_stats_validation=True)
         try:
@@ -218,7 +218,7 @@ class EventingBucket(EventingBaseTest):
         self.bucket_compaction()
         # load some data on metadata bucket while eventing is processing mutations
         # metadata bucket can be used for other purposes as well
-        task = self.cluster.async_load_gen_docs(self.master, self.metadata_bucket_name, gen_load_copy,
+        task = self.cluster.async_load_gen_docs(self.main, self.metadata_bucket_name, gen_load_copy,
                                                 self.buckets[0].kvs[1], "create", compression=self.sdk_compression)
         # Wait for eventing to catch up with all the update mutations and verify results
         self.verify_eventing_results(self.function_name, self.docs_per_day * 2016, skip_stats_validation=True)
@@ -238,7 +238,7 @@ class EventingBucket(EventingBaseTest):
         values = ['1', '10']
         gen_load_non_json = JSONNonDocGenerator('non_json_docs', values, start=0, end=2016 * self.docs_per_day)
         gen_load_non_json_del = copy.deepcopy(gen_load_non_json)
-        self.cluster.load_gen_docs(self.master, self.dst_bucket_name, gen_load_non_json, self.buckets[0].kvs[1],
+        self.cluster.load_gen_docs(self.main, self.dst_bucket_name, gen_load_non_json, self.buckets[0].kvs[1],
                                    'create', compression=self.sdk_compression)
         # deploy the first function
         body = self.create_save_function_body(self.function_name, HANDLER_CODE.DELETE_BUCKET_OP_ON_DELETE,
@@ -260,7 +260,7 @@ class EventingBucket(EventingBaseTest):
                                      bucket=self.src_bucket_name)
         self.load(self.gens_load, buckets=self.src_bucket, flag=self.item_flag, verify_data=False,
                   batch_size=self.batch_size, op_type='delete')
-        self.cluster.load_gen_docs(self.master, self.dst_bucket_name, gen_load_non_json_del, self.buckets[0].kvs[1],
+        self.cluster.load_gen_docs(self.main, self.dst_bucket_name, gen_load_non_json_del, self.buckets[0].kvs[1],
                                    'delete', compression=self.sdk_compression)
         self.verify_eventing_results(self.function_name, 0, skip_stats_validation=True)
         self.verify_eventing_results(self.function_name + "_1", 0, skip_stats_validation=True,
@@ -291,11 +291,11 @@ class EventingBucket(EventingBaseTest):
             # since some of the docs are already ejected by eventing, load method will fails, hence ignoring failure
             pass
         # Wait for eventing to catch up with all the delete mutations and verify results
-        stats_src = RestConnection(self.master).get_bucket_stats(bucket=self.src_bucket_name)
+        stats_src = RestConnection(self.main).get_bucket_stats(bucket=self.src_bucket_name)
         self.verify_eventing_results(self.function_name, stats_src["curr_items"], skip_stats_validation=True)
         self.undeploy_and_delete_function(body)
-        vb_active_auto_delete_count = StatsCommon.get_stats([self.master], self.src_bucket_name, '',
-                                                            'vb_active_auto_delete_count')[self.master]
+        vb_active_auto_delete_count = StatsCommon.get_stats([self.main], self.src_bucket_name, '',
+                                                            'vb_active_auto_delete_count')[self.main]
         if vb_active_auto_delete_count == 0:
             self.fail("No items were ejected from ephemeral bucket")
         else:
@@ -366,7 +366,7 @@ class EventingBucket(EventingBaseTest):
                       batch_size=self.batch_size)
         body = self.create_save_function_body(self.function_name, self.handler_code)
         self.deploy_function(body)
-        stats_src = RestConnection(self.master).get_bucket_stats(bucket=self.src_bucket_name)
+        stats_src = RestConnection(self.main).get_bucket_stats(bucket=self.src_bucket_name)
         # Wait for eventing to catch up with all the update mutations and verify results
         self.verify_eventing_results(self.function_name, stats_src["curr_items"], skip_stats_validation=True)
         # delete all documents

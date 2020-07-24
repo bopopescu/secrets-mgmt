@@ -45,7 +45,7 @@ class x509main:
         if host is not None:
             self.host = host
             self.install_path = self._get_install_path(self.host)
-        self.slave_host = x509main.SLAVE_HOST
+        self.subordinate_host = x509main.SLAVE_HOST
 
     def getLocalIPAddress(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -63,7 +63,7 @@ class x509main:
             x509main(server)._setup_node_certificates(reload_cert=reload_cert,host=server)
 
     def _generate_cert(self,servers,root_cn='Root\ Authority',type='go',encryption="",key_length=1024):
-        shell = RemoteMachineShellConnection(self.slave_host)
+        shell = RemoteMachineShellConnection(self.subordinate_host)
         shell.execute_command("rm -rf " + x509main.CACERTFILEPATH)
         shell.execute_command("mkdir " + x509main.CACERTFILEPATH)
         
@@ -230,6 +230,6 @@ class x509main:
         status, content, header = rest._http_request(api, 'GET')
         return status, content, header
 
-    def setup_master(self,user='Administrator',password='password'):
+    def setup_main(self,user='Administrator',password='password'):
         x509main(self.host)._upload_cluster_ca_certificate(user,password)
         x509main(self.host)._setup_node_certificates()

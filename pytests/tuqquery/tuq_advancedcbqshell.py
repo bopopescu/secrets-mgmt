@@ -324,7 +324,7 @@ class AdvancedQueryTests(QueryTests):
                 self.shell.disconnect()
 
     def test_pretty_false(self):
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         queries = ['\SET -pretty true;',
                    'select * from default limit 5;']
         pretty = self.execute_commands_inside(self.cbqpath,'',queries,'','','','')

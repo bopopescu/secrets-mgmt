@@ -20,11 +20,11 @@ class CBASFunctionalTests(CBASBaseTest):
         '''
         if "add_all_cbas_nodes" in self.input.test_params and self.input.test_params["add_all_cbas_nodes"] and len(self.cbas_servers) >= 1:
             self.add_all_cbas_node_then_rebalance()
-            result = self.load_sample_buckets(servers=list(set(self.cbas_servers + [self.master, self.cbas_node])),
+            result = self.load_sample_buckets(servers=list(set(self.cbas_servers + [self.main, self.cbas_node])),
                                               bucketName="travel-sample",
                                               total_items=self.travel_sample_docs_count)
         else:
-            result = self.load_sample_buckets(servers=list(set([self.master,self.cbas_node])),
+            result = self.load_sample_buckets(servers=list(set([self.main,self.cbas_node])),
                                               bucketName="travel-sample",
                                               total_items=self.travel_sample_docs_count)
 
@@ -105,7 +105,7 @@ class CBASFunctionalTests(CBASBaseTest):
     def test_connect_bucket(self):
         # Create bucket on CBAS
         if self.cb_bucket_password:
-            self.cb_server_ip=self.master.ip
+            self.cb_server_ip=self.main.ip
             
         self.create_bucket_on_cbas(cbas_bucket_name=self.cbas_bucket_name,
                                    cb_bucket_name=self.cb_bucket_name,
@@ -275,7 +275,7 @@ class CBASFunctionalTests(CBASBaseTest):
             statement_create_dataset += ";"
 
         status, metrics, errors, results, _ = self.execute_statement_on_cbas(
-            statement_create_dataset, self.master)
+            statement_create_dataset, self.main)
         
         self.log.info("Executing Statement on CBAS: %s", statement_create_dataset)
         

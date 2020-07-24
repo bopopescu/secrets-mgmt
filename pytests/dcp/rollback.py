@@ -62,7 +62,7 @@ class DCPRollBack(DCPBase):
 
         # store the KVs which were modified and active on node 1
         modified_kvs_active_on_node1 = {}
-        vbucket_client = VBucketAwareMemcached(RestConnection(self.master), 'default')
+        vbucket_client = VBucketAwareMemcached(RestConnection(self.main), 'default')
         client = MemcachedClientHelper.direct_client(self.servers[0], 'default')
         for i in range(NUMBER_OF_DOCS/100):
             keyname = 'keyname-' + str(i)
@@ -146,7 +146,7 @@ class DCPRollBack(DCPBase):
     def test_rollback_and_persistence_race_condition(self):
 
         nodeA = self.servers[0]
-        vbucket_client = VBucketAwareMemcached(RestConnection(self.master), 'default')
+        vbucket_client = VBucketAwareMemcached(RestConnection(self.main), 'default')
         gen_create = BlobGenerator('dcp', 'dcp-', 64, start=0, end=self.num_items)
         self._load_all_buckets(nodeA, gen_create, "create", 0)
 

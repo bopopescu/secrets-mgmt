@@ -43,7 +43,7 @@ class CBASBaseTest(BaseTestCase):
         self.expected_error = self.input.param("error", None)
         if self.expected_error:
             self.expected_error = self.expected_error.replace("INVALID_IP",invalid_ip)
-            self.expected_error = self.expected_error.replace("PORT",self.master.port)
+            self.expected_error = self.expected_error.replace("PORT",self.main.port)
         self.cb_server_ip = self.input.param("cb_server_ip", None)
         self.cb_server_ip = self.cb_server_ip.replace('INVALID_IP',invalid_ip) if self.cb_server_ip is not None else None
         self.cbas_dataset_name = self.input.param("cbas_dataset_name", 'travel_ds')
@@ -68,7 +68,7 @@ class CBASBaseTest(BaseTestCase):
             self.index_fields = self.index_fields.split("-")
         self.otpNodes = []
 
-        self.rest = RestConnection(self.master)
+        self.rest = RestConnection(self.main)
         
         self.log.info("Setting the min possible memory quota so that adding mode nodes to the cluster wouldn't be a problem.")
         self.rest.set_service_memoryQuota(service='memoryQuota', memoryQuota=MIN_KV_QUOTA)
@@ -82,10 +82,10 @@ class CBASBaseTest(BaseTestCase):
                     
         if not self.cbas_node and len(self.cbas_servers)>=1:
             self.cbas_node = self.cbas_servers[0]
-            if "cbas" in self.master.services:
+            if "cbas" in self.main.services:
                 self.cleanup_cbas()
             if add_defualt_cbas_node:
-                if self.master.ip != self.cbas_node.ip:
+                if self.main.ip != self.cbas_node.ip:
                     self.otpNodes.append(self.add_node(self.cbas_node))
                 else:
                     self.otpNodes = self.rest.node_statuses()
@@ -103,7 +103,7 @@ class CBASBaseTest(BaseTestCase):
             ram_available = node_info.memoryQuota
             
         self.bucket_size = ram_available - 1
-        default_params=self._create_bucket_params(server=self.master, size=self.bucket_size,
+        default_params=self._create_bucket_params(server=self.main, size=self.bucket_size,
                                                          replicas=self.num_replicas, bucket_type=self.bucket_type,
                                                          enable_replica_index=self.enable_replica_index,
                                                          eviction_policy=self.eviction_policy, lww=self.lww)
@@ -118,8 +118,8 @@ class CBASBaseTest(BaseTestCase):
     def add_all_cbas_node_then_rebalance(self):
         if len(self.cbas_servers)>=1:
             for server in self.cbas_servers:
-                '''This is the case when master node is running cbas service as well'''
-                if self.master.ip != server.ip:
+                '''This is the case when main node is running cbas service as well'''
+                if self.main.ip != server.ip:
                     self.otpNodes.append(self.rest.add_node(user=server.rest_username,
                                                password=server.rest_password,
                                                remoteIp=server.ip,
@@ -162,7 +162,7 @@ class CBASBaseTest(BaseTestCase):
     
     def remove_node(self,otpnode=None, wait_for_rebalance=True):
         nodes = self.rest.node_statuses()
-        '''This is the case when master node is running cbas service as well'''
+        '''This is the case when main node is running cbas service as well'''
         if len(nodes) <= len(otpnode):
             return
         
@@ -191,7 +191,7 @@ class CBASBaseTest(BaseTestCase):
                 self.sleep(10)
                 num_actual = 0
                 if not servers:
-                    num_actual = self.get_item_count(self.master,bucketName)
+                    num_actual = self.get_item_count(self.main,bucketName)
                 else:
                     for server in servers:
                         if "kv" in server.services:
@@ -503,7 +503,7 @@ class CBASBaseTest(BaseTestCase):
                                      start=start_key, end=end_key)
         self.log.info("%s %s documents..." % (operation, num_items))
         try:
-            self._load_all_buckets(self.master, gen_load, operation, 0)
+            self._load_all_buckets(self.main, gen_load, operation, 0)
             self._verify_stats_all_buckets(self.input.servers)
         except Exception as e:
             self.log.info(e.message)
@@ -790,7 +790,7 @@ class CBASBaseTest(BaseTestCase):
 
     def _create_user_and_grant_role(self, username, role, source='builtin'):
         user = [{'id':username,'password':'password','name':'Some Name'}]
-        response = RbacBase().create_user_source(user,source,self.master)
+        response = RbacBase().create_user_source(user,source,self.main)
         user_role_list = [{'id':username,'name':'Some Name','roles':role}]
         response = RbacBase().add_user_role(user_role_list, self.rest, source)
 

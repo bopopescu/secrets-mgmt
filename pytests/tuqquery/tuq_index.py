@@ -97,7 +97,7 @@ class QueriesViewsTests(QuerySanityTests):
                     self.run_test_case()
             except Exception, ex:
                 if self.index_type == 'VIEW':
-                    content = self.cluster.query_view(self.master, "ddl_%s" % view_name, view_name, {"stale": "ok"},
+                    content = self.cluster.query_view(self.main, "ddl_%s" % view_name, view_name, {"stale": "ok"},
                                                       bucket="default", retry_time=1)
                     self.log.info("Generated view has %s items" % len(content['rows']))
                     raise ex

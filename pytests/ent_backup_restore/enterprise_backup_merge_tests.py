@@ -21,11 +21,11 @@ class EnterpriseBackupMergeTest(EnterpriseBackupMergeBase):
         self.expected_error = self.input.param("expected_error", None)
         if self.expires:
             for bucket in self.buckets:
-                cb = self._get_python_sdk_client(self.master.ip, bucket, self.backupset.cluster_host)
+                cb = self._get_python_sdk_client(self.main.ip, bucket, self.backupset.cluster_host)
                 for i in range(1, self.num_items + 1):
                     cb.upsert("doc" + str(i), {"key":"value"})
         else:
-            self._load_all_buckets(self.master, self.initial_load_gen,
+            self._load_all_buckets(self.main, self.initial_load_gen,
                                "create", self.expires)
         self.log.info("*** done to load items to all buckets")
         self.backup_create_validate()
@@ -42,7 +42,7 @@ class EnterpriseBackupMergeTest(EnterpriseBackupMergeBase):
             else:
                 rest = RestConnection(self.input.clusters[0][0])
                 rest.force_eject_node()
-                master_services = self.get_services([self.backupset.cluster_host],
+                main_services = self.get_services([self.backupset.cluster_host],
                                                  self.services_init, start_node=0)
                 info = rest.get_nodes_self()
                 if info.memoryQuota and int(info.memoryQuota) > 0:
@@ -66,17 +66,17 @@ class EnterpriseBackupMergeTest(EnterpriseBackupMergeBase):
         self.expected_error = self.input.param("expected_error", None)
         if self.expires:
             for bucket in self.buckets:
-                cb = self._get_python_sdk_client(self.master.ip, bucket)
+                cb = self._get_python_sdk_client(self.main.ip, bucket)
                 for i in range(1, self.num_items + 1):
                     cb.upsert("doc" + str(i), {"key": "value"})
         else:
-            self._load_all_buckets(self.master, self.initial_load_gen,
+            self._load_all_buckets(self.main, self.initial_load_gen,
                                    "create", self.expires)
         self.log.info("*** done to load items to all buckets")
         self.backup_create_validate()
         self.backup()
         self.set_meta_purge_interval()
-        self._load_all_buckets(self.master, self.delete_gen, "delete",
+        self._load_all_buckets(self.main, self.delete_gen, "delete",
                                self.expires)
         self.sleep(360, "Sleep for 6 minutes for the meta-data purge "
                         "interval to be completed")

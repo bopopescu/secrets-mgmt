@@ -72,12 +72,12 @@ class AutoReprovisionBaseTest(unittest.TestCase):
                  .format(testcase.case_number, testcase._testMethodName))
 
     @staticmethod
-    def wait_for_failover_or_assert(master, autofailover_count, timeout, testcase):
+    def wait_for_failover_or_assert(main, autofailover_count, timeout, testcase):
         time_start = time.time()
         time_max_end = time_start + timeout
         failover_count = 0
         while time.time() < time_max_end:
-            failover_count = AutoReprovisionBaseTest.get_failover_count(master)
+            failover_count = AutoReprovisionBaseTest.get_failover_count(main)
             if failover_count == autofailover_count:
                 testcase.log.info("{0} nodes failed over as expected".format(failover_count))
                 testcase.log.info("expected failover in {0} seconds, actual time {1} seconds".format \
@@ -86,14 +86,14 @@ class AutoReprovisionBaseTest(unittest.TestCase):
                 return
             time.sleep(2)
 
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         rest.print_UI_logs()
-        testcase.log.warn("pools/default from {0} : {1}".format(master.ip, rest.cluster_status()))
+        testcase.log.warn("pools/default from {0} : {1}".format(main.ip, rest.cluster_status()))
         testcase.fail("{0} nodes failed over, expected {1} in {2} seconds".
                       format(failover_count, autofailover_count, time.time() - time_start))
 
     @staticmethod
-    def wait_for_warmup_or_assert(master, warmup_count, timeout, testcase):
+    def wait_for_warmup_or_assert(main, warmup_count, timeout, testcase):
         time_start = time.time()
         time_max_end = time_start + timeout
         bucket_name = testcase.rest.get_buckets()[0].name
@@ -110,20 +110,20 @@ class AutoReprovisionBaseTest(unittest.TestCase):
                 return
             time.sleep(2)
 
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         rest.print_UI_logs()
-        testcase.log.warn("pools/default from {0} : {1}".format(master.ip, rest.cluster_status()))
+        testcase.log.warn("pools/default from {0} : {1}".format(main.ip, rest.cluster_status()))
         testcase.fail("{0} nodes warmup, expected {1} in {2} seconds".
                       format(num_nodes_with_warmup, warmup_count, time.time() - time_start))
 
     @staticmethod
-    def wait_for_no_failover_or_assert(master, autofailover_count, timeout, testcase):
+    def wait_for_no_failover_or_assert(main, autofailover_count, timeout, testcase):
         time_start = time.time()
         time_max_end = time_start + timeout
         failover_count = 0
 
         while time.time() < time_max_end:
-            failover_count = AutoReprovisionBaseTest.get_failover_count(master)
+            failover_count = AutoReprovisionBaseTest.get_failover_count(main)
             if failover_count == autofailover_count:
                 break
             time.sleep(2)
@@ -136,8 +136,8 @@ class AutoReprovisionBaseTest(unittest.TestCase):
         log.info("{0} nodes failed over as expected in {1} seconds".format(failover_count, time_end - time_start))
 
     @staticmethod
-    def get_failover_count(master):
-        rest = RestConnection(master)
+    def get_failover_count(main):
+        rest = RestConnection(main)
         cluster_status = rest.cluster_status()
 
         failover_count = 0
@@ -154,20 +154,20 @@ class AutoReprovisionTests(unittest.TestCase):
     def setUp(self):
         self.input = TestInputSingleton.input
         self.case_number = self.input.param("case_number", 0)
-        self.use_master = self.input.param("use_master", False)
+        self.use_main = self.input.param("use_main", False)
         self.skip_services = self.input.param("skip_services", True)
         self.replicas = self.input.param("replicas", 1)
         self.servers = self.input.servers
         self.log = logger.Logger().get_logger()
-        self.master = self.servers[0]
-        self.rest = RestConnection(self.master)
+        self.main = self.servers[0]
+        self.rest = RestConnection(self.main)
         self.timeout = 60
         self.loaded_items = dict()
         AutoReprovisionBaseTest.common_setup(self.input, self)
         self._cluster_setup()
-        if self.use_master:
+        if self.use_main:
             self.server_fail = self.servers[0]
-            self.master = self.servers[1]
+            self.main = self.servers[1]
         else:
             self.server_fail = self.servers[1]
 
@@ -223,20 +223,20 @@ class AutoReprovisionTests(unittest.TestCase):
             self.fail('failed to change autoreprovision_settings!')
         self.sleep(5)
         RemoteUtilHelper.enable_firewall(self.server_fail)
-        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 1,
+        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 1,
                                                             timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                             self)
         self.sleep(5)
         shell = RemoteMachineShellConnection(self.server_fail)
         shell.disable_firewall()
-        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 0,
+        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 0,
                                                             timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                             self)
         self.rest.rebalance(otpNodes=[node.id for node in self.rest.node_statuses()], ejectedNodes=[])
         self.assertTrue(self.rest.monitorRebalance())
         buckets = self.rest.get_buckets()
         for bucket in buckets:
-            self.verify_loaded_data(self.master, bucket.name, self.loaded_items[bucket.name])
+            self.verify_loaded_data(self.main, bucket.name, self.loaded_items[bucket.name])
 
     def test_node_stop(self):
         timeout = self.timeout / 2
@@ -245,12 +245,12 @@ class AutoReprovisionTests(unittest.TestCase):
             self.fail('failed to change autoreprovision_settings!')
         self.sleep(5)
         self._stop_couchbase(self.server_fail)
-        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 1,
+        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 1,
                                                             timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                             self)
         self.sleep(30)
         self._start_couchbase(self.server_fail)
-        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 0,
+        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 0,
                                                             timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                             self)
         self.sleep(10)
@@ -261,7 +261,7 @@ class AutoReprovisionTests(unittest.TestCase):
         self.assertTrue(self.rest.monitorRebalance())
         buckets = self.rest.get_buckets()
         for bucket in buckets:
-            self.verify_loaded_data(self.master, bucket.name, self.loaded_items[bucket.name])
+            self.verify_loaded_data(self.main, bucket.name, self.loaded_items[bucket.name])
 
     def test_node_cb_restart(self):
         timeout = self.timeout / 2
@@ -271,10 +271,10 @@ class AutoReprovisionTests(unittest.TestCase):
         self.sleep(5)
         shell = RemoteMachineShellConnection(self.server_fail)
         shell.restart_couchbase()
-        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 1,
+        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 1,
                                                             timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                             self)
-        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 0,
+        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 0,
                                                             timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                             self)
         self.sleep(5)
@@ -285,7 +285,7 @@ class AutoReprovisionTests(unittest.TestCase):
         self.assertTrue(self.rest.monitorRebalance())
         buckets = self.rest.get_buckets()
         for bucket in buckets:
-            self.verify_loaded_data(self.master, bucket.name, self.loaded_items[bucket.name])
+            self.verify_loaded_data(self.main, bucket.name, self.loaded_items[bucket.name])
 
     def test_node_reboot(self):
         wait_timeout = 120
@@ -307,7 +307,7 @@ class AutoReprovisionTests(unittest.TestCase):
         # disable firewall on the node
         shell = RemoteMachineShellConnection(self.server_fail)
         shell.disable_firewall()
-        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 0,
+        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 0,
                                                             timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                             self)
         helper = RestHelper(self.rest)
@@ -317,7 +317,7 @@ class AutoReprovisionTests(unittest.TestCase):
         self.assertTrue(self.rest.monitorRebalance())
         buckets = self.rest.get_buckets()
         for bucket in buckets:
-            self.verify_loaded_data(self.master, bucket.name, self.loaded_items[bucket.name])
+            self.verify_loaded_data(self.main, bucket.name, self.loaded_items[bucket.name])
 
     def test_firewall_node_when_autoreprovisioning(self):
         wait_timeout = 120
@@ -340,7 +340,7 @@ class AutoReprovisionTests(unittest.TestCase):
         # disable firewall on the node
         shell = RemoteMachineShellConnection(self.server_fail)
         shell.disable_firewall()
-        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 0,
+        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 0,
                                                             timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                             self)
         helper = RestHelper(self.rest)
@@ -365,7 +365,7 @@ class AutoReprovisionTests(unittest.TestCase):
         self.assertTrue(self.rest.monitorRebalance())
         buckets = self.rest.get_buckets()
         for bucket in buckets:
-            self.verify_loaded_data(self.master, bucket.name, self.loaded_items[bucket.name])
+            self.verify_loaded_data(self.main, bucket.name, self.loaded_items[bucket.name])
 
     def test_node_memcached_failure(self):
         timeout = self.timeout / 2
@@ -375,11 +375,11 @@ class AutoReprovisionTests(unittest.TestCase):
         self.sleep(5)
         self._pause_couchbase(self.server_fail)
         self.sleep(5)
-        AutoReprovisionBaseTest.wait_for_warmup_or_assert(self.master, 1,
+        AutoReprovisionBaseTest.wait_for_warmup_or_assert(self.main, 1,
                                                           timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                           self)
         RemoteUtilHelper.common_basic_setup([self.server_fail])
-        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 0,
+        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 0,
                                                             timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                             self)
         helper = RestHelper(self.rest)
@@ -387,7 +387,7 @@ class AutoReprovisionTests(unittest.TestCase):
         self.assertTrue(helper.is_cluster_rebalanced(), "cluster is not balanced")
         buckets = self.rest.get_buckets()
         for bucket in buckets:
-            self.verify_loaded_data(self.master, bucket.name, self.loaded_items[bucket.name])
+            self.verify_loaded_data(self.main, bucket.name, self.loaded_items[bucket.name])
 
     def test_two_failed_nodes(self):
         timeout = self.timeout / 2
@@ -399,13 +399,13 @@ class AutoReprovisionTests(unittest.TestCase):
         self.sleep(5)
         self.log.info("stopping the first server")
         self._stop_couchbase(server_fail1)
-        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 1,
+        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 1,
                                                             timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                             self)
 
         self.log.info("stopping the second server")
         self._stop_couchbase(server_fail2)
-        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 2,
+        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 2,
                                                             timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                             self)
         helper = RestHelper(self.rest)
@@ -414,11 +414,11 @@ class AutoReprovisionTests(unittest.TestCase):
         self._start_couchbase(server_fail1)
 
         self._start_couchbase(server_fail1)
-        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 1,
+        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 1,
                                                             timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                             self)
         self._start_couchbase(server_fail2)
-        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 0,
+        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 0,
                                                             timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                             self)
         self.sleep(20)
@@ -438,7 +438,7 @@ class AutoReprovisionTests(unittest.TestCase):
         self.sleep(5)
         self.log.info("stopping the first server")
         self._stop_couchbase(server_fail1)
-        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 1,
+        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 1,
                                                             timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                             self)
 
@@ -448,7 +448,7 @@ class AutoReprovisionTests(unittest.TestCase):
 
         self.log.info("stopping the second server")
         self._stop_couchbase(server_fail2)
-        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 2,
+        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 2,
                                                             timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                             self)
 
@@ -501,7 +501,7 @@ class AutoReprovisionTests(unittest.TestCase):
             shell = RemoteMachineShellConnection(self.servers[i])
             print "operation", operation
             if i == 0:
-                self.master = self.servers[1]
+                self.main = self.servers[1]
             if operation == 'stop':
                 self._stop_couchbase(self.servers[i])
             elif operation == 'memcached_failure':
@@ -520,19 +520,19 @@ class AutoReprovisionTests(unittest.TestCase):
                 self.sleep(60)
             self.sleep(40)
             if operation == 'memcached_failure':
-                AutoReprovisionBaseTest.wait_for_warmup_or_assert(self.master, 1,
+                AutoReprovisionBaseTest.wait_for_warmup_or_assert(self.main, 1,
                                                                   timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                                   self)
             if operation != 'restart' and operation != 'memcached_failure' and operation != 'reboot':
-                AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 1,
+                AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 1,
                                                                     timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                                     self)
             if operation != 'restart':
                 RemoteUtilHelper.common_basic_setup([self.servers[i]])
-            AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 0,
+            AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 0,
                                                                 timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                                 self)
-            helper = RestHelper(RestConnection(self.master))
+            helper = RestHelper(RestConnection(self.main))
             self.assertTrue(helper.is_cluster_healthy(), "cluster status is not healthy")
             self.sleep(40)
             if operation == 'memcached_failure' or operation == 'failover':
@@ -549,7 +549,7 @@ class AutoReprovisionTests(unittest.TestCase):
                 data_lost = True
             for bucket in buckets:
                 if not data_lost:
-                    self.verify_loaded_data(self.master, bucket.name, self.loaded_items[bucket.name])
+                    self.verify_loaded_data(self.main, bucket.name, self.loaded_items[bucket.name])
 
     def test_ui_logs(self):
         timeout = self.timeout / 2
@@ -564,7 +564,7 @@ class AutoReprovisionTests(unittest.TestCase):
 
         self.log.info("stopping the first server")
         self._stop_couchbase(server_fail1)
-        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 1,
+        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 1,
                                                             timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                             self)
 
@@ -576,7 +576,7 @@ class AutoReprovisionTests(unittest.TestCase):
 
         self.log.info("stopping the second server")
         self._stop_couchbase(server_fail2)
-        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.master, 2,
+        AutoReprovisionBaseTest.wait_for_failover_or_assert(self.main, 2,
                                                             timeout + AutoReprovisionBaseTest.MAX_FAIL_DETECT_TIME,
                                                             self)
         settings = self.rest.get_autoreprovision_settings()
@@ -697,8 +697,8 @@ class AutoReprovisionTests(unittest.TestCase):
         log.info(msg.format(deleted_count, expired_count))
         return inserted_keys, rejected_keys
 
-    def verify_loaded_data(self, master, bucket, inserted_keys):
-        keys_exist = BucketOperationHelper.keys_exist_or_assert_in_parallel(inserted_keys, master, bucket, self,
+    def verify_loaded_data(self, main, bucket, inserted_keys):
+        keys_exist = BucketOperationHelper.keys_exist_or_assert_in_parallel(inserted_keys, main, bucket, self,
                                                                             concurrency=4)
         self.assertTrue(keys_exist, msg="unable to verify keys after restore")
 
@@ -708,12 +708,12 @@ class AutoReprovisionTests(unittest.TestCase):
         bucketType = self.input.param("bucketType", "ephemeral")
         evictionPolicy = self.input.param("evictionPolicy", "noEviction")  # fullEviction
 
-        # master = self.servers[0]
+        # main = self.servers[0]
         # credentials = self.input.membase_settings
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         info = rest.get_nodes_self()
-        rest.init_cluster(username=self.master.rest_username,
-                          password=self.master.rest_password)
+        rest.init_cluster(username=self.main.rest_username,
+                          password=self.main.rest_password)
         memory = min(info.mcdMemoryReserved, self.input.param("kv_memory", 1000))
         rest.init_cluster_memoryQuota(memoryQuota=memory)
         rest.reset_autoreprovision()
@@ -730,18 +730,18 @@ class AutoReprovisionTests(unittest.TestCase):
                                evictionPolicy=evictionPolicy)
         else:
             created = BucketOperationHelper.create_multiple_buckets(
-                self.master, self.replicas, howmany=num_buckets,
+                self.main, self.replicas, howmany=num_buckets,
                 bucketType=bucketType, evictionPolicy=evictionPolicy)
             self.assertTrue(created, "unable to create multiple buckets")
 
         buckets = rest.get_buckets()
         for bucket in buckets:
-            ready = BucketOperationHelper.wait_for_memcached(self.master, bucket.name)
+            ready = BucketOperationHelper.wait_for_memcached(self.main, bucket.name)
             self.assertTrue(ready, msg="wait_for_memcached failed")
 
         for bucket in buckets:
             distribution = {10: 0.2, 20: 0.5, 30: 0.25, 40: 0.05}
-            inserted_keys, rejected_keys = self.load_bucket_and_return_the_keys(servers=[self.master],
+            inserted_keys, rejected_keys = self.load_bucket_and_return_the_keys(servers=[self.main],
                                                                                 name=bucket.name,
                                                                                 # ram_load_ratio=0.02,
                                                                                 value_size_distribution=distribution,
@@ -753,10 +753,10 @@ class AutoReprovisionTests(unittest.TestCase):
 
     def _add_and_rebalance(self, servers, wait_for_rebalance=True):
         log = logger.Logger.get_logger()
-        master = servers[0]
+        main = servers[0]
         all_nodes_added = True
         rebalanced = True
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         if len(servers) > 1:
             for serverInfo in servers[1:]:
                 log.info('adding {0} node : {1}:{2} to the cluster'.format(
@@ -764,7 +764,7 @@ class AutoReprovisionTests(unittest.TestCase):
                 services = serverInfo.services.split()
                 if self.skip_services:
                     services = None
-                otpNode = rest.add_node(master.rest_username, master.rest_password, serverInfo.ip, port=serverInfo.port,
+                otpNode = rest.add_node(main.rest_username, main.rest_password, serverInfo.ip, port=serverInfo.port,
                                         services=services)
                 if otpNode:
                     log.info('added node : {0} to the cluster'.format(otpNode.id))

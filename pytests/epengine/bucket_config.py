@@ -36,8 +36,8 @@ class BucketConfig(BaseTestCase):
         self.lww = self.input.param("lww", True)
         self.drift = self.input.param("drift", False)
         self.bucket='bucket-1'
-        self.master = self.servers[0]
-        self.rest = RestConnection(self.master)
+        self.main = self.servers[0]
+        self.rest = RestConnection(self.main)
         self.cluster = Cluster()
         self.skip_rebalance = self.input.param("skip_rebalance", False)
 
@@ -46,15 +46,15 @@ class BucketConfig(BaseTestCase):
                         node_ram_ratio)
 
         if not self.skip_rebalance:
-            self.rest.init_cluster(self.master.rest_username,
-                self.master.rest_password)
-            self.rest.init_cluster_memoryQuota(self.master.rest_username,
-                self.master.rest_password,
+            self.rest.init_cluster(self.main.rest_username,
+                self.main.rest_password)
+            self.rest.init_cluster_memoryQuota(self.main.rest_username,
+                self.main.rest_password,
                 memoryQuota=mem_quota)
             for server in self.servers:
                 ClusterOperationHelper.cleanup_cluster([server])
                 ClusterOperationHelper.wait_for_ns_servers_or_assert(
-                    [self.master], self.testcase)
+                    [self.main], self.testcase)
             try:
                 rebalanced = ClusterOperationHelper.add_and_rebalance(
                     self.servers)
@@ -115,14 +115,14 @@ class BucketConfig(BaseTestCase):
             self.fail('[ERROR]Rebalance failed .. , {0}'.format(e))
 
     def test_backup_same_cluster(self):
-        self.shell = RemoteMachineShellConnection(self.master)
-        self.buckets = RestConnection(self.master).get_buckets()
+        self.shell = RemoteMachineShellConnection(self.main)
+        self.buckets = RestConnection(self.main).get_buckets()
         self.couchbase_login_info = "%s:%s" % (self.input.membase_settings.rest_username,
                                                self.input.membase_settings.rest_password)
         self.backup_location = "/tmp/backup"
         self.command_options = self.input.param("command_options", '')
         try:
-            shell = RemoteMachineShellConnection(self.master)
+            shell = RemoteMachineShellConnection(self.main)
             self.shell.execute_cluster_backup(self.couchbase_login_info, self.backup_location, self.command_options)
 
             time.sleep(5)
@@ -132,19 +132,19 @@ class BucketConfig(BaseTestCase):
             self._check_config()
 
     def test_backup_diff_bucket(self):
-        self.shell = RemoteMachineShellConnection(self.master)
-        self.buckets = RestConnection(self.master).get_buckets()
+        self.shell = RemoteMachineShellConnection(self.main)
+        self.buckets = RestConnection(self.main).get_buckets()
         self.couchbase_login_info = "%s:%s" % (self.input.membase_settings.rest_username,
                                                self.input.membase_settings.rest_password)
         self.backup_location = "/tmp/backup"
         self.command_options = self.input.param("command_options", '')
         try:
-            shell = RemoteMachineShellConnection(self.master)
+            shell = RemoteMachineShellConnection(self.main)
             self.shell.execute_cluster_backup(self.couchbase_login_info, self.backup_location, self.command_options)
 
             time.sleep(5)
             self._create_bucket(lww=False,name="new_bucket")
-            self.buckets = RestConnection(self.master).get_buckets()
+            self.buckets = RestConnection(self.main).get_buckets()
             shell.restore_backupFile(self.couchbase_login_info, self.backup_location, ["new_bucket"])
 
         finally:
@@ -169,7 +169,7 @@ class BucketConfig(BaseTestCase):
             self.rest.create_bucket(bucket=self.bucket,
                 ramQuotaMB=512,authType='sasl',lww=self.lww)
             try:
-                ready = BucketOperationHelper.wait_for_memcached(self.master,
+                ready = BucketOperationHelper.wait_for_memcached(self.main,
                     self.bucket)
             except Exception, e:
                 self.fail('unable to create bucket')

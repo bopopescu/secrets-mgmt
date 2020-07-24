@@ -52,7 +52,7 @@ class LWW_EP_Engine(BaseTestCase):
         # XDCR user so we need to do a bit of a hack by using sed to edit the rbac.json file
         # TODO: implement for Windows
 
-        if self.master.ip != '127.0.0.1' and not LWW_EP_Engine.have_modified_rbac_file:
+        if self.main.ip != '127.0.0.1' and not LWW_EP_Engine.have_modified_rbac_file:
             # first stop the servers
             for s in self.servers:
                 self.stop_server(s)
@@ -100,18 +100,18 @@ class LWW_EP_Engine(BaseTestCase):
     def enable_time_synchronization(self):
         self.log.info('\n\nStarting set_enables_time_synchronization')
 
-        client = VBucketAwareMemcached(RestConnection(self.master), 'default')
+        client = VBucketAwareMemcached(RestConnection(self.main), 'default')
 
         vbucket_id = client._get_vBucket_id(LWW_EP_Engine.TEST_KEY)
-        mc_master = client.memcached_for_vbucket( vbucket_id )
+        mc_main = client.memcached_for_vbucket( vbucket_id )
         mc_replica = client.memcached_for_replica_vbucket(vbucket_id)
 
         # enable synchronization - the exact means has not yet been implemented
 
         self.log.info('\n\nVerify adjusted time is initially set')
 
-        time_is_set, master_val = self.get_adjusted_time( mc_master, vbucket_id)
-        self.assertTrue(time_is_set, msg='On startup time should be set on master' )
+        time_is_set, main_val = self.get_adjusted_time( mc_main, vbucket_id)
+        self.assertTrue(time_is_set, msg='On startup time should be set on main' )
 
 
         time_is_set, replica_val = self.get_adjusted_time( mc_replica, vbucket_id)
@@ -127,14 +127,14 @@ class LWW_EP_Engine(BaseTestCase):
 
         self.log.info('\n\nStarting verify_meta_data_when_not_enabled')
 
-        client = VBucketAwareMemcached(RestConnection(self.master), 'default')
+        client = VBucketAwareMemcached(RestConnection(self.main), 'default')
 
         vbucket_id = client._get_vBucket_id(LWW_EP_Engine.TEST_KEY)
-        mc_master = client.memcached_for_vbucket( vbucket_id )
+        mc_main = client.memcached_for_vbucket( vbucket_id )
 
-        mc_master.set(LWW_EP_Engine.TEST_KEY, 0, 0, LWW_EP_Engine.TEST_VALUE)
+        mc_main.set(LWW_EP_Engine.TEST_KEY, 0, 0, LWW_EP_Engine.TEST_VALUE)
 
-        get_meta_resp = mc_master.getMeta(LWW_EP_Engine.TEST_KEY, request_extended_meta_data=True)
+        get_meta_resp = mc_main.getMeta(LWW_EP_Engine.TEST_KEY, request_extended_meta_data=True)
 
         self.assertTrue( get_meta_resp[5] == 0, msg='Metadata indicate conflict resolution is set')
 
@@ -147,18 +147,18 @@ class LWW_EP_Engine(BaseTestCase):
         # need to explicitly enable and disable sync when it is supported
         self.log.info('\n\nStarting verify_one_node_has_time_sync_and_one_does_not')
 
-        client = VBucketAwareMemcached(RestConnection(self.master), 'default')
+        client = VBucketAwareMemcached(RestConnection(self.main), 'default')
 
         vbucket_id = client._get_vBucket_id(LWW_EP_Engine.TEST_KEY)
-        mc_master = client.memcached_for_vbucket( vbucket_id )
+        mc_main = client.memcached_for_vbucket( vbucket_id )
         mc_replica = client.memcached_for_replica_vbucket(vbucket_id)
 
-        # set for master but not for the replica
-        result = mc_master.set_time_drift_counter_state(vbucket_id, 0, 1)
+        # set for main but not for the replica
+        result = mc_main.set_time_drift_counter_state(vbucket_id, 0, 1)
 
-        mc_master.set(LWW_EP_Engine.TEST_KEY, 0, 0, LWW_EP_Engine.TEST_VALUE)
+        mc_main.set(LWW_EP_Engine.TEST_KEY, 0, 0, LWW_EP_Engine.TEST_VALUE)
 
-        get_meta_resp = mc_master.getMeta(LWW_EP_Engine.TEST_KEY, request_extended_meta_data=True)
+        get_meta_resp = mc_main.getMeta(LWW_EP_Engine.TEST_KEY, request_extended_meta_data=True)
 
         self.assertTrue( get_meta_resp[5] ==1, msg='Metadata indicates conflict resolution is not set')
 
@@ -171,10 +171,10 @@ class LWW_EP_Engine(BaseTestCase):
 
         self.log.info('\n\nStarting basic_functionality')
 
-        client = VBucketAwareMemcached(RestConnection(self.master), 'default')
+        client = VBucketAwareMemcached(RestConnection(self.main), 'default')
 
         vbucket_id = client._get_vBucket_id(LWW_EP_Engine.TEST_KEY)
-        mc_master = client.memcached_for_vbucket( vbucket_id )
+        mc_main = client.memcached_for_vbucket( vbucket_id )
         mc_replica = client.memcached_for_replica_vbucket(vbucket_id)
 
 
@@ -183,8 +183,8 @@ class LWW_EP_Engine(BaseTestCase):
 
         self.log.info('\n\nVerify adjusted time is initially unset')
 
-        time_is_set, master_val = self.get_adjusted_time( mc_master, vbucket_id)
-        self.assertFalse(time_is_set, msg='On startup time should not be set on master' )
+        time_is_set, main_val = self.get_adjusted_time( mc_main, vbucket_id)
+        self.assertFalse(time_is_set, msg='On startup time should not be set on main' )
 
 
         time_is_set, replica_val = self.get_adjusted_time( mc_replica, vbucket_id)
@@ -193,12 +193,12 @@ class LWW_EP_Engine(BaseTestCase):
 
 
         self.log.info('\n\nVerify adjusted time is set properly')
-        result = mc_master.set_time_drift_counter_state(vbucket_id, 0, 1)
-        time_is_set, master_val = self.get_adjusted_time( mc_master, vbucket_id)
-        self.assertTrue(time_is_set, msg='After setting time of master get adjusted time should return the time' )
+        result = mc_main.set_time_drift_counter_state(vbucket_id, 0, 1)
+        time_is_set, main_val = self.get_adjusted_time( mc_main, vbucket_id)
+        self.assertTrue(time_is_set, msg='After setting time of main get adjusted time should return the time' )
 
         time_is_set, replica_val = self.get_adjusted_time( mc_replica, vbucket_id)
-        self.assertFalse(time_is_set, msg='After setting time of master replica should be unset' )
+        self.assertFalse(time_is_set, msg='After setting time of main replica should be unset' )
 
 
 
@@ -214,21 +214,21 @@ class LWW_EP_Engine(BaseTestCase):
         self.log.info('\n\nStarting meta_commands')
 
 
-        client = VBucketAwareMemcached(RestConnection(self.master), 'default')
+        client = VBucketAwareMemcached(RestConnection(self.main), 'default')
         vbucket_id = client._get_vBucket_id(LWW_EP_Engine.TEST_KEY)
-        mc_master = client.memcached_for_vbucket( vbucket_id )
+        mc_main = client.memcached_for_vbucket( vbucket_id )
         mc_replica = client.memcached_for_replica_vbucket(vbucket_id)
 
-        result = mc_master.set_time_drift_counter_state(vbucket_id, 0, 1)
+        result = mc_main.set_time_drift_counter_state(vbucket_id, 0, 1)
 
-        time_is_set, master_val = self.get_adjusted_time( mc_master, vbucket_id)
+        time_is_set, main_val = self.get_adjusted_time( mc_main, vbucket_id)
 
 
         # verify conflict res is set
-        set_with_meta_resp = mc_master.set_with_meta(LWW_EP_Engine.TEST_KEY, 0, 0, 0, 0, LWW_EP_Engine.TEST_VALUE,
-            vbucket_id, add_extended_meta_data=True, adjusted_time=master_val,conflict_resolution_mode=1)
+        set_with_meta_resp = mc_main.set_with_meta(LWW_EP_Engine.TEST_KEY, 0, 0, 0, 0, LWW_EP_Engine.TEST_VALUE,
+            vbucket_id, add_extended_meta_data=True, adjusted_time=main_val,conflict_resolution_mode=1)
 
-        get_meta_resp = mc_master.getMeta(LWW_EP_Engine.TEST_KEY, request_extended_meta_data=True)
+        get_meta_resp = mc_main.getMeta(LWW_EP_Engine.TEST_KEY, request_extended_meta_data=True)
         self.assertTrue( get_meta_resp[5] == 1, msg='Metadata indicate conflict resolution is not set')
 
 
@@ -252,7 +252,7 @@ class LWW_EP_Engine(BaseTestCase):
         vbucket_id = client._get_vBucket_id( new_key )
 
         del_with_meta_resp = client.memcached_for_vbucket( vbucket_id ).del_with_meta(new_key, 0, 0, 0, 0, 0,
-            vbucket_id, add_extended_meta_data=True, adjusted_time=master_val,conflict_resolution_mode=1)
+            vbucket_id, add_extended_meta_data=True, adjusted_time=main_val,conflict_resolution_mode=1)
 
 
         get_meta_resp = client.memcached_for_vbucket( vbucket_id ).getMeta(new_key, request_extended_meta_data=True)
@@ -280,18 +280,18 @@ class LWW_EP_Engine(BaseTestCase):
     def test_monotonic_cas(self):
         self.log.info('\n\nStarting test_monotonic_cas')
 
-        client = VBucketAwareMemcached(RestConnection(self.master), 'default')
+        client = VBucketAwareMemcached(RestConnection(self.main), 'default')
         vbucket_id = client._get_vBucket_id(LWW_EP_Engine.TEST_KEY)
-        mc_master = client.memcached_for_vbucket( vbucket_id )
+        mc_main = client.memcached_for_vbucket( vbucket_id )
 
-        result = mc_master.set_time_drift_counter_state(vbucket_id, 0, 1)
+        result = mc_main.set_time_drift_counter_state(vbucket_id, 0, 1)
 
-        old_cas = mc_master.stats('vbucket-details')['vb_' + str(vbucket_id) + ':max_cas']
+        old_cas = mc_main.stats('vbucket-details')['vb_' + str(vbucket_id) + ':max_cas']
 
         for i in range(10):
-            mc_master.set(LWW_EP_Engine.TEST_KEY, 0, 0, LWW_EP_Engine.TEST_VALUE)
+            mc_main.set(LWW_EP_Engine.TEST_KEY, 0, 0, LWW_EP_Engine.TEST_VALUE)
 
-            cas = mc_master.stats('vbucket-details')['vb_' + str(vbucket_id) + ':max_cas']
+            cas = mc_main.stats('vbucket-details')['vb_' + str(vbucket_id) + ':max_cas']
             self.assertTrue( cas > old_cas, msg='CAS did not increase. Old {0} new {1}'.format(old_cas, cas))
             old_cas = cas
 

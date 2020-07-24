@@ -106,7 +106,7 @@ def measure_sched_delays(func):
     return wrapper
 
 
-class EPerfMaster(perf.PerfBase):
+class EPerfMain(perf.PerfBase):
 
     """
     specURL = http://hub.internal.couchbase.org/confluence/pages/viewpage.action?pageId=1901816
@@ -115,7 +115,7 @@ class EPerfMaster(perf.PerfBase):
 
     def setUp(self):
         self.dgm = False
-        self.is_master = True
+        self.is_main = True
         self.input = TestInputSingleton.input
         self.mem_quota = self.parami("mem_quota",
                                      PerfDefaults.mem_quota)  # for 10G system
@@ -126,16 +126,16 @@ class EPerfMaster(perf.PerfBase):
         self.superSetUp()
 
     def superSetUp(self):
-        super(EPerfMaster, self).setUp()
+        super(EPerfMain, self).setUp()
 
     def tearDown(self):
         self.superTearDown()
 
     def superTearDown(self):
-        super(EPerfMaster, self).tearDown()
+        super(EPerfMain, self).tearDown()
 
     def get_all_stats(self):
-        """One node, the 'master', should aggregate stats from client and
+        """One node, the 'main', should aggregate stats from client and
         server nodes and push results to couchdb.
         Assuming clients ssh_username/password are same as server
         Save servers list as clients
@@ -406,7 +406,7 @@ class EPerfMaster(perf.PerfBase):
         Remove when we delete test functions.
         No useful? we are calling setupBased1() on SetUp() in perf.py
         """
-        if not self.is_master:
+        if not self.is_main:
             self.setUpBase1()
 
     @cbtop
@@ -419,8 +419,8 @@ class EPerfMaster(perf.PerfBase):
         else:
             num_items = self.parami("items", PerfDefaults.items)
 
-        # Cluster nodes if master
-        if self.is_master:
+        # Cluster nodes if main
+        if self.is_main:
             self.rebalance_nodes(num_nodes)
 
         if self.is_leader:
@@ -659,8 +659,8 @@ class EPerfMaster(perf.PerfBase):
                 start_time = time.time()
 
             # Create design documents and views
-            master = self.input.servers[0]
-            self.set_up_rest(master)
+            main = self.input.servers[0]
+            self.set_up_rest(main)
 
             bucket = self.param('bucket', 'default')
 
@@ -1129,11 +1129,11 @@ class EPerfMaster(perf.PerfBase):
         self.rest.delete_bucket(bucket='default')
 
 
-class EPerfClient(EPerfMaster):
+class EPerfClient(EPerfMain):
 
     def setUp(self):
         self.dgm = False
-        self.is_master = False
+        self.is_main = False
         self.level_callbacks = []
         self.latched_rebalance_done = False
         self.setUpBase0()
@@ -1143,21 +1143,21 @@ class EPerfClient(EPerfMaster):
         self.get_bucket_conf()
         self.seriesly = None
 
-        pass  # Skip super's setUp().  The master should do the real work.
+        pass  # Skip super's setUp().  The main should do the real work.
 
     def tearDown(self):
         if self.sc is not None:
             self.sc.stop()
             self.sc = None
 
-        pass  # Skip super's tearDown().  The master should do the real work.
+        pass  # Skip super's tearDown().  The main should do the real work.
 
     def mk_stats(self, verbosity):
         if self.parami("prefix", 0) == 0 and self.level_callbacks:
             sc = CallbackStatsCollector(verbosity)
             sc.level_callbacks = self.level_callbacks
         else:
-            sc = super(EPerfMaster, self).mk_stats(verbosity)
+            sc = super(EPerfMain, self).mk_stats(verbosity)
         return sc
 
     def test_wait_until_drained(self):

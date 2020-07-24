@@ -19,8 +19,8 @@ class CsvDataTest(BaseTestCase):
             if bucket.name == 'default':
                 bucket_to_load = bucket
                 break
-        self.assertNotEqual(bucket_to_load, None, msg="Could not find default bucket on node {0}".format(self.master.ip))
-        self.cluster.load_gen_docs(self.master, bucket_to_load.name, self.gen_load, bucket_to_load.kvs[1], 'create',
+        self.assertNotEqual(bucket_to_load, None, msg="Could not find default bucket on node {0}".format(self.main.ip))
+        self.cluster.load_gen_docs(self.main, bucket_to_load.name, self.gen_load, bucket_to_load.kvs[1], 'create',
                                    compression=self.sdk_compression)
 
     '''The below function loads some data to bucket and then creates a csv
@@ -30,7 +30,7 @@ class CsvDataTest(BaseTestCase):
     def create_and_restore_csv(self):
         try:
             self.__load_data()
-            shell_obj = RemoteMachineShellConnection(self.master)
+            shell_obj = RemoteMachineShellConnection(self.main)
             self.log.info("Removing backup folder if already present")
             info = shell_obj.extract_remote_info()
             path = "/tmp/backup/"
@@ -52,7 +52,7 @@ class CsvDataTest(BaseTestCase):
             shell_obj.execute_cbtransfer(source, destination, options)
             self.sleep(10)
             self.log.info("Checking whether number of items loaded match with the number of items restored.")
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             itemCount = rest.get_bucket_json('standard_bucket0')['basicStats']['itemCount']
             self.assertEqual(itemCount, self.num_items, msg="Number of items loaded do no match\
             with the number of items restored. Number of items loaded is {0} \

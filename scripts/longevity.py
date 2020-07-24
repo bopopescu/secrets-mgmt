@@ -110,8 +110,8 @@ class BackupProcess(object):
                 #things are notmal just do another back aafter
                 #waiting for self.interval
             except Exception:
-                master = self.servers[0]
-                rest = RestConnection(master)
+                main = self.servers[0]
+                rest = RestConnection(main)
                 nodes = rest.node_statuses()
                 map = self.node_server_map(nodes, self.servers)
                 self.log.info("cluster has {0} nodes".format(len(nodes)))
@@ -181,10 +181,10 @@ class ComboBaseTests(object):
     # then from no failover x node and rebalance and
     # verify we did not lose items
     @staticmethod
-    def choose_nodes(master, nodes, howmany):
+    def choose_nodes(main, nodes, howmany):
         selected = []
         for node in nodes:
-            if not ComboBaseTests.contains(node.ip, master.ip) and\
+            if not ComboBaseTests.contains(node.ip, main.ip) and\
                not ComboBaseTests.contains(node.ip, '127.0.0.1'):
                 selected.append(node)
                 if len(selected) == howmany:
@@ -217,9 +217,9 @@ class ComboBaseTests(object):
         start_time = time.time()
         log.info("replica : {0}".format(replica))
         log.info("load_ratio : {0}".format(load_ratio))
-        master = self._servers[0]
-        log.info('picking server : {0} as the master'.format(master))
-        rest = RestConnection(master)
+        main = self._servers[0]
+        log.info('picking server : {0} as the main'.format(main))
+        rest = RestConnection(main)
         while time.time() < ( start_time + 60 * timeout):
             #rebalance out step nodes
             #let's add some items ?

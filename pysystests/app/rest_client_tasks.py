@@ -387,7 +387,7 @@ def monitorRebalance():
 @celery.task
 def perform_xdcr_tasks(xdcrMsg):
     logger.error(xdcrMsg)
-    src_master = create_server_obj()
+    src_main = create_server_obj()
     remoteHost = None
     remotePort = 8091
 
@@ -402,10 +402,10 @@ def perform_xdcr_tasks(xdcrMsg):
         logger.error("Cannot find remote site %s in testcfg.REMOTE_SITES: " % (remoteRef))
         return
 
-    dest_master = create_server_obj(server_ip=remote_ip, port=remote_port,
+    dest_main = create_server_obj(server_ip=remote_ip, port=remote_port,
                                     username=xdcrMsg['dest_cluster_rest_username'],
                                     password=xdcrMsg['dest_cluster_rest_pwd'])
-    xdcr_link_cluster(src_master, dest_master, dest_cluster_name)
+    xdcr_link_cluster(src_main, dest_main, dest_cluster_name)
 
     buckets = xdcrMsg.get("buckets")
     replication_filters = xdcrMsg.get("filter_expression")
@@ -414,16 +414,16 @@ def perform_xdcr_tasks(xdcrMsg):
         xdcr_params={}
         if replication_filters and bucket in replication_filters.keys():
             xdcr_params["filterExpression"] = replication_filters[bucket]
-        xdcr_start_replication(src_master, dest_cluster_name, bucket, xdcr_params)
+        xdcr_start_replication(src_main, dest_cluster_name, bucket, xdcr_params)
 
-def xdcr_link_cluster(src_master, dest_master, dest_cluster_name):
-    rest_conn_src = RestConnection(src_master)
-    rest_conn_src.add_remote_cluster(dest_master.ip, dest_master.port,
-                                 dest_master.rest_username,
-                                 dest_master.rest_password, dest_cluster_name)
+def xdcr_link_cluster(src_main, dest_main, dest_cluster_name):
+    rest_conn_src = RestConnection(src_main)
+    rest_conn_src.add_remote_cluster(dest_main.ip, dest_main.port,
+                                 dest_main.rest_username,
+                                 dest_main.rest_password, dest_cluster_name)
 
-def xdcr_start_replication(src_master, dest_cluster_name, bucket_name, xdcr_params):
-    rest_conn_src = RestConnection(src_master)
+def xdcr_start_replication(src_main, dest_cluster_name, bucket_name, xdcr_params):
+    rest_conn_src = RestConnection(src_main)
     for bucket in rest_conn_src.get_buckets():
         if bucket.name == bucket_name:
             rep_id = rest_conn_src.start_replication("continuous",

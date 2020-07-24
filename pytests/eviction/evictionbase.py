@@ -20,15 +20,15 @@ class EvictionBase(BaseTestCase):
 
     def load_set_to_be_evicted(self, ttl, end=100):
         gen_create = BlobGenerator('ejected', 'ejected-', 128, start=0, end=end)
-        self._load_all_buckets(self.master, gen_create, "create", ttl)
+        self._load_all_buckets(self.main, gen_create, "create", ttl)
 
 
     def load_ejected_set(self, end=100):
         gen_create = BlobGenerator('ejected', 'ejected-', 128, start=0, end=end)
-        self._load_all_buckets(self.master, gen_create, "create", 0)
+        self._load_all_buckets(self.main, gen_create, "create", 0)
 
     def stat(self, key):
-        stats =  StatsCommon.get_stats([self.master], 'default', "", key)
+        stats =  StatsCommon.get_stats([self.main], 'default', "", key)
         val = stats.values()[0]
         if val.isdigit():
             val = int(val)
@@ -51,7 +51,7 @@ class EvictionBase(BaseTestCase):
             gen_create = BlobGenerator(prefix, prefix+'-', doc_size , start=curr_items + 1, end=curr_items+batch_items)
             total_items += batch_items
             try:
-                self._load_all_buckets(self.master, gen_create, "create", ttl)
+                self._load_all_buckets(self.main, gen_create, "create", ttl)
             except:
                 pass
             curr_active = self.stat('vb_active_perc_mem_resident')
@@ -68,11 +68,11 @@ class EvictionBase(BaseTestCase):
     def ops_on_ejected_set(self, action, start = 0, end = 100,  ttl = 0):
         kv_store = self.get_kv_store()
         gen_reader = BlobGenerator('ejected', 'ejected-', 128, start=start, end=end)
-        self.cluster.load_gen_docs(self.master, 'default', gen_reader, kv_store, action, exp = ttl,
+        self.cluster.load_gen_docs(self.main, 'default', gen_reader, kv_store, action, exp = ttl,
                                    compression=self.sdk_compression)
 
     def run_expiry_pager(self, ts = 15):
-        ClusterOperationHelper.flushctl_set(self.master, "exp_pager_stime", ts)
+        ClusterOperationHelper.flushctl_set(self.main, "exp_pager_stime", ts)
         self.log.info("wait for expiry pager to run on all these nodes")
 
     def verify_missing_keys(self, prefix, count):

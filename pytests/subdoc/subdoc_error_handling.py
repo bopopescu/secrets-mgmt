@@ -9,7 +9,7 @@ class SubdocErrorHandling(SubdocBaseTest):
     def setUp(self):
         super(SubdocErrorHandling, self).setUp()
         self.nesting_level =  self.input.param("nesting_level",0)
-        self.client = self.direct_client(self.master, self.buckets[0])
+        self.client = self.direct_client(self.main, self.buckets[0])
 
     def tearDown(self):
         super(SubdocErrorHandling, self).tearDown()
@@ -668,7 +668,7 @@ class SubdocErrorHandling(SubdocBaseTest):
             if (str(ex).find(error) == -1):
                 self.log.info(str(ex))
                 result[field]  = "Error is incorrect.Actual %s.Expected: %s." %(str(ex), error)
-                self.client = self.direct_client(self.master, self.buckets[0])
+                self.client = self.direct_client(self.main, self.buckets[0])
 
     def error_gets(self, in_key, path, error = "error", field  = "field", result = {}):
         try:
@@ -678,7 +678,7 @@ class SubdocErrorHandling(SubdocBaseTest):
             if (str(ex).find(error) == -1):
                 self.log.info(str(ex))
                 result[field]  = "Error is incorrect.Actual %s.Expected: %s." %(str(ex), error)
-                self.client = self.direct_client(self.master, self.buckets[0])
+                self.client = self.direct_client(self.main, self.buckets[0])
 
     def error_add_dict(self, in_key, path, value = 10, error = "error", field  = "field", result = {}):
         try:
@@ -688,7 +688,7 @@ class SubdocErrorHandling(SubdocBaseTest):
             if (str(ex).find(error) == -1):
                 self.log.info(str(ex))
                 result[field]  = "Error is incorrect.Actual %s.Expected: %s." %(str(ex), error)
-                self.client = self.direct_client(self.master, self.buckets[0])
+                self.client = self.direct_client(self.main, self.buckets[0])
 
     def error_upsert_dict(self, in_key, path, value = 10, error = "error", field  = "field", result = {}):
         try:
@@ -698,7 +698,7 @@ class SubdocErrorHandling(SubdocBaseTest):
             if (str(ex).find(error) == -1):
                 self.log.info(str(ex))
                 result[field]  = "Error is incorrect.Actual %s.Expected: %s." %(str(ex), error)
-                self.client = self.direct_client(self.master, self.buckets[0])
+                self.client = self.direct_client(self.main, self.buckets[0])
 
 
     def error_array_push_last(self, in_key, path, value = 10, error = "error", field  = "field", result = {}):
@@ -709,7 +709,7 @@ class SubdocErrorHandling(SubdocBaseTest):
             if (str(ex).find(error) == -1):
                 self.log.info(str(ex))
                 result[field]  = "Error is incorrect.Actual %s.Expected: %s." %(str(ex), error)
-                self.client = self.direct_client(self.master, self.buckets[0])
+                self.client = self.direct_client(self.main, self.buckets[0])
 
     def error_array_push_first(self, in_key, path, value = 10, error = "error", field  = "field", result = {}):
         try:
@@ -719,7 +719,7 @@ class SubdocErrorHandling(SubdocBaseTest):
             if (str(ex).find(error) == -1):
                 self.log.info(str(ex))
                 result[field]  = "Error is incorrect.Actual %s.Expected: %s." %(str(ex), error)
-                self.client = self.direct_client(self.master, self.buckets[0])
+                self.client = self.direct_client(self.main, self.buckets[0])
 
     def error_array_add_unique(self, in_key, path, value = 10, error = "error", field  = "field", result = {}):
         try:
@@ -729,7 +729,7 @@ class SubdocErrorHandling(SubdocBaseTest):
             if (str(ex).find(error) == -1):
                 self.log.info(str(ex))
                 result[field]  = "Error is incorrect.Actual %s.Expected: %s." %(str(ex), error)
-                self.client = self.direct_client(self.master, self.buckets[0])
+                self.client = self.direct_client(self.main, self.buckets[0])
 
 
     def error_array_add_insert(self, in_key, path, value = 10, error = "error", field  = "field", result = {}):
@@ -740,7 +740,7 @@ class SubdocErrorHandling(SubdocBaseTest):
             if (str(ex).find(error) == -1):
                 self.log.info(str(ex))
                 result[field]  = "Error is incorrect.Actual %s.Expected: %s." %(str(ex), error)
-                self.client = self.direct_client(self.master, self.buckets[0])
+                self.client = self.direct_client(self.main, self.buckets[0])
 
     def error_replace(self, in_key, path, value = 10, error = "error", field  = "field", result = {}):
         try:
@@ -750,7 +750,7 @@ class SubdocErrorHandling(SubdocBaseTest):
             if (str(ex).find(error) == -1):
                 self.log.info(str(ex))
                 result[field]  = "Error is incorrect.Actual %s.Expected: %s." %(str(ex), error)
-                self.client = self.direct_client(self.master, self.buckets[0])
+                self.client = self.direct_client(self.main, self.buckets[0])
 
 
     def error_delete(self, in_key, path, error = "error", field  = "field", result = {}):
@@ -761,7 +761,7 @@ class SubdocErrorHandling(SubdocBaseTest):
             if (str(ex).find(error) == -1):
                 self.log.info(str(ex))
                 result[field]  = "Error is incorrect.Actual %s.Expected: %s." %(str(ex), error)
-                self.client = self.direct_client(self.master, self.buckets[0])
+                self.client = self.direct_client(self.main, self.buckets[0])
 
     def error_counter(self, in_key, path, value = 10, error = "error", field  = "field", result = {}):
         try:
@@ -771,4 +771,4 @@ class SubdocErrorHandling(SubdocBaseTest):
             if (str(ex).find(error) == -1):
                 self.log.info(str(ex))
                 result[field]  = "Error is incorrect.Actual %s.Expected: %s." %(str(ex), error)
-                self.client = self.direct_client(self.master, self.buckets[0])
+                self.client = self.direct_client(self.main, self.buckets[0])

@@ -29,7 +29,7 @@ class ViewMergingTests(BaseTestCase):
             if 'first_case' in TestInputSingleton.input.test_params:
                 self.cluster.rebalance(self.servers[:], self.servers[1:], [])
             # We use only one bucket in this test suite
-            self.rest = RestConnection(self.master)
+            self.rest = RestConnection(self.main)
             self.bucket = self.rest.get_bucket(Bucket(name=self.default_bucket_name))
             # num_docs must be a multiple of the number of vbuckets
             self.num_docs = self.input.param("num_docs_per_vbucket", 1) * \
@@ -343,15 +343,15 @@ class ViewMergingTests(BaseTestCase):
         mapview = View(self.map_view_name, '''function(doc) {
              emit(doc.integer, doc.string);
           }''', dev_view=is_dev_view)
-        self.cluster.create_view(self.master, 'test', mapview)
+        self.cluster.create_view(self.main, 'test', mapview)
         redview = View(self.red_view_name, '''function(doc) {
              emit([doc.integer, doc.string], doc.integer);
           }''', '''_count''', dev_view=is_dev_view)
-        self.cluster.create_view(self.master, 'test', redview)
+        self.cluster.create_view(self.main, 'test', redview)
         redview_stats = View(self.red_view_stats_name, '''function(doc) {
              emit(doc.string, doc.string);
           }''', '''_stats''', dev_view=is_dev_view)
-        self.cluster.create_view(self.master, 'test2', redview_stats)
+        self.cluster.create_view(self.main, 'test2', redview_stats)
         # The keys view is there to test the `keys` query parameter. In order
         # to reproduce the ordering bug (MB-16618) there must be more than
         # one document with the same key, hence modulo is used
@@ -359,8 +359,8 @@ class ViewMergingTests(BaseTestCase):
         keysview = View(self.keys_view_name, '''function(doc) {
              emit(doc.integer % ''' + str(modulo) + ''', doc.string);
           }''', '_count', dev_view=is_dev_view)
-        self.cluster.create_view(self.master, 'test3', keysview)
-        RebalanceHelper.wait_for_persistence(self.master, self.bucket, 0)
+        self.cluster.create_view(self.main, 'test3', keysview)
+        RebalanceHelper.wait_for_persistence(self.main, self.bucket, 0)
 
     def _get_server(self, port):
         ''' Return server from cluster matching port '''
@@ -373,15 +373,15 @@ class ViewMergingTests(BaseTestCase):
         """Initialise clients for all servers there are vBuckets on
 
         It returns a dict with 'ip:port' as key (this information is also
-        stored this way in every vBucket in the `master` property) and
+        stored this way in every vBucket in the `main` property) and
         the MemcachedClient as the value
         """
         clients = {}
         for vbucket in self.bucket.vbuckets:
-            if vbucket.master not in clients:
-                ip, port = vbucket.master.split(':')
-                sport = str((int(port[-2:]))/2 + int(self.master.port))
-                clients[vbucket.master] = MemcachedClientHelper.direct_client(self._get_server(sport), self.default_bucket_name)
+            if vbucket.main not in clients:
+                ip, port = vbucket.main.split(':')
+                sport = str((int(port[-2:]))/2 + int(self.main.port))
+                clients[vbucket.main] = MemcachedClientHelper.direct_client(self._get_server(sport), self.default_bucket_name)
         return clients
 
     def populate_alternated(self, num_vbuckets, docs):
@@ -399,7 +399,7 @@ class ViewMergingTests(BaseTestCase):
         """
         for i, doc in enumerate(docs):
             self.insert_into_vbucket(i % num_vbuckets, doc)
-        RebalanceHelper.wait_for_persistence(self.master, self.bucket, 0)
+        RebalanceHelper.wait_for_persistence(self.main, self.bucket, 0)
 
     def populate_sequenced(self, num_vbuckets, docs):
         """vBuckets get filled up one by one
@@ -421,7 +421,7 @@ class ViewMergingTests(BaseTestCase):
             end = start + docs_per_vbucket
             for doc in docs[start:end]:
                     self.insert_into_vbucket(vbucket, doc)
-        RebalanceHelper.wait_for_persistence(self.master, self.bucket, 0)
+        RebalanceHelper.wait_for_persistence(self.main, self.bucket, 0)
 
     def insert_into_vbucket(self, vbucket_id, doc):
         """Insert a document into a certain vBucket
@@ -430,7 +430,7 @@ class ViewMergingTests(BaseTestCase):
         self.clients property.
         """
         vbucket = self.bucket.vbuckets[vbucket_id]
-        client = self.clients[vbucket.master]
+        client = self.clients[vbucket.main]
 
         client.set(doc['json']['key'], 0, 0, json.dumps(doc['json']['body']).encode("ascii", "ignore"), vbucket_id)
 

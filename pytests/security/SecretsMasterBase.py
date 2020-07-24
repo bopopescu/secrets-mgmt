@@ -24,7 +24,7 @@ from testconstants import MAC_COUCHBASE_BIN_PATH
 import random
 #from TestInput import TestInputSingleton
 
-class SecretsMasterBase():
+class SecretsMainBase():
 
     char_ascii_range_start = 97
     char_ascii_range_stop = 122
@@ -54,11 +54,11 @@ class SecretsMasterBase():
         os_type = shell.extract_remote_info().distribution_type
         log.info ("OS type is {0}".format(os_type))
         if os_type == 'windows':
-            install_path = SecretsMasterBase.WININSTALLPATH
+            install_path = SecretsMainBase.WININSTALLPATH
         elif os_type == 'Mac':
-            install_path = SecretsMasterBase.MACINSTALLPATH
+            install_path = SecretsMainBase.MACINSTALLPATH
         else:
-            install_path = SecretsMasterBase.LININSTALLPATH
+            install_path = SecretsMainBase.LININSTALLPATH
 
         return install_path
 
@@ -81,7 +81,7 @@ class SecretsMasterBase():
         log.info ("Status of set password command is - {0}".format(status))
 
     def execute_cli(self,host,new_password=None):
-        cmd = "/opt/couchbase/bin/couchbase-cli master-password -c localhost:8091 -u Administrator -p password --new-password"
+        cmd = "/opt/couchbase/bin/couchbase-cli main-password -c localhost:8091 -u Administrator -p password --new-password"
         shell = RemoteMachineShellConnection(host)
         chan = shell._ssh_client.invoke_shell()
         buff = ''
@@ -96,13 +96,13 @@ class SecretsMasterBase():
         chan.send(new_password + "\n")
         time.sleep(10)
         resp = chan.recv(9999)
-        if (resp.find('SUCCESS: New master password set') > 0):
+        if (resp.find('SUCCESS: New main password set') > 0):
             return True
         else:
             return False
 
     def execute_cli_rotate_key(self,host,new_password=None):
-        cmd = "/opt/couchbase/bin/couchbase-cli master-password -c localhost:8091 -u Administrator -p password --rotate-data-key"
+        cmd = "/opt/couchbase/bin/couchbase-cli main-password -c localhost:8091 -u Administrator -p password --rotate-data-key"
         shell = RemoteMachineShellConnection(host)
         chan = shell._ssh_client.invoke_shell()
         buff = ''
@@ -200,7 +200,7 @@ class SecretsMasterBase():
         buff = ""
         time.sleep(10)
         resp = chan.recv(9999)
-        if (resp.find('Enter master password:') > 0):
+        if (resp.find('Enter main password:') > 0):
             chan.send(password + "\n")
 
         time.sleep(10)
@@ -229,7 +229,7 @@ class SecretsMasterBase():
         chan.send(cmd + "\n")
         time.sleep(10)
         resp = chan.recv(9999)
-        if (resp.find('Enter master password:') > 0):
+        if (resp.find('Enter main password:') > 0):
             while (i <= retries_number):
                 print i
                 if (input_correct_pass) and retries_number == i:
@@ -266,7 +266,7 @@ class SecretsMasterBase():
         shell.disconnect()
 
 
-    def set_password_on_prompt(self,host,correct_master_password, retry=False, incorrect_master_password = 'incorrect', \
+    def set_password_on_prompt(self,host,correct_main_password, retry=False, incorrect_main_password = 'incorrect', \
                                continue_with_correct=False):
         shell = RemoteMachineShellConnection(host)
         chan = shell.invoke_shell()
@@ -281,7 +281,7 @@ class SecretsMasterBase():
 
         buff = ''
 
-        while not buff.endswith('Please enter master password:'):
+        while not buff.endswith('Please enter main password:'):
             resp = chan.recv(9999)
             buff += resp
 
@@ -289,18 +289,18 @@ class SecretsMasterBase():
 
         time.sleep(10)
         if retry:
-            chan.send(incorrect_master_password + '\n')
+            chan.send(incorrect_main_password + '\n')
             buff = ''
             resp = chan.recv(9999)
             if (resp.find("Incorrect password") > 0):
                 print "Incorrect Password from program for the first time"
-                response = chan.send(incorrect_master_password + '\n')
+                response = chan.send(incorrect_main_password + '\n')
                 print "Response from the command {0}".format(response)
                 time.sleep(10)
                 resp = chan.recv(9999)
                 if (resp.find("Incorrect password") > 0):
                     print "Incorrect Password from program for the second time"
-                response = chan.send(incorrect_master_password + '\n')
+                response = chan.send(incorrect_main_password + '\n')
                 print "Response from the command {0}".format(response)
                 time.sleep(10)
                 resp = chan.recv(9999)
@@ -308,20 +308,20 @@ class SecretsMasterBase():
                 if (resp.find("Incorrect password. Node shuts down.") > 0):
                     print "Finally the node shutdown after 3 retries"
         else:
-            chan.send(correct_master_password + '\n')
+            chan.send(correct_main_password + '\n')
             buff = ''
             resp = chan.recv(9999)
             if (resp.find('Password accepted. Node started booting.') > 0):
                 print "Node is started now"
 
 
-        if (correct_master_password):
-            chan.send(incorrect_master_password + '\n')
+        if (correct_main_password):
+            chan.send(incorrect_main_password + '\n')
             time.sleep(10)
             resp = chan.recv(9999)
             if (resp.find("Incorrect password") > 0):
                 print ("Incorrect password from the program for the first time")
-            chan.send(correct_master_password + '\n')
+            chan.send(correct_main_password + '\n')
             time.sleep(10)
             resp = chan.recv(9999)
             if (resp.find("Password accepted. Node started booting. ") > 0):
@@ -426,7 +426,7 @@ class SecretsMasterBase():
             shell.stop_server()
             self.start_server_prompt_diff_window(host)
             time.sleep(10)
-            cmd = "/opt/couchbase/bin/couchbase-cli master-password --send-password"
+            cmd = "/opt/couchbase/bin/couchbase-cli main-password --send-password"
             self.incorrect_password(host, cmd=cmd, retries_number=1, input_correct_pass=True, correct_pass=password)
         elif startup_type == 'simple':
             shell.stop_server()

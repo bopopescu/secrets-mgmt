@@ -14,7 +14,7 @@ class FailoverHelper(object):
         self.log = logger.Logger.get_logger()
         self.servers = servers
         self.test = test
-        #master is usually the first node ?
+        #main is usually the first node ?
 
     # failover any node except self.servers[0]
     # assuming that replica = howmany
@@ -26,9 +26,9 @@ class FailoverHelper(object):
             self.test.fail(num_nodes_mismatch.format(len(self.servers), len(nodes)))
         if len(nodes) - howmany < 2:
             self.test.fail(num_nodes_mismatch.format(len(nodes), howmany))
-        master_node = rest.get_nodes_self()
-        #when selecting make sure we dont pick the master node
-        selection = [n for n in nodes if n.id != master_node.id]
+        main_node = rest.get_nodes_self()
+        #when selecting make sure we dont pick the main node
+        selection = [n for n in nodes if n.id != main_node.id]
 
         shuffle(selection)
         failed = selection[0:howmany]

@@ -22,9 +22,9 @@ def usage(err=None):
         err_code = 1
         print "Error:", err
         print
-    print "./load_items.py -m <master> -p <prefix> -o <# of sets>:<# of mutations>:<# of deletes> -f <file>"
+    print "./load_items.py -m <main> -p <prefix> -o <# of sets>:<# of mutations>:<# of deletes> -f <file>"
     print ""
-    print " master             the master node rest interface"
+    print " main             the main node rest interface"
     print " prefix             prefix to use for key names"
     print " operations         number of sets, mutations and deletes to do"
     print " file               file to write out the kvstore to"
@@ -70,7 +70,7 @@ class KVStore(object):
 class Config(object):
     def __init__(self, argv):
         # defaults
-        self.master = None
+        self.main = None
         self.prefix = ""
         self.sets = 0
         self.mutations = 0
@@ -79,7 +79,7 @@ class Config(object):
         self.bucket = 'default'
 
         try:
-            (opts, args) = getopt.getopt(argv, 'hm:p:o:f:b:', ['help', 'master=', 'prefix=', 'operations=', 'file=', 'bucket='])
+            (opts, args) = getopt.getopt(argv, 'hm:p:o:f:b:', ['help', 'main=', 'prefix=', 'operations=', 'file=', 'bucket='])
         except IndexError:
             usage()
         except getopt.GetoptError, err:
@@ -88,13 +88,13 @@ class Config(object):
         for o, a in opts:
             if o == "-h" or o == "--help":
                 usage()
-            if o == "-m" or o == "--master":
-                master_list = re.split('[:@]', a)
-                self.master = {}
-                self.master["username"] = master_list[0]
-                self.master["password"] = master_list[1]
-                self.master["ip"] = master_list[2]
-                self.master["port"] = master_list[3]
+            if o == "-m" or o == "--main":
+                main_list = re.split('[:@]', a)
+                self.main = {}
+                self.main["username"] = main_list[0]
+                self.main["password"] = main_list[1]
+                self.main["ip"] = main_list[2]
+                self.main["port"] = main_list[3]
             if o == "-p" or o == "--prefix":
                 self.prefix = a
             if o == "-o" or o == "--operations":
@@ -107,8 +107,8 @@ class Config(object):
             if o == "-b" or o == "--bucket":
                 self.bucket = a
 
-        if not self.master:
-            usage("missing master")
+        if not self.main:
+            usage("missing main")
         if not self.filename:
             usage("missing file")
 
@@ -158,7 +158,7 @@ if __name__ == "__main__":
 
     kv = KVStore()
 
-    rest = RestConnection(config.master)
+    rest = RestConnection(config.main)
     awareness = VBucketAwareMemcached(rest, config.bucket)
 
     for i in range(config.sets):

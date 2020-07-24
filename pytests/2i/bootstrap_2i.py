@@ -51,7 +51,7 @@ class SecondaryIndexingBootstrapTests(BaseSecondaryIndexingTests):
             # runs operations
             for task in tasks:
                 task.result()
-            stopped = RestConnection(self.master).stop_rebalance(wait_timeout=self.wait_timeout / 3)
+            stopped = RestConnection(self.main).stop_rebalance(wait_timeout=self.wait_timeout / 3)
             self.assertTrue(stopped, msg="unable to stop rebalance")
             rebalance.result()
             rebalance = self.cluster.async_rebalance(self.servers[:self.nodes_init],
@@ -68,7 +68,7 @@ class SecondaryIndexingBootstrapTests(BaseSecondaryIndexingTests):
             for task in tasks:
                 task.result()
             servr_out = self.nodes_out_list
-            failover_task = self.cluster.async_failover([self.master],
+            failover_task = self.cluster.async_failover([self.main],
                     failover_nodes=servr_out, graceful=self.graceful)
             failover_task.result()
             self.log.info ("Rebalance first time")
@@ -83,14 +83,14 @@ class SecondaryIndexingBootstrapTests(BaseSecondaryIndexingTests):
 
     def test_failover_add_back(self):
         try:
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             recoveryType = self.input.param("recoveryType", "full")
             servr_out = self.nodes_out_list
             nodes_all = rest.node_statuses()
             tasks = self.async_run_operations(buckets=self.buckets, phase="before")
             for task in tasks:
                 task.result()
-            failover_task = self.cluster.async_failover([self.master],
+            failover_task = self.cluster.async_failover([self.main],
                     failover_nodes=servr_out, graceful=self.graceful)
             failover_task.result()
             nodes_all = rest.node_statuses()
@@ -116,7 +116,7 @@ class SecondaryIndexingBootstrapTests(BaseSecondaryIndexingTests):
 
     def test_autofailover(self):
         autofailover_timeout = 30
-        status = RestConnection(self.master).update_autofailover_settings(True, autofailover_timeout)
+        status = RestConnection(self.main).update_autofailover_settings(True, autofailover_timeout)
         self.assertTrue(status, 'failed to change autofailover_settings!')
         servr_out = self.nodes_out_list
         remote = RemoteMachineShellConnection(servr_out[0])

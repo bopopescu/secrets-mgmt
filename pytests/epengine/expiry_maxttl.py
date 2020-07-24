@@ -16,22 +16,22 @@ class ExpiryMaxTTL(BaseTestCase):
 
         gen = copy.deepcopy(self._gen_create)
         self.log.info("Loading {0} docs with expiry={1}s".format(num_items, exp))
-        task = self.cluster.async_load_gen_docs(self.master,
+        task = self.cluster.async_load_gen_docs(self.main,
                                              bucket.name,
                                              gen,
                                              bucket.kvs[1],
                                              "create",
                                              exp, compression=self.sdk_compression)
         task.result()
-        while RestConnection(self.master).get_active_key_count(bucket) != num_items:
+        while RestConnection(self.main).get_active_key_count(bucket) != num_items:
             self.sleep(2, "waiting for docs to get loaded")
-        self.log.info("Item count = {0}".format(RestConnection(self.master).get_active_key_count(bucket)))
+        self.log.info("Item count = {0}".format(RestConnection(self.main).get_active_key_count(bucket)))
         return
 
     def _update_bucket_maxTTL(self, maxttl):
         for bucket in self.buckets:
             self.log.info("Updating maxTTL for bucket {0} to {1}s".format(bucket.name, maxttl))
-            RestConnection(self.master).change_bucket_props(bucket, maxTTL=maxttl)
+            RestConnection(self.main).change_bucket_props(bucket, maxTTL=maxttl)
 
     def test_maxttl_lesser_doc_expiry(self):
         """
@@ -46,8 +46,8 @@ class ExpiryMaxTTL(BaseTestCase):
         self.expire_pager(self.servers)
         self.sleep(20, "waiting for item count to come down...")
         for bucket in self.buckets:
-            items = RestConnection(self.master).get_active_key_count(bucket)
-            RestConnection(self.master).get_active_key_count(bucket)
+            items = RestConnection(self.main).get_active_key_count(bucket)
+            RestConnection(self.main).get_active_key_count(bucket)
             self.log.info("Doc expiry set to = {0}s, maxTTL = {1}s, after {2}s, item count = {3}".format(
                 int(self.maxttl) + 500,
                 self.maxttl,
@@ -74,7 +74,7 @@ class ExpiryMaxTTL(BaseTestCase):
         self.expire_pager(self.servers)
         self.sleep(20, "waiting for item count to come down...")
         for bucket in self.buckets:
-            items = RestConnection(self.master).get_active_key_count(bucket)
+            items = RestConnection(self.main).get_active_key_count(bucket)
             self.log.info("Doc expiry set to = {0}s, maxTTL = {1}s, after {2}s, item count = {3}".format(
                 int(self.maxttl) - 100,
                 self.maxttl-100,
@@ -103,7 +103,7 @@ class ExpiryMaxTTL(BaseTestCase):
         self.expire_pager(self.servers)
         self.sleep(20, "waiting for item count to come down...")
         for bucket in self.buckets:
-            items = RestConnection(self.master).get_active_key_count(bucket)
+            items = RestConnection(self.main).get_active_key_count(bucket)
             self.log.info("Doc expiry set to = 100s, maxTTL = 60s"
                           "(set after doc creation), after 60s, item count = {0}".format(items))
             if items != self.num_items:
@@ -113,7 +113,7 @@ class ExpiryMaxTTL(BaseTestCase):
         self.expire_pager(self.servers)
         self.sleep(20, "waiting for item count to come down...")
         for bucket in self.buckets:
-            items = RestConnection(self.master).get_active_key_count(bucket)
+            items = RestConnection(self.main).get_active_key_count(bucket)
             self.log.info("Doc expiry set to = 100s, maxTTL = 60s"
                           "(set after doc creation), after 100s,"
                           " item count = {0}".format(items))
@@ -127,7 +127,7 @@ class ExpiryMaxTTL(BaseTestCase):
         self.expire_pager(self.servers)
         self.sleep(20, "waiting for item count to come down...")
         for bucket in self.buckets:
-            items = RestConnection(self.master).get_active_key_count(bucket)
+            items = RestConnection(self.main).get_active_key_count(bucket)
             self.log.info("Doc expiry set to = 100s, maxTTL = 60s, after 100s,"
                           " item count = {0}".format(items))
             if items != 0:
@@ -143,7 +143,7 @@ class ExpiryMaxTTL(BaseTestCase):
         4. negative values, date, string
         """
         # default
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         default_maxttl = rest.get_bucket_maxTTL()
         if default_maxttl != 0:
             self.fail("FAIL: default maxTTL if left unset must be 0 but is {0}".format(default_maxttl))
@@ -205,7 +205,7 @@ class ExpiryMaxTTL(BaseTestCase):
         self.expire_pager(self.servers)
         self.sleep(20, "waiting for item count to come down...")
         for bucket in self.buckets:
-            items = RestConnection(self.master).get_active_key_count(bucket)
+            items = RestConnection(self.main).get_active_key_count(bucket)
             self.log.info("Doc expiry set to = 100s, maxTTL at the time of doc creation = 200s"
                           " updated maxttl = 40s, after 40s item count = {0}".format(items))
             if items != self.num_items:
@@ -215,7 +215,7 @@ class ExpiryMaxTTL(BaseTestCase):
         self.expire_pager(self.servers)
         self.sleep(20, "waiting for item count to come down...")
         for bucket in self.buckets:
-            items = RestConnection(self.master).get_active_key_count(bucket)
+            items = RestConnection(self.main).get_active_key_count(bucket)
             self.log.info("Doc expiry set to = 100s, maxTTL at the time of doc creation = 200s"
                           " updated maxttl = 40s, after 100s item count = {0}".format(items))
             if items != 0:
@@ -229,7 +229,7 @@ class ExpiryMaxTTL(BaseTestCase):
         4. After 40s, run expiry pager again and get item count, must be 1000
         5. After 20s, run expiry pager again and get item count, must be 0
         """
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         for bucket in self.buckets:
             self._load_json(bucket, self.num_items, exp=40)
 

@@ -39,13 +39,13 @@ class QueryTests(BaseTestCase):
         if self.input.tuq_client and "client" in self.input.tuq_client:
             self.shell = RemoteMachineShellConnection(self.input.tuq_client["client"])
         else:
-            self.shell = RemoteMachineShellConnection(self.master)
+            self.shell = RemoteMachineShellConnection(self.main)
         self.use_gsi_for_primary = self.input.param("use_gsi_for_primary", False)
         self.use_gsi_for_secondary = self.input.param("use_gsi_for_secondary", True)
         self.create_primary_index = self.input.param("create_primary_index", True)
         self.use_rest = self.input.param("use_rest", True)
         self.max_verify = self.input.param("max_verify", None)
-        self.buckets = RestConnection(self.master).get_buckets()
+        self.buckets = RestConnection(self.main).get_buckets()
         self.docs_per_day = self.input.param("doc-per-day", 49)
         self.item_flag = self.input.param("item_flag", 4042322160)
         self.n1ql_port = self.input.param("n1ql_port", 8093)
@@ -78,7 +78,7 @@ class QueryTests(BaseTestCase):
             use_rest=self.use_rest, max_verify=self.max_verify,
             buckets=self.buckets, item_flag=self.item_flag,
             n1ql_port=self.n1ql_port, full_docs_list=self.full_docs_list,
-            log=self.log, input=self.input, master=self.master)
+            log=self.log, input=self.input, main=self.main)
         self.n1ql_node = self.get_nodes_from_services_map(service_type="n1ql")
         self.log.info(self.n1ql_node)
         #self.n1ql_helper._start_command_line_query(self.n1ql_node)

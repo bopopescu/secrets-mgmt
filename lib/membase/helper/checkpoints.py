@@ -38,9 +38,9 @@ class GetCheckpointsHelper(object):
     def get_checkpoints_node(self, node, bucket):
         pass
 
-    def get_checkpoints_from_cluster(self, master, bucket):
+    def get_checkpoints_from_cluster(self, main, bucket):
         parser = CheckpointStatParser()
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         servers = rest.get_nodes()
         merged = {}
         for server in servers:
@@ -51,7 +51,7 @@ class GetCheckpointsHelper(object):
             mc.close()
         return merged
 
-    def monitor_checkpoints(self, master, bucket,state,
+    def monitor_checkpoints(self, main, bucket,state,
                                    interval, max_allowed, command_queue):
         #monitor all checkpoints and if num_checkpoints is greater than max_allowed
         #it alerts
@@ -63,7 +63,7 @@ class GetCheckpointsHelper(object):
                     break
             except Queue.Empty:
                 pass
-            merged = self.get_checkpoints_from_cluster(master, bucket)
+            merged = self.get_checkpoints_from_cluster(main, bucket)
             alarms = []
             for vb, checkpoints in merged.items():
                 for node, checkpoint_attributes in checkpoints.items():

@@ -38,7 +38,7 @@ class RackzoneBaseTest(BaseTestCase):
             self._load_all_buckets(self.servers[0], self.gen_load, "create", 0)
         else:
             self._load_doc_data_all_buckets()
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         type = shell.extract_remote_info().distribution_type
         shell.disconnect()
         self.os_name = "linux"
@@ -51,7 +51,7 @@ class RackzoneBaseTest(BaseTestCase):
         if type.lower() == 'mac':
             self.cbstat_command = "%scbstats" % (MAC_COUCHBASE_BIN_PATH)
         if self.nonroot:
-            self.cbstat_command = "/home/%s%scbstats" % (self.master.ssh_username,
+            self.cbstat_command = "/home/%s%scbstats" % (self.main.ssh_username,
                                                          LINUX_COUCHBASE_BIN_PATH)
 
     def tearDown(self):
@@ -59,7 +59,7 @@ class RackzoneBaseTest(BaseTestCase):
             right after kill erlang process, we need to start couchbase server
             in teardown so that the next test will not be false failed """
         super(RackzoneBaseTest, self).tearDown()
-        ClusterOperationHelper.cleanup_cluster(self.servers, master=self.master)
+        ClusterOperationHelper.cleanup_cluster(self.servers, main=self.main)
         for server in self.servers:
             shell = RemoteMachineShellConnection(server)
             shell.start_couchbase()

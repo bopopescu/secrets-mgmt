@@ -57,7 +57,7 @@ class SubdocScenarioTests(SubdocAutoTestGenerator):
         rebalance = self.cluster.async_rebalance(self.servers[:self.nodes_init],
                                                  self.nodes_in_list,
                                                  self.nodes_out_list, services=self.services_in)
-        stopped = RestConnection(self.master).stop_rebalance(wait_timeout=self.wait_timeout / 3)
+        stopped = RestConnection(self.main).stop_rebalance(wait_timeout=self.wait_timeout / 3)
         self.assertTrue(stopped, msg="unable to stop rebalance")
         rebalance.result()
         rebalance = self.cluster.async_rebalance(self.servers[:self.nodes_init],
@@ -69,13 +69,13 @@ class SubdocScenarioTests(SubdocAutoTestGenerator):
     def test_failover(self):
         self.run_async_data()
         servr_out = self.nodes_out_list
-        failover_task = self.cluster.async_failover([self.master],
+        failover_task = self.cluster.async_failover([self.main],
                                                         failover_nodes=servr_out, graceful=self.graceful)
         failover_task.result()
         if self.graceful:
             # Check if rebalance is still running
             msg = "graceful failover failed for nodes"
-            self.assertTrue(RestConnection(self.master).monitorRebalance(stop_if_loop=True), msg=msg)
+            self.assertTrue(RestConnection(self.main).monitorRebalance(stop_if_loop=True), msg=msg)
         rebalance = self.cluster.async_rebalance(self.servers[:self.nodes_init],
                                                      [], servr_out)
         self.run_mutation_operations_for_situational_tests()
@@ -88,10 +88,10 @@ class SubdocScenarioTests(SubdocAutoTestGenerator):
 
     def test_failover_add_back(self):
         self.run_async_data()
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         recoveryType = self.input.param("recoveryType", "full")
         servr_out = self.nodes_out_list
-        failover_task = self.cluster.async_failover([self.master],
+        failover_task = self.cluster.async_failover([self.main],
                                                     failover_nodes=servr_out, graceful=self.graceful)
         failover_task.result()
         nodes_all = rest.node_statuses()
@@ -120,7 +120,7 @@ class SubdocScenarioTests(SubdocAutoTestGenerator):
     def test_autofailover(self):
         self.run_async_data()
         autofailover_timeout = 30
-        status = RestConnection(self.master).update_autofailover_settings(True, autofailover_timeout)
+        status = RestConnection(self.main).update_autofailover_settings(True, autofailover_timeout)
         self.assertTrue(status, 'failed to change autofailover_settings!')
         servr_out = self.nodes_out_list
         remote = RemoteMachineShellConnection(servr_out[0])
@@ -162,7 +162,7 @@ class SubdocScenarioTests(SubdocAutoTestGenerator):
         compact_tasks = []
         self.run_async_data()
         for bucket in self.buckets:
-            compact_tasks.append(self.cluster.async_compact_bucket(self.master, bucket))
+            compact_tasks.append(self.cluster.async_compact_bucket(self.main, bucket))
         self.run_mutation_operations_for_situational_tests()
         self.sleep(120, "Wait for compaction")
         for task in compact_tasks:
@@ -191,7 +191,7 @@ class SubdocScenarioTests(SubdocAutoTestGenerator):
         # Flush the bucket
         self.run_async_data()
         for bucket in self.buckets:
-            RestConnection(self.master).flush_bucket(bucket.name)
+            RestConnection(self.main).flush_bucket(bucket.name)
             self.sleep(120, "Wait for flush")
         self.run_mutation_operations_for_situational_tests()
         for t in self.load_thread_list:

@@ -16,10 +16,10 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
         super(XDCRCheckpointUnitTest, self).setUp()
         self.src_cluster = self.get_cb_cluster_by_name('C1')
         self.src_nodes = self.src_cluster.get_nodes()
-        self.src_master = self.src_cluster.get_master_node()
+        self.src_main = self.src_cluster.get_main_node()
         self.dest_cluster = self.get_cb_cluster_by_name('C2')
         self.dest_nodes = self.dest_cluster.get_nodes()
-        self.dest_master = self.dest_cluster.get_master_node()
+        self.dest_main = self.dest_cluster.get_main_node()
         if not self._create_default_bucket:
             self.fail("Remove \'default_bucket=false\', these unit tests are designed to run on default bucket")
         self.setup_xdcr()
@@ -61,7 +61,7 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
         self.num_commit_for_chkpt_beginning = self.num_successful_chkpts_beginning = self.num_failed_chkpts_beginning = 0
         self.num_pre_replicates_beginning = self.num_successful_prereps_beginning = self.num_failed_prereps_beginning = 0
         # get these numbers from logs
-        node = self.get_active_vb0_node(self.dest_master)
+        node = self.get_active_vb0_node(self.dest_main)
         self.num_commit_for_chkpt_beginning, self.num_successful_chkpts_beginning, self.num_failed_chkpts_beginning = \
             self.get_checkpoint_call_history(node)
         self.num_pre_replicates_beginning, self.num_successful_prereps_beginning,self.num_failed_prereps_beginning = \
@@ -81,10 +81,10 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
         self.num_failed_prereps_so_far = self.num_failed_prereps_beginning
 
     """ Returns node containing active vb0 """
-    def get_active_vb0_node(self, master):
+    def get_active_vb0_node(self, main):
         nodes = self.src_nodes
-        ip = VBucketAwareMemcached(RestConnection(master),'default').vBucketMap[0].split(':')[0]
-        if master == self.dest_master:
+        ip = VBucketAwareMemcached(RestConnection(main),'default').vBucketMap[0].split(':')[0]
+        if main == self.dest_main:
             nodes = self.dest_nodes
         for node in nodes:
             if ip == node.ip:
@@ -113,7 +113,7 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
 
         Main method that validates a checkpoint record """
     def get_and_validate_latest_checkpoint(self):
-        rest_con = RestConnection(self.get_active_vb0_node(self.src_master))
+        rest_con = RestConnection(self.get_active_vb0_node(self.src_main))
         repl = rest_con.get_replication_for_buckets('default', 'default')
         try:
             checkpoint_record = rest_con.get_recent_xdcr_vb_ckpt(repl['id'])
@@ -129,7 +129,7 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
         if seqno != 0:
             self.validate_remote_failover_log(checkpoint_record["target_vb_opaque"]["target_vb_uuid"], checkpoint_record["target_seqno"])
             self.log.info ("Verifying local failover uuid ...")
-            local_vb_uuid, _ = self.get_failover_log(self.src_master)
+            local_vb_uuid, _ = self.get_failover_log(self.src_main)
             self.assertTrue((int(failover_uuid) == int(local_vb_uuid)) or
                             (int(failover_uuid) == 0),
                         "local failover_uuid is wrong in checkpoint record! Expected: {0} seen: {1}".
@@ -142,15 +142,15 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
     """ Checks if target_seqno in a checkpoint record matches remote failover log """
     def validate_remote_failover_log(self, vb_uuid, high_seqno):
         # TAP based validation
-        remote_uuid, remote_highseq = self.get_failover_log(self.dest_master)
+        remote_uuid, remote_highseq = self.get_failover_log(self.dest_main)
         self.log.info("Remote failover log = [{0},{1}]".format(remote_uuid, remote_highseq))
         if int(remote_uuid) != int(vb_uuid):
             raise XDCRCheckpointException("vb_uuid in commitopaque is {0} while actual remote vb_uuid is {1}"
                                           .format(vb_uuid, remote_uuid))
 
     """ Gets failover log [vb_uuid, high_seqno] from node containing vb0 """
-    def get_failover_log(self, master):
-        vb0_active_node = self.get_active_vb0_node(master)
+    def get_failover_log(self, main):
+        vb0_active_node = self.get_active_vb0_node(main)
         stats = MemcachedClientHelper.direct_client(vb0_active_node, 'default').stats('vbucket-seqno')
         return stats['vb_0:uuid'], stats['vb_0:high_seqno']
 
@@ -193,7 +193,7 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
 
     """ From destination couchdb log tells if checkpointing was successful """
     def was_checkpointing_successful(self):
-        node = self.get_active_vb0_node(self.dest_master)
+        node = self.get_active_vb0_node(self.dest_main)
         total_commit_calls, success, failures = self.get_checkpoint_call_history(node)
         if success > self.num_successful_chkpts_so_far :
             self.log.info("_commit_for_checkpoint was successful: last recorded success:{0} , now :{1}".
@@ -212,7 +212,7 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
     """ Tells if pre-replicate was successful based on source->dest _pre_replicate CAPI posts """
     def was_pre_rep_successful(self):
         self.sleep(30)
-        node = self.get_active_vb0_node(self.dest_master)
+        node = self.get_active_vb0_node(self.dest_main)
         total_commit_calls, success, failures = self.get_pre_replicate_call_history(node)
         if success > self.num_successful_prereps_so_far :
             self.log.info("_pre_replicate was successful: last recorded success :{0} , now :{1}".
@@ -261,7 +261,7 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
         """
         Get num_checkpoints xdcr stat for default replication
         """
-        rest = RestConnection(self.src_master)
+        rest = RestConnection(self.src_main)
         repl = rest.get_replication_for_buckets('default', 'default')
         val = rest.fetch_bucket_xdcr_stats()['op']['samples']['replications/'+repl['id']+'/num_checkpoints']
         return int(val[-1])
@@ -273,10 +273,10 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
         # get vb0 active source node
         stats_log = NodeHelper.get_goxdcr_log_dir(self._input.servers[0])\
                      + '/stats.log'
-        active_src_node = self.get_active_vb0_node(self.src_master)
+        active_src_node = self.get_active_vb0_node(self.src_main)
         while count <=n:
-            remote_vbuuid, remote_highseqno = self.get_failover_log(self.dest_master)
-            local_vbuuid, local_highseqno = self.get_failover_log(self.src_master)
+            remote_vbuuid, remote_highseqno = self.get_failover_log(self.dest_main)
+            local_vbuuid, local_highseqno = self.get_failover_log(self.src_main)
 
             self.log.info("Local failover log: [{0}, {1}]".format(local_vbuuid,local_highseqno))
             self.log.info("Remote failover log: [{0}, {1}]".format(remote_vbuuid,remote_highseqno))
@@ -311,7 +311,7 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
     """ Verify checkpoint 404 error thrown when the dest node containing vb0 is no more a part of cluster """
     def mutate_and_check_error404(self, n=1):
         # get vb0 active source node
-        active_src_node = self.get_active_vb0_node(self.src_master)
+        active_src_node = self.get_active_vb0_node(self.src_main)
         shell = RemoteMachineShellConnection(active_src_node)
         os_type = shell.extract_remote_info().distribution_type
         if os_type.lower() == 'windows':
@@ -345,22 +345,22 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
             self.log.error("Checkpoint 404 error NOT recorded at source following dest failover or rebalance!")
 
     """ Rebalance-out active vb0 node from a cluster """
-    def rebalance_out_activevb0_node(self, master):
-        pre_rebalance_uuid, _ =self.get_failover_log(master)
+    def rebalance_out_activevb0_node(self, main):
+        pre_rebalance_uuid, _ =self.get_failover_log(main)
         self.log.info("Starting rebalance-out ...")
         # find which node contains vb0
-        node = self.get_active_vb0_node(master)
+        node = self.get_active_vb0_node(main)
         self.log.info("Node {0} contains active vb0".format(node))
-        if node == self.src_master:
-            self.src_cluster.rebalance_out_master()
-            if master == node and node in self.src_nodes:
-                self.src_nodes.remove(self.src_master)
-            self.src_master = self.src_nodes[0]
-            post_rebalance_uuid, _= self.get_failover_log(self.get_active_vb0_node(self.src_master))
+        if node == self.src_main:
+            self.src_cluster.rebalance_out_main()
+            if main == node and node in self.src_nodes:
+                self.src_nodes.remove(self.src_main)
+            self.src_main = self.src_nodes[0]
+            post_rebalance_uuid, _= self.get_failover_log(self.get_active_vb0_node(self.src_main))
             self.log.info("Remote uuid before rebalance :{0}, after rebalance : {1}".
                       format(pre_rebalance_uuid, post_rebalance_uuid))
             # source rebalance on tap?
-            if RestConnection(self.src_master).get_internal_replication_type() == 'tap':
+            if RestConnection(self.src_main).get_internal_replication_type() == 'tap':
                 self.assertTrue(int(pre_rebalance_uuid) != int(post_rebalance_uuid),
                                 "vb_uuid of vb0 is same before and after TAP rebalance")
             else:
@@ -369,15 +369,15 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
             self.sleep(self._wait_timeout)
             self.verify_next_checkpoint_passes()
         else:
-            self.dest_cluster.rebalance_out_master()
-            if master == node and node in self.dest_nodes:
-                self.dest_nodes.remove(self.dest_master)
-            self.dest_master = self.dest_nodes[0]
-            post_rebalance_uuid, _= self.get_failover_log(self.get_active_vb0_node(self.dest_master))
+            self.dest_cluster.rebalance_out_main()
+            if main == node and node in self.dest_nodes:
+                self.dest_nodes.remove(self.dest_main)
+            self.dest_main = self.dest_nodes[0]
+            post_rebalance_uuid, _= self.get_failover_log(self.get_active_vb0_node(self.dest_main))
             self.log.info("Remote uuid before rebalance :{0}, after rebalance : {1}".
                       format(pre_rebalance_uuid, post_rebalance_uuid))
             # destination rebalance on tap?
-            if RestConnection(self.dest_master).get_internal_replication_type() == 'tap':
+            if RestConnection(self.dest_main).get_internal_replication_type() == 'tap':
                 self.assertTrue(int(pre_rebalance_uuid) != int(post_rebalance_uuid),
                                 "vb_uuid of vb0 is same before and after TAP rebalance")
                 self.read_chkpt_history_new_vb0node()
@@ -394,50 +394,50 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
                 self.verify_next_checkpoint_passes()
 
     """ Failover active vb0 node from a cluster """
-    def failover_activevb0_node(self, master):
-        pre_failover_uuid, _ =self.get_failover_log(master)
+    def failover_activevb0_node(self, main):
+        pre_failover_uuid, _ =self.get_failover_log(main)
         self.log.info("Starting failover ...")
         # find which node contains vb0, we will failover that node
-        node = self.get_active_vb0_node(master)
+        node = self.get_active_vb0_node(main)
         self.log.info("Node {0} contains active vb0".format(node))
         if node in self.src_nodes:
-            if node == self.src_master:
-                self.src_cluster.failover_and_rebalance_master()
+            if node == self.src_main:
+                self.src_cluster.failover_and_rebalance_main()
             else:
-                self.src_cluster.failover_and_rebalance_master(master=False)
+                self.src_cluster.failover_and_rebalance_main(main=False)
             if node in self.src_nodes:
                 self.src_nodes.remove(node)
-            if node == self.src_master:
-                self.src_master = self.src_nodes[0]
+            if node == self.src_main:
+                self.src_main = self.src_nodes[0]
         else:
-            self.dest_cluster.failover_and_rebalance_master()
+            self.dest_cluster.failover_and_rebalance_main()
             if node in self.dest_nodes:
                 self.dest_nodes.remove(node)
-            self.dest_master = self.dest_nodes[0]
+            self.dest_main = self.dest_nodes[0]
 
         if "source" in self._failover:
-            post_failover_uuid, _= self.get_failover_log(self.get_active_vb0_node(self.src_master))
+            post_failover_uuid, _= self.get_failover_log(self.get_active_vb0_node(self.src_main))
         else:
-            post_failover_uuid, _= self.get_failover_log(self.get_active_vb0_node(self.dest_master))
+            post_failover_uuid, _= self.get_failover_log(self.get_active_vb0_node(self.dest_main))
         self.log.info("Remote uuid before failover :{0}, after failover : {1}".format(pre_failover_uuid, post_failover_uuid))
         self.assertTrue(int(pre_failover_uuid) != int(post_failover_uuid),"Remote vb_uuid is same before and after failover")
 
     """ Crash node, check uuid before and after crash """
-    def crash_node(self, master):
+    def crash_node(self, main):
         count = 0
-        pre_crash_uuid, _ = self.get_failover_log(master)
-        node = self.get_active_vb0_node(master)
+        pre_crash_uuid, _ = self.get_failover_log(main)
+        node = self.get_active_vb0_node(main)
         self.log.info("Crashing node {0} containing vb0 ...".format(node))
         shell = RemoteMachineShellConnection(node)
         shell.terminate_process(process_name='memcached',force=True)
         shell.disconnect()
         # If we are killing dest node, try to mutate key at source to cause xdcr activity
-        if master == self.dest_master:
+        if main == self.dest_main:
             while count < 5:
-                self.load_one_mutation_into_source_vb0(self.get_active_vb0_node(self.src_master))
+                self.load_one_mutation_into_source_vb0(self.get_active_vb0_node(self.src_main))
                 count += 1
         self.sleep(10)
-        post_crash_uuid, _=self.get_failover_log(master)
+        post_crash_uuid, _=self.get_failover_log(main)
         self.log.info("vb_uuid before crash :{0}, after crash : {1}".format(pre_crash_uuid, post_crash_uuid))
         self.assertTrue(int(pre_crash_uuid) != int(post_crash_uuid),
                         "vb_uuid is same before and after erlang crash - MB-11085 ")
@@ -445,7 +445,7 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
     """Tests dest node(containing vb0) crash"""
     def test_dest_node_crash(self):
         self.mutate_and_checkpoint()
-        self.crash_node(self.dest_master)
+        self.crash_node(self.dest_main)
         self.verify_next_checkpoint_fails_after_dest_uuid_change()
         self.verify_next_checkpoint_passes()
         self.sleep(10)
@@ -454,12 +454,12 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
     """ Tests if pre_replicate and commit_for_checkpoint following source crash is successful"""
     def test_source_node_crash(self):
         self.mutate_and_checkpoint(n=2)
-        self.crash_node(self.src_master)
+        self.crash_node(self.src_main)
         if self.was_pre_rep_successful():
             self.log.info("_pre_replicate following the source crash was successful: {0}".
                           format(self.num_successful_prereps_so_far))
             self.load_one_mutation_into_source_vb0(
-                self.get_active_vb0_node(self.src_master))
+                self.get_active_vb0_node(self.src_main))
             self.sleep(60)
             self.verify_next_checkpoint_passes()
         else:
@@ -493,7 +493,7 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
         self.src_cluster.delete_bucket('default')
         self.sleep(30)
         self.create_buckets_on_cluster(self.src_cluster.get_name())
-        RestConnection(self.src_master).start_replication(REPLICATION_TYPE.CONTINUOUS,
+        RestConnection(self.src_main).start_replication(REPLICATION_TYPE.CONTINUOUS,
             'default',
             "remote_cluster_%s-%s" % (self.src_cluster.get_name(), self.dest_cluster.get_name()))
         self.key_counter = 0
@@ -511,9 +511,9 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
     def test_rebalance(self):
         self.mutate_and_checkpoint(n=2)
         if "destination" in self._rebalance:
-            self.rebalance_out_activevb0_node(self.dest_master)
+            self.rebalance_out_activevb0_node(self.dest_main)
         elif "source" in self._rebalance:
-            self.rebalance_out_activevb0_node(self.src_master)
+            self.rebalance_out_activevb0_node(self.src_main)
         self.sleep(10)
         self.verify_revid()
 
@@ -521,14 +521,14 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
     def test_failover(self):
         self.mutate_and_checkpoint(n=2)
         if "destination" in self._failover:
-            self.failover_activevb0_node(self.dest_master)
+            self.failover_activevb0_node(self.dest_main)
             self.read_chkpt_history_new_vb0node()
             self.mutate_and_check_error404()
             # the replicator might still be awake, ensure adequate time gap
             self.sleep(self._wait_timeout*2)
             self.verify_next_checkpoint_passes()
         elif "source" in self._failover:
-            self.failover_activevb0_node(self.src_master)
+            self.failover_activevb0_node(self.src_main)
             self.sleep(self._wait_timeout * 2)
             self.verify_next_checkpoint_passes()
         self.sleep(10)
@@ -561,8 +561,8 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
     """ Checks revIDs of loaded keys and logs missing keys """
     def verify_revid(self):
         missing_keys = False
-        src_node = self.get_active_vb0_node(self.src_master)
-        dest_node = self.get_active_vb0_node(self.dest_master)
+        src_node = self.get_active_vb0_node(self.src_main)
+        dest_node = self.get_active_vb0_node(self.dest_main)
         src_client = MemcachedClient(src_node.ip, 11210)
         dest_client = MemcachedClient(dest_node.ip, 11210)
         src_client.sasl_auth_plain("cbadminbucket","password")
@@ -612,8 +612,8 @@ class XDCRCheckpointUnitTest(XDCRNewBaseTest):
 
         self.sleep(self._wait_timeout)
 
-        # Kill memcached on Node A so that Node B becomes master
-        shell = RemoteMachineShellConnection(self.src_cluster.get_master_node())
+        # Kill memcached on Node A so that Node B becomes main
+        shell = RemoteMachineShellConnection(self.src_cluster.get_main_node())
         shell.kill_memcached()
 
         # Start persistence on Node B

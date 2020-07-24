@@ -39,10 +39,10 @@ class GatewayBaseTest(unittest.TestCase):
         self.configfile = self.input.param("configfile", "sync_gateway.json")
         self.expected_error = self.input.param("expected_error", "")
         self.servers = self.input.servers
-        self.master = self.servers[0]
+        self.main = self.servers[0]
         self.folder_prefix = ""
         self.installed_folder = '/opt/couchbase-sync-gateway/bin'
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         type = shell.extract_remote_info().distribution_type
         shell.disconnect()
         if type.lower() == 'windows':
@@ -109,12 +109,12 @@ class GatewayBaseTest(unittest.TestCase):
                 cmd = 'sudo launchctl unload /Library/LaunchDaemons/com.couchbase.mobile.sync_gateway.plist'
             else:
                 self.log.info('uninstall_gateway is not supported on {0}, {1}'.format(type, distribution_type))
-            self.log.info('=== Un-installing Sync Gateway package on {0} - cmd: {1}'.format(self.master, cmd))
+            self.log.info('=== Un-installing Sync Gateway package on {0} - cmd: {1}'.format(self.main, cmd))
             output, error = shell.execute_command(cmd)
             shell.log_command_output(output, error)
         elif self.info.type.lower() == 'windows':
             cmd = "wmic product where name='Couchbase Sync Gateway' uninstall"
-            self.log.info('=== Un-installing Sync Gateway package on {0} - cmd: {1}'.format(self.master, cmd))
+            self.log.info('=== Un-installing Sync Gateway package on {0} - cmd: {1}'.format(self.main, cmd))
             output, error = shell.execute_batch_command(cmd)
             shell.log_command_output(output, error)
 
@@ -270,7 +270,7 @@ class GatewayBaseTest(unittest.TestCase):
                 'is_sync_gateway_service_running is not supported on {0}, {1}'.format(type, distribution_type))
             return False
 
-        self.log.info('=== Check whether Sync Gateway service is running on {0} - cmd: {1}'.format(self.master, cmd))
+        self.log.info('=== Check whether Sync Gateway service is running on {0} - cmd: {1}'.format(self.main, cmd))
         output, error = shell.execute_command_raw(cmd)
         shell.log_command_output(output, error)
         if output and output[0].startswith(service_str):
@@ -326,7 +326,7 @@ class GatewayBaseTest(unittest.TestCase):
         return output, error
 
     def is_sync_gateway_process_running(self, shell):
-        self.log.info('=== Check whether Sync Gateway process is running on {0}'.format(self.master))
+        self.log.info('=== Check whether Sync Gateway process is running on {0}'.format(self.main))
         obj = RemoteMachineHelper(shell).is_process_running('sync_gateway')
         if obj and obj.pid:
             self.log.info('Sync Gateway is running with pid of {0}'.format(obj.pid))

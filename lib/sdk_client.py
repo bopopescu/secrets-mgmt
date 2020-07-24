@@ -18,7 +18,7 @@ import json
 
 
 class SDKClient(object):
-    """Python SDK Client Implementation for testrunner - master branch Implementation"""
+    """Python SDK Client Implementation for testrunner - main branch Implementation"""
 
     def __init__(self, bucket, hosts = ["localhost"] , scheme = "couchbase",
                  ssl_path = None, uhm_options = None, password=None,
@@ -419,24 +419,24 @@ class SDKClient(object):
         except CouchbaseError as e:
             raise
 
-    def observe(self, key, master_only=False):
+    def observe(self, key, main_only=False):
         try:
-            return self.cb.observe(key, master_only = master_only)
+            return self.cb.observe(key, main_only = main_only)
         except CouchbaseError as e:
             try:
                 time.sleep(10)
-                return self.cb.observe(key, master_only = master_only)
+                return self.cb.observe(key, main_only = main_only)
             except CouchbaseError as e:
                 raise
 
-    def observe_multi(self, keys, master_only=False):
+    def observe_multi(self, keys, main_only=False):
         try:
-            data = self.cb.observe_multi(keys, master_only = master_only)
+            data = self.cb.observe_multi(keys, main_only = main_only)
             return self.__translate_observe_multi(data)
         except CouchbaseError as e:
             try:
                 time.sleep(10)
-                data = self.cb.observe_multi(keys, master_only = master_only)
+                data = self.cb.observe_multi(keys, main_only = main_only)
                 return self.__translate_observe_multi(data)
             except CouchbaseError as e:
                 raise

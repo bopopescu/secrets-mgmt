@@ -20,7 +20,7 @@ class MoxiTests(BaseTestCase):
         if self.cluster_ops:
             self.cluster_ops = self.cluster_ops.split(';')
         try:
-            self.assertTrue(self.master != self.moxi_server, 'There are not enough vms!')
+            self.assertTrue(self.main != self.moxi_server, 'There are not enough vms!')
             self._stop_moxi()
         except Exception, ex:
             self.tearDown()
@@ -65,15 +65,15 @@ class MoxiTests(BaseTestCase):
         tasks = self.run_ops()
         for bucket in self.buckets:
             try:
-                self._run_moxi(self.master, bucket)
+                self._run_moxi(self.main, bucket)
                 moxi_client = MemcachedClientHelper.standalone_moxi_client(self.moxi_server, bucket,
                                                                            moxi_port=self.moxi_port)
                 self.sleep(30)
-                self.cluster.load_gen_docs(self.master, bucket.name, self.gen_load,
+                self.cluster.load_gen_docs(self.main, bucket.name, self.gen_load,
                                            bucket.kvs[1],"create", proxy_client=moxi_client,
                                            compression=self.sdk_compression)
                 if self.ops in ['update', 'delete', 'read']:
-                    self.cluster.load_gen_docs(self.master, bucket.name, self.gen_load,
+                    self.cluster.load_gen_docs(self.main, bucket.name, self.gen_load,
                                            bucket.kvs[1], self.ops, proxy_client=moxi_client,
                                                compression=self.sdk_compression)
             finally:
@@ -143,7 +143,7 @@ class MoxiTests(BaseTestCase):
         option = " -vv > %s.out 2>&1" % self.moxi_server.ip
         for bucket in self.buckets:
             try:
-                self._run_moxi(self.master, bucket, option=option)
+                self._run_moxi(self.main, bucket, option=option)
                 mc1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 mc1.connect((self.moxi_server.ip, int(self.moxi_port)))
                 mc1.sendall(set_packet)
@@ -203,7 +203,7 @@ class MoxiTests(BaseTestCase):
         option = " -vv > %s.out 2>&1" % self.moxi_server.ip
         for bucket in self.buckets:
             try:
-                self._run_moxi(self.master, bucket, option=option)
+                self._run_moxi(self.main, bucket, option=option)
                 mc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 mc.connect((self.moxi_server.ip, int(self.moxi_port)))
                 mc.sendall(packet)
@@ -242,7 +242,7 @@ class MoxiTests(BaseTestCase):
         option = " -vv > %s.out 2>&1" % self.moxi_server.ip
         for bucket in self.buckets:
             try:
-                self._run_moxi(self.master, bucket, option=option)
+                self._run_moxi(self.main, bucket, option=option)
                 mc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 mc.connect((self.moxi_server.ip, int(self.moxi_port)))
                 mc.sendall(packet)

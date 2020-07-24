@@ -21,16 +21,16 @@ class SingleNodeUpgradeTests(NewUpgradeBaseTest):
     def tearDown(self):
         super(SingleNodeUpgradeTests, self).tearDown()
         if self.input.param("op", None) == "close_port":
-            remote = RemoteMachineShellConnection(self.master)
+            remote = RemoteMachineShellConnection(self.main)
             remote.disable_firewall()
 
     def test_upgrade(self):
-        self._install([self.master])
-        self.operations([self.master])
+        self._install([self.main])
+        self.operations([self.main])
         for upgrade_version in self.upgrade_versions:
             self.sleep(self.sleep_time, "Pre-setup of old version is done. Wait for upgrade to {0} version". \
                        format(upgrade_version))
-            upgrade_threads = self._async_update(upgrade_version, [self.master])
+            upgrade_threads = self._async_update(upgrade_version, [self.main])
             # wait upgrade statuses
             for upgrade_thread in upgrade_threads:
                 upgrade_thread.join()
@@ -39,21 +39,21 @@ class SingleNodeUpgradeTests(NewUpgradeBaseTest):
                 success_upgrade &= self.queue.get()
             if not success_upgrade:
                 self.fail("Upgrade failed!")
-            self.add_built_in_server_user(node=self.master)
+            self.add_built_in_server_user(node=self.main)
             self.sleep(self.expire_time)
             #            if not self.is_linux:
-            #                self.wait_node_restarted(self.master, wait_time=1200, wait_if_warmup=True, check_service=True)
-            remote = RemoteMachineShellConnection(self.master)
+            #                self.wait_node_restarted(self.main, wait_time=1200, wait_if_warmup=True, check_service=True)
+            remote = RemoteMachineShellConnection(self.main)
             for bucket in self.buckets:
                 remote.execute_cbepctl(bucket, "", "set flush_param", "exp_pager_stime", 5)
             remote.disconnect()
             self.sleep(30)
-            self.verification([self.master])
+            self.verification([self.main])
 
     def test_upgrade_negative(self):
         op = self.input.param("op", None)
         error = self.input.param("error", '')
-        remote = RemoteMachineShellConnection(self.master)
+        remote = RemoteMachineShellConnection(self.main)
         if op is None:
             self.fail("operation should be specified")
         if op == "higher_version":
@@ -64,21 +64,21 @@ class SingleNodeUpgradeTests(NewUpgradeBaseTest):
         if op == "wrong_arch":
             info = remote.extract_remote_info()
             info.architecture_type = ('x86_64', 'x86')[info.architecture_type == 'x86']
-        self._install([self.master])
-        self.operations([self.master])
+        self._install([self.main])
+        self.operations([self.main])
         try:
             if op == "close_port":
-                RemoteUtilHelper.enable_firewall(self.master)
+                RemoteUtilHelper.enable_firewall(self.main)
             for upgrade_version in self.upgrade_versions:
                 self.sleep(self.sleep_time, "Pre-setup of old version is done. Wait for upgrade to {0} version". \
                            format(upgrade_version))
-                output, error = self._upgrade(upgrade_version, self.master, info=info)
+                output, error = self._upgrade(upgrade_version, self.main, info=info)
                 if str(output).find(error) != -1 or str(error).find(error) != -1:
                     raise Exception(error)
         except Exception, ex:
             self.log.info("Exception %s appeared as expected" % ex)
             self.log.info("Check that old version is working fine")
-            self.verification([self.master])
+            self.verification([self.main])
         else:
             self.fail("Upgrade should fail!")
         remote.disconnect()
@@ -323,12 +323,12 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
 
             if self.input.param('extra_verification', False):
                 self.bucket_size = 100
-                self._create_sasl_buckets(self.master, 1)
-                self._create_standard_buckets(self.master, 1)
+                self._create_sasl_buckets(self.main, 1)
+                self._create_standard_buckets(self.main, 1)
                 if self.ddocs_num:
                     self.create_ddocs_and_views()
                     gen_load = BlobGenerator('upgrade', 'upgrade-', self.value_size, end=self.num_items)
-                    self._load_all_buckets(self.master, gen_load, "create", self.expire_time, flag=self.item_flag)
+                    self._load_all_buckets(self.main, gen_load, "create", self.expire_time, flag=self.item_flag)
             self._create_ephemeral_buckets()
             self.verification(self.servers[:self.nodes_init], check_items=not num_nodes_remove_data)
         finally:
@@ -375,7 +375,7 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
             tasks_ops = []
             for bucket in self.buckets:
                 gen = copy.deepcopy(gen_load)
-                tasks_ops.append(self.cluster.async_load_gen_docs(self.master, bucket.name, gen,
+                tasks_ops.append(self.cluster.async_load_gen_docs(self.main, bucket.name, gen,
                                                                   bucket.kvs[1], "create"))
             for task in tasks_ops:
                 task.result()
@@ -437,7 +437,7 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         self.sleep(10)
 
         if self.input.param('initial_version', '')[:5] in COUCHBASE_FROM_VERSION_3:
-            self.master = self.servers[self.nodes_init: self.num_servers][0]
+            self.main = self.servers[self.nodes_init: self.num_servers][0]
         """ verify DCP upgrade in 3.0.0 version """
         self.monitor_dcp_rebalance()
 
@@ -465,7 +465,7 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
             self.log.info("Rebalanced in upgraded nodes")
             self.sleep(self.sleep_time)
             self.verification(self.servers)
-        self._new_master(self.servers[1])
+        self._new_main(self.servers[1])
         self.cluster.rebalance(self.servers, [], [self.servers[0]])
         self.log.info("Rebalanced out all old version nodes")
         self.sleep(10)
@@ -492,7 +492,7 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         self.sleep(10)
 
         """ verify DCP upgrade in 3.x.x version """
-        self.master = self.servers[half_node]
+        self.main = self.servers[half_node]
         self.add_built_in_server_user()
         self.monitor_dcp_rebalance()
         self.sleep(self.sleep_time)
@@ -500,7 +500,7 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
             for server in self.servers[half_node:]:
                 if self.port and self.port != '8091':
                     server.port = self.port
-            self._new_master(self.servers[half_node])
+            self._new_main(self.servers[half_node])
             self.add_built_in_server_user()
             self.verification(self.servers[half_node:])
             self.log.info("Upgrade nodes of old version")
@@ -542,12 +542,12 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         self.cluster.rebalance(self.servers, upgrade_servers, self.servers[self.num_servers:])
         self.log.info("Rebalance completed")
         self.log.info("Remove the second old version node")
-        self._new_master(self.servers[1])
+        self._new_main(self.servers[1])
         self.cluster.rebalance(self.servers, [], [self.servers[0]])
         self.log.info("Rebalance completed")
         self.sleep(10)
         """ verify DCP upgrade in 3.0.0 version """
-        self.master = self.servers[self.nodes_init]
+        self.main = self.servers[self.nodes_init]
         self.monitor_dcp_rebalance()
         self._create_ephemeral_buckets()
         self.verification(self.servers[self.nodes_init: -self.nodes_init])
@@ -558,21 +558,21 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         self.log.info("Rebalance in all {0} nodes" \
                       .format(self.input.param("upgrade_version", "")))
         self.sleep(self.sleep_time)
-        status, content = ClusterOperationHelper.find_orchestrator(self.master)
+        status, content = ClusterOperationHelper.find_orchestrator(self.main)
         self.assertTrue(status, msg="Unable to find orchestrator: {0}:{1}". \
                         format(status, content))
         FIND_MASTER = False
         for new_server in servers_in:
             if content.find(new_server.ip) >= 0:
-                self._new_master(new_server)
+                self._new_main(new_server)
                 FIND_MASTER = True
-                self.log.info("%s node %s becomes the master" \
+                self.log.info("%s node %s becomes the main" \
                               % (self.input.param("upgrade_version", ""), new_server.ip))
                 break
         if self.input.param("initial_version", "")[:5] in COUCHBASE_VERSION_2 \
                 and not FIND_MASTER and not self.is_downgrade:
             raise Exception( \
-                "After rebalance in {0} nodes, {0} node doesn't become master" \
+                "After rebalance in {0} nodes, {0} node doesn't become main" \
                     .format(self.input.param("upgrade_version", "")))
 
         servers_out = self.servers[:self.nodes_init]
@@ -593,7 +593,7 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         self.sleep(self.sleep_time, "Installation of new version is done. Wait for rebalance")
         self.swap_num_servers = self.input.param('swap_num_servers', 1)
         old_servers = self.servers[:self.nodes_init]
-        new_vb_nums = RestHelper(RestConnection(self.master))._get_vbuckets(old_servers,
+        new_vb_nums = RestHelper(RestConnection(self.main))._get_vbuckets(old_servers,
                                                                             bucket_name=self.buckets[0].name)
         new_servers = []
         for i in range(self.nodes_init / self.swap_num_servers):
@@ -609,7 +609,7 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
             old_servers = self.servers[((i + 1) * self.swap_num_servers):self.nodes_init]
             new_servers = new_servers + servers_in
             servers = old_servers + new_servers
-            new_vb_nums = RestHelper(RestConnection(self.master))._get_vbuckets(servers,
+            new_vb_nums = RestHelper(RestConnection(self.main))._get_vbuckets(servers,
                                                                                 bucket_name=self.buckets[0].name)
             self._verify_vbucket_nums_for_swap(old_vb_nums, new_vb_nums)
             status, content = ClusterOperationHelper.find_orchestrator(servers[0])
@@ -618,18 +618,18 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
             FIND_MASTER = False
             for new_server in new_servers:
                 if content.find(new_server.ip) >= 0:
-                    self._new_master(new_server)
+                    self._new_main(new_server)
                     FIND_MASTER = True
-                    self.log.info("3.0 Node %s becomes the master" % (new_server.ip))
+                    self.log.info("3.0 Node %s becomes the main" % (new_server.ip))
             if not FIND_MASTER and not self.is_downgrade:
                 if self.input.param("initial_version", "")[:5] in COUCHBASE_VERSION_3 \
                         and self.input.param("upgrade_version", "")[:5] in SHERLOCK_VERSION:
                     raise Exception("After rebalance in {0} nodes, {0} node doesn't become" \
-                                    " the master ".format(self.input.param("upgrade_version", "")[:5]))
+                                    " the main ".format(self.input.param("upgrade_version", "")[:5]))
                 elif self.input.param("initial_version", "")[:5] in COUCHBASE_VERSION_2 \
                         and self.input.param("upgrade_version", "")[:5] in COUCHBASE_VERSION_3:
                     raise Exception("After rebalance in {0} nodes, {0} node doesn't become" \
-                                    " the master ".format(self.input.param("upgrade_version", "")[:5]))
+                                    " the main ".format(self.input.param("upgrade_version", "")[:5]))
 
         """ verify DCP upgrade in 3.0.0 version """
         self.monitor_dcp_rebalance()
@@ -658,14 +658,14 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         self.sleep(10)
 
         """ verify DCP upgrade in 3.x.x version """
-        self.master = self.servers[2]
+        self.main = self.servers[2]
         self.monitor_dcp_rebalance()
         self.sleep(self.sleep_time)
         try:
             for server in self.servers[2:]:
                 if self.port and self.port != '8091':
                     server.port = self.port
-            self._new_master(self.servers[2])
+            self._new_main(self.servers[2])
             self.verification(self.servers[2:])
             self.log.info("Upgrade nodes of old version")
             upgrade_threads = self._async_update(self.upgrade_versions[0],
@@ -760,15 +760,15 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         # creating new buckets after upgrade
         if after_upgrade_buckets_in is not False:
             self.bucket_size = 100
-            self._create_sasl_buckets(self.master, 1)
-            self._create_standard_buckets(self.master, 1)
+            self._create_sasl_buckets(self.main, 1)
+            self._create_standard_buckets(self.main, 1)
             if self.ddocs_num:
                 self.create_ddocs_and_views()
                 gen_load = BlobGenerator('upgrade', 'upgrade-', self.value_size, end=self.num_items)
-                self._load_all_buckets(self.master, gen_load, "create", self.expire_time, flag=self.item_flag)
+                self._load_all_buckets(self.main, gen_load, "create", self.expire_time, flag=self.item_flag)
         # deleting buckets after upgrade
         if after_upgrade_buckets_out is not False:
-            self._all_buckets_delete(self.master)
+            self._all_buckets_delete(self.main)
         # flushing buckets after upgrade
         if after_upgrade_buckets_flush is not False:
             self._all_buckets_flush()
@@ -809,7 +809,7 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         for i in range(0, len(upgrade_servers)):
             self.cluster.rebalance(self.servers, [upgrade_servers[i]], [], services=[upgrade_services[i]])
 
-        self._new_master(self.servers[self.swap_num_servers])
+        self._new_main(self.servers[self.swap_num_servers])
         # swap out the remaining half of the servers and rebalance
         upgrade_servers = self.servers[:self.swap_num_servers]
         self.cluster.rebalance(self.servers, [], upgrade_servers)
@@ -847,15 +847,15 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         # creating new buckets after upgrade
         if after_upgrade_buckets_in is not False:
             self.bucket_size = 100
-            self._create_sasl_buckets(self.master, 1)
-            self._create_standard_buckets(self.master, 1)
+            self._create_sasl_buckets(self.main, 1)
+            self._create_standard_buckets(self.main, 1)
             if self.ddocs_num:
                 self.create_ddocs_and_views()
                 gen_load = BlobGenerator('upgrade', 'upgrade-', self.value_size, end=self.num_items)
-                self._load_all_buckets(self.master, gen_load, "create", self.expire_time, flag=self.item_flag)
+                self._load_all_buckets(self.main, gen_load, "create", self.expire_time, flag=self.item_flag)
         # deleting buckets after upgrade
         if after_upgrade_buckets_out is not False:
-            self._all_buckets_delete(self.master)
+            self._all_buckets_delete(self.main)
         # flushing buckets after upgrade
         if after_upgrade_buckets_flush is not False:
             self._all_buckets_flush()
@@ -933,7 +933,7 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
 
         # rebalance in the failed over nodes
         self.cluster.rebalance(self.servers[:self.nodes_init], [], [])
-        self._new_master(self.servers[self.swap_num_servers])
+        self._new_main(self.servers[self.swap_num_servers])
         upgrade_servers = self.servers[:self.swap_num_servers]
         # do a graceful failover of remaining nodes except 1
         self.rest.fail_over('ns_1@' + upgrade_servers[0].ip, graceful=True)
@@ -1011,15 +1011,15 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         # creating new buckets after upgrade
         if after_upgrade_buckets_in is not False:
             self.bucket_size = 100
-            self._create_sasl_buckets(self.master, 1)
-            self._create_standard_buckets(self.master, 1)
+            self._create_sasl_buckets(self.main, 1)
+            self._create_standard_buckets(self.main, 1)
             if self.ddocs_num:
                 self.create_ddocs_and_views()
                 gen_load = BlobGenerator('upgrade', 'upgrade-', self.value_size, end=self.num_items)
-                self._load_all_buckets(self.master, gen_load, "create", self.expire_time, flag=self.item_flag)
+                self._load_all_buckets(self.main, gen_load, "create", self.expire_time, flag=self.item_flag)
         # deleting buckets after upgrade
         if after_upgrade_buckets_out is not False:
-            self._all_buckets_delete(self.master)
+            self._all_buckets_delete(self.main)
         # flushing buckets after upgrade
         if after_upgrade_buckets_flush is not False:
             self._all_buckets_flush()
@@ -1045,7 +1045,7 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         self.initial_version = self.upgrade_versions[0]
         # install new version on another set of nodes
         self._install(self.servers[self.nodes_init:self.num_servers])
-        self.master = self.servers[self.nodes_init]
+        self.main = self.servers[self.nodes_init]
         # Configure the nodes with services on the other cluster2
         try:
             self.operations(self.servers[self.nodes_init:self.num_servers], services="kv,kv,index,n1ql")
@@ -1086,15 +1086,15 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         # creating new buckets after upgrade
         if after_upgrade_buckets_in is not False:
             self.bucket_size = 100
-            self._create_sasl_buckets(self.master, 1)
-            self._create_standard_buckets(self.master, 1)
+            self._create_sasl_buckets(self.main, 1)
+            self._create_standard_buckets(self.main, 1)
             if self.ddocs_num:
                 self.create_ddocs_and_views()
                 gen_load = BlobGenerator('upgrade', 'upgrade-', self.value_size, end=self.num_items)
-                self._load_all_buckets(self.master, gen_load, "create", self.expire_time, flag=self.item_flag)
+                self._load_all_buckets(self.main, gen_load, "create", self.expire_time, flag=self.item_flag)
         # deleting buckets after upgrade
         if after_upgrade_buckets_out is not False:
-            self._all_buckets_delete(self.master)
+            self._all_buckets_delete(self.main)
         # flushing buckets after upgrade
         if after_upgrade_buckets_flush is not False:
             self._all_buckets_flush()
@@ -1190,15 +1190,15 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         # creating new buckets after upgrade
         if after_upgrade_buckets_in is not False:
             self.bucket_size = 100
-            self._create_sasl_buckets(self.master, 1)
-            self._create_standard_buckets(self.master, 1)
+            self._create_sasl_buckets(self.main, 1)
+            self._create_standard_buckets(self.main, 1)
             if self.ddocs_num:
                 self.create_ddocs_and_views()
                 gen_load = BlobGenerator('upgrade', 'upgrade-', self.value_size, end=self.num_items)
-                self._load_all_buckets(self.master, gen_load, "create", self.expire_time, flag=self.item_flag)
+                self._load_all_buckets(self.main, gen_load, "create", self.expire_time, flag=self.item_flag)
         # deleting buckets after upgrade
         if after_upgrade_buckets_out is not False:
-            self._all_buckets_delete(self.master)
+            self._all_buckets_delete(self.main)
         # flushing buckets after upgrade
         if after_upgrade_buckets_flush is not False:
             self._all_buckets_flush()
@@ -1291,15 +1291,15 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         # creating new buckets after upgrade
         if after_upgrade_buckets_in is not False:
             self.bucket_size = 100
-            self._create_sasl_buckets(self.master, 1)
-            self._create_standard_buckets(self.master, 1)
+            self._create_sasl_buckets(self.main, 1)
+            self._create_standard_buckets(self.main, 1)
             if self.ddocs_num:
                 self.create_ddocs_and_views()
                 gen_load = BlobGenerator('upgrade', 'upgrade-', self.value_size, end=self.num_items)
-                self._load_all_buckets(self.master, gen_load, "create", self.expire_time, flag=self.item_flag)
+                self._load_all_buckets(self.main, gen_load, "create", self.expire_time, flag=self.item_flag)
         # deleting buckets after upgrade
         if after_upgrade_buckets_out is not False:
-            self._all_buckets_delete(self.master)
+            self._all_buckets_delete(self.main)
         # flushing buckets after upgrade
         if after_upgrade_buckets_flush is not False:
             self._all_buckets_flush()
@@ -1391,15 +1391,15 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         # creating new buckets after upgrade
         if after_upgrade_buckets_in is not False:
             self.bucket_size = 100
-            self._create_sasl_buckets(self.master, 1)
-            self._create_standard_buckets(self.master, 1)
+            self._create_sasl_buckets(self.main, 1)
+            self._create_standard_buckets(self.main, 1)
             if self.ddocs_num:
                 self.create_ddocs_and_views()
                 gen_load = BlobGenerator('upgrade', 'upgrade-', self.value_size, end=self.num_items)
-                self._load_all_buckets(self.master, gen_load, "create", self.expire_time, flag=self.item_flag)
+                self._load_all_buckets(self.main, gen_load, "create", self.expire_time, flag=self.item_flag)
         # deleting buckets after upgrade
         if after_upgrade_buckets_out is not False:
-            self._all_buckets_delete(self.master)
+            self._all_buckets_delete(self.main)
         # flushing buckets after upgrade
         if after_upgrade_buckets_flush is not False:
             self._all_buckets_flush()
@@ -1491,15 +1491,15 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         # creating new buckets after upgrade
         if after_upgrade_buckets_in is not False:
             self.bucket_size = 100
-            self._create_sasl_buckets(self.master, 1)
-            self._create_standard_buckets(self.master, 1)
+            self._create_sasl_buckets(self.main, 1)
+            self._create_standard_buckets(self.main, 1)
             if self.ddocs_num:
                 self.create_ddocs_and_views()
                 gen_load = BlobGenerator('upgrade', 'upgrade-', self.value_size, end=self.num_items)
-                self._load_all_buckets(self.master, gen_load, "create", self.expire_time, flag=self.item_flag)
+                self._load_all_buckets(self.main, gen_load, "create", self.expire_time, flag=self.item_flag)
         # deleting buckets after upgrade
         if after_upgrade_buckets_out is not False:
-            self._all_buckets_delete(self.master)
+            self._all_buckets_delete(self.main)
         # flushing buckets after upgrade
         if after_upgrade_buckets_flush is not False:
             self._all_buckets_flush()
@@ -1591,15 +1591,15 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         # creating new buckets after upgrade
         if after_upgrade_buckets_in is not False:
             self.bucket_size = 100
-            self._create_sasl_buckets(self.master, 1)
-            self._create_standard_buckets(self.master, 1)
+            self._create_sasl_buckets(self.main, 1)
+            self._create_standard_buckets(self.main, 1)
             if self.ddocs_num:
                 self.create_ddocs_and_views()
                 gen_load = BlobGenerator('upgrade', 'upgrade-', self.value_size, end=self.num_items)
-                self._load_all_buckets(self.master, gen_load, "create", self.expire_time, flag=self.item_flag)
+                self._load_all_buckets(self.main, gen_load, "create", self.expire_time, flag=self.item_flag)
         # deleting buckets after upgrade
         if after_upgrade_buckets_out is not False:
-            self._all_buckets_delete(self.master)
+            self._all_buckets_delete(self.main)
         # flushing buckets after upgrade
         if after_upgrade_buckets_flush is not False:
             self._all_buckets_flush()
@@ -1691,15 +1691,15 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         # creating new buckets after upgrade
         if after_upgrade_buckets_in is not False:
             self.bucket_size = 100
-            self._create_sasl_buckets(self.master, 1)
-            self._create_standard_buckets(self.master, 1)
+            self._create_sasl_buckets(self.main, 1)
+            self._create_standard_buckets(self.main, 1)
             if self.ddocs_num:
                 self.create_ddocs_and_views()
                 gen_load = BlobGenerator('upgrade', 'upgrade-', self.value_size, end=self.num_items)
-                self._load_all_buckets(self.master, gen_load, "create", self.expire_time, flag=self.item_flag)
+                self._load_all_buckets(self.main, gen_load, "create", self.expire_time, flag=self.item_flag)
         # deleting buckets after upgrade
         if after_upgrade_buckets_out is not False:
-            self._all_buckets_delete(self.master)
+            self._all_buckets_delete(self.main)
         # flushing buckets after upgrade
         if after_upgrade_buckets_flush is not False:
             self._all_buckets_flush()
@@ -1791,15 +1791,15 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         # creating new buckets after upgrade
         if after_upgrade_buckets_in is not False:
             self.bucket_size = 100
-            self._create_sasl_buckets(self.master, 1)
-            self._create_standard_buckets(self.master, 1)
+            self._create_sasl_buckets(self.main, 1)
+            self._create_standard_buckets(self.main, 1)
             if self.ddocs_num:
                 self.create_ddocs_and_views()
                 gen_load = BlobGenerator('upgrade', 'upgrade-', self.value_size, end=self.num_items)
-                self._load_all_buckets(self.master, gen_load, "create", self.expire_time, flag=self.item_flag)
+                self._load_all_buckets(self.main, gen_load, "create", self.expire_time, flag=self.item_flag)
         # deleting buckets after upgrade
         if after_upgrade_buckets_out is not False:
-            self._all_buckets_delete(self.master)
+            self._all_buckets_delete(self.main)
         # flushing buckets after upgrade
         if after_upgrade_buckets_flush is not False:
             self._all_buckets_flush()
@@ -1895,15 +1895,15 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         # creating new buckets after upgrade
         if after_upgrade_buckets_in is not False:
             self.bucket_size = 100
-            self._create_sasl_buckets(self.master, 1)
-            self._create_standard_buckets(self.master, 1)
+            self._create_sasl_buckets(self.main, 1)
+            self._create_standard_buckets(self.main, 1)
             if self.ddocs_num:
                 self.create_ddocs_and_views()
                 gen_load = BlobGenerator('upgrade', 'upgrade-', self.value_size, end=self.num_items)
-                self._load_all_buckets(self.master, gen_load, "create", self.expire_time, flag=self.item_flag)
+                self._load_all_buckets(self.main, gen_load, "create", self.expire_time, flag=self.item_flag)
         # deleting buckets after upgrade
         if after_upgrade_buckets_out is not False:
-            self._all_buckets_delete(self.master)
+            self._all_buckets_delete(self.main)
         # flushing buckets after upgrade
         if after_upgrade_buckets_flush is not False:
             self._all_buckets_flush()
@@ -1999,15 +1999,15 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         # creating new buckets after upgrade
         if after_upgrade_buckets_in is not False:
             self.bucket_size = 100
-            self._create_sasl_buckets(self.master, 1)
-            self._create_standard_buckets(self.master, 1)
+            self._create_sasl_buckets(self.main, 1)
+            self._create_standard_buckets(self.main, 1)
             if self.ddocs_num:
                 self.create_ddocs_and_views()
                 gen_load = BlobGenerator('upgrade', 'upgrade-', self.value_size, end=self.num_items)
-                self._load_all_buckets(self.master, gen_load, "create", self.expire_time, flag=self.item_flag)
+                self._load_all_buckets(self.main, gen_load, "create", self.expire_time, flag=self.item_flag)
         # deleting buckets after upgrade
         if after_upgrade_buckets_out is not False:
-            self._all_buckets_delete(self.master)
+            self._all_buckets_delete(self.main)
         # flushing buckets after upgrade
         if after_upgrade_buckets_flush is not False:
             self._all_buckets_flush()
@@ -2103,15 +2103,15 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         # creating new buckets after upgrade
         if after_upgrade_buckets_in is not False:
             self.bucket_size = 100
-            self._create_sasl_buckets(self.master, 1)
-            self._create_standard_buckets(self.master, 1)
+            self._create_sasl_buckets(self.main, 1)
+            self._create_standard_buckets(self.main, 1)
             if self.ddocs_num:
                 self.create_ddocs_and_views()
                 gen_load = BlobGenerator('upgrade', 'upgrade-', self.value_size, end=self.num_items)
-                self._load_all_buckets(self.master, gen_load, "create", self.expire_time, flag=self.item_flag)
+                self._load_all_buckets(self.main, gen_load, "create", self.expire_time, flag=self.item_flag)
         # deleting buckets after upgrade
         if after_upgrade_buckets_out is not False:
-            self._all_buckets_delete(self.master)
+            self._all_buckets_delete(self.main)
         # flushing buckets after upgrade
         if after_upgrade_buckets_flush is not False:
             self._all_buckets_flush()
@@ -2197,7 +2197,7 @@ class MultiNodesUpgradeTests(NewUpgradeBaseTest):
         # Add new services after the upgrade
         self.log.info("Indexer node : {}".format(self.index_server))
         for upgrade_version in self.upgrade_versions:
-            rest = RestConnection(self.master)
+            rest = RestConnection(self.main)
             versions = rest.get_nodes_versions()
             for version in versions:
                 if "5" > version:

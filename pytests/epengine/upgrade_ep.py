@@ -22,8 +22,8 @@ class Upgrade_EpTests(UpgradeTests):
 
     def setUp(self):
         super(Upgrade_EpTests, self).setUp()
-        print self.master
-        self.rest = RestConnection(self.master)
+        print self.main
+        self.rest = RestConnection(self.main)
         self.bucket = 'default' # temp fix
         self.client = VBucketAwareMemcached(self.rest, self.bucket)
         self.time_synchronization ='disabled'
@@ -50,7 +50,7 @@ class Upgrade_EpTests(UpgradeTests):
         #o = OpsChangeCasTests()
 
         self.log.info('Inserting few items pre upgrade')
-        self._load_ops(ops='set', mutations=20, master=self.master, bucket=self.bucket)
+        self._load_ops(ops='set', mutations=20, main=self.main, bucket=self.bucket)
         self.log.info('Upgrading ..')
         try:
             UpgradeTests.test_upgrade(self)
@@ -59,7 +59,7 @@ class Upgrade_EpTests(UpgradeTests):
 
         self.log.info('Testing the meta details on items post upgrade')
         #self._check_config()
-        self._check_cas(check_conflict_resolution=True, master=self.servers[1], bucket=self.bucket)
+        self._check_cas(check_conflict_resolution=True, main=self.servers[1], bucket=self.bucket)
 
     def _check_config(self):
         result = self.rest.get_bucket_json(self.bucket)["timeSynchronization"]
@@ -67,10 +67,10 @@ class Upgrade_EpTests(UpgradeTests):
         self.assertEqual(result,self.time_synchronization, msg='ERROR, Mismatch on expected time synchronization values')
         self.log.info("Verified results")
 
-    def _load_ops(self, ops=None, mutations=1, master=None, bucket=None):
+    def _load_ops(self, ops=None, mutations=1, main=None, bucket=None):
 
-        if master:
-            self.rest = RestConnection(master)
+        if main:
+            self.rest = RestConnection(main)
         if bucket:
             self.client = VBucketAwareMemcached(self.rest, bucket)
 
@@ -104,10 +104,10 @@ class Upgrade_EpTests(UpgradeTests):
 
     ''' Common function to verify the expected values on cas
     '''
-    def _check_cas(self, check_conflict_resolution=False, master=None, bucket=None, time_sync=None):
+    def _check_cas(self, check_conflict_resolution=False, main=None, bucket=None, time_sync=None):
         self.log.info(' Verifying cas and max cas for the keys')
-        if master:
-            self.rest = RestConnection(master)
+        if main:
+            self.rest = RestConnection(main)
             self.client = VBucketAwareMemcached(self.rest, bucket)
 
         k=0

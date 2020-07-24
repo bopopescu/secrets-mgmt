@@ -707,7 +707,7 @@ class QueryXattrTests(QueryTests):
         try:
 
             # failover the indexer node
-            failover_task = self.cluster.async_failover([self.master], failover_nodes=[index_server], graceful=False)
+            failover_task = self.cluster.async_failover([self.main], failover_nodes=[index_server], graceful=False)
             failover_task.result()
             self.sleep(30)
             # do a full recovery and rebalance
@@ -753,7 +753,7 @@ class QueryXattrTests(QueryTests):
         self.sleep(30)
         try:
             # failover the indexer node
-            failover_task = self.cluster.async_failover([self.master], failover_nodes=[index_server], graceful=True)
+            failover_task = self.cluster.async_failover([self.main], failover_nodes=[index_server], graceful=True)
             self.run_xattrs_query(query, '', '_system3', 'idx8', 'default', xattr_data=self.system_xattr_data)
 
             # Run a virtual xattr query
@@ -1857,7 +1857,7 @@ class QueryXattrTests(QueryTests):
     3. {'user3': {'field1': {'sub_field1a': int, 'sub_field1b': int}, 'field2': {'sub_field2a': int, 'sub_field2b': int}}}
     """
     def create_xattr_data(self, type="system"):
-        cluster = Cluster('couchbase://'+str(self.master.ip))
+        cluster = Cluster('couchbase://'+str(self.main.ip))
         authenticator = PasswordAuthenticator(self.username, self.password)
         cluster.authenticate(authenticator)
         cb = cluster.open_bucket('default')
@@ -1890,7 +1890,7 @@ class QueryXattrTests(QueryTests):
     Write a single xattr key and val to doc id
     """
     def write_xattr(self, doc_id, xattr_id, value):
-        cluster = Cluster('couchbase://'+str(self.master.ip))
+        cluster = Cluster('couchbase://'+str(self.main.ip))
         authenticator = PasswordAuthenticator(self.username, self.password)
         cluster.authenticate(authenticator)
         cb = cluster.open_bucket('default')
@@ -1905,7 +1905,7 @@ class QueryXattrTests(QueryTests):
     Resets the bucket data by deleting the bucket and recreating/reloading the data generated during test suite setup
     """
     def reload_data(self):
-        self._all_buckets_delete(self.master)
+        self._all_buckets_delete(self.main)
         self._bucket_creation()
         self.gens_load = self.gen_docs(self.docs_per_day)
         self.load(self.gens_load, batch_size=1000, flag=self.item_flag)

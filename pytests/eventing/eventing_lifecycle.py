@@ -21,12 +21,12 @@ class EventingLifeCycle(EventingBaseTest):
                                                        replicas=self.num_replicas)
             self.cluster.create_standard_bucket(name=self.src_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
-            self.src_bucket = RestConnection(self.master).get_buckets()
+            self.src_bucket = RestConnection(self.main).get_buckets()
             self.cluster.create_standard_bucket(name=self.dst_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
             self.cluster.create_standard_bucket(name=self.metadata_bucket_name, port=STANDARD_BUCKET_PORT + 1,
                                                 bucket_params=bucket_params)
-            self.buckets = RestConnection(self.master).get_buckets()
+            self.buckets = RestConnection(self.main).get_buckets()
         self.gens_load = self.generate_docs(self.docs_per_day)
         self.expiry = 3
 
@@ -38,7 +38,7 @@ class EventingLifeCycle(EventingBaseTest):
                   batch_size=self.batch_size)
         body = self.create_save_function_body(self.function_name, HANDLER_CODE.BUCKET_OPS_ON_UPDATE)
         for i in xrange(1, 5):
-            self.cluster.bucket_flush(self.master, self.dst_bucket_name)
+            self.cluster.bucket_flush(self.main, self.dst_bucket_name)
             self.deploy_function(body)
             self.undeploy_function(body)
         self.sleep(30)
@@ -52,7 +52,7 @@ class EventingLifeCycle(EventingBaseTest):
                   batch_size=self.batch_size)
         body = self.create_save_function_body(self.function_name, HANDLER_CODE.N1QL_INSERT_ON_UPDATE)
         for i in xrange(1, 5):
-            self.cluster.bucket_flush(self.master, self.dst_bucket_name)
+            self.cluster.bucket_flush(self.main, self.dst_bucket_name)
             self.deploy_function(body)
             self.undeploy_function(body)
         self.sleep(30)
@@ -64,8 +64,8 @@ class EventingLifeCycle(EventingBaseTest):
     def test_function_deploy_undeploy_in_a_loop_for_doc_timers(self):
         body = self.create_save_function_body(self.function_name, HANDLER_CODE.BUCKET_OPS_WITH_DOC_TIMER)
         for i in xrange(1, 5):
-            self.cluster.bucket_flush(self.master, self.src_bucket_name)
-            self.cluster.bucket_flush(self.master, self.dst_bucket_name)
+            self.cluster.bucket_flush(self.main, self.src_bucket_name)
+            self.cluster.bucket_flush(self.main, self.dst_bucket_name)
             self.load(self.gens_load, buckets=self.src_bucket, flag=self.item_flag, verify_data=False,
                       batch_size=self.batch_size)
             self.deploy_function(body)
@@ -83,7 +83,7 @@ class EventingLifeCycle(EventingBaseTest):
         body = self.create_save_function_body(self.function_name, HANDLER_CODE.BUCKET_OPS_ON_UPDATE)
         self.deploy_function(body)
         # load some data
-        task = self.cluster.async_load_gen_docs(self.master, self.src_bucket_name, self.gens_load,
+        task = self.cluster.async_load_gen_docs(self.main, self.src_bucket_name, self.gens_load,
                                                 self.buckets[0].kvs[1], 'create', compression=self.sdk_compression)
         for i in xrange(1, 10):
             self.pause_function(body)
@@ -100,7 +100,7 @@ class EventingLifeCycle(EventingBaseTest):
         body = self.create_save_function_body(self.function_name, HANDLER_CODE.N1QL_INSERT_ON_UPDATE)
         self.deploy_function(body)
         # load some data
-        task = self.cluster.async_load_gen_docs(self.master, self.src_bucket_name, self.gens_load,
+        task = self.cluster.async_load_gen_docs(self.main, self.src_bucket_name, self.gens_load,
                                                 self.buckets[0].kvs[1], 'create', compression=self.sdk_compression)
         for i in xrange(1, 10):
             self.pause_function(body)
@@ -117,7 +117,7 @@ class EventingLifeCycle(EventingBaseTest):
         body = self.create_save_function_body(self.function_name, HANDLER_CODE.BUCKET_OPS_WITH_DOC_TIMER)
         self.deploy_function(body)
         # load some data
-        task = self.cluster.async_load_gen_docs(self.master, self.src_bucket_name, self.gens_load,
+        task = self.cluster.async_load_gen_docs(self.main, self.src_bucket_name, self.gens_load,
                                                 self.buckets[0].kvs[1], 'create', compression=self.sdk_compression)
         for i in xrange(1, 10):
             self.pause_function(body)

@@ -51,7 +51,7 @@ class docloaderTests(CliBaseTest):
                                                                     self.memory_quota,
                                                                    self.load_filename)
 
-        self.buckets = RestConnection(self.master).get_buckets()
+        self.buckets = RestConnection(self.main).get_buckets()
         self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
 
         self.shell.delete_files(self.load_filename)
@@ -158,7 +158,7 @@ class docloaderTests(CliBaseTest):
                 raise Exception("Sample file %s.zip doesn't exists" % (file))
 
     def verify_ddoc(self, file):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         ddoc_names = self.get_ddoc_names(file)
         for bucket in self.buckets:
             for ddoc_name in ddoc_names:

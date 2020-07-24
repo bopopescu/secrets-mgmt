@@ -11,7 +11,7 @@ class RegressionTests(BaseTestCase):
         super(RegressionTests, self).tearDown()
 
     def test_MB_12751(self):
-        mc = MemcachedClientHelper.direct_client(self.master, "default")
+        mc = MemcachedClientHelper.direct_client(self.main, "default")
         mc.set("hello", 0, 0, "world")
         mc.getl("hello", 15)
         try:

@@ -10,7 +10,7 @@ class TokenTests(QueryTests):
         self.scan_consistency = self.input.param("scan_consistency", 'REQUEST_PLUS')
 
     def tearDown(self):
-        server = self.master
+        server = self.main
         shell = RemoteMachineShellConnection(server)
         #  shell.execute_command("""curl -X DELETE -u Administrator:password http://{0}:8091/pools/default/buckets/beer-sample""".format(server.ip))
         self.sleep(20)

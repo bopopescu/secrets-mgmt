@@ -27,7 +27,7 @@ class IBRTests(BackupBaseTest):
         super(IBRTests, self).setUp()
         self.num_mutate_items = self.input.param("mutate_items", 1000)
         gen_load = BlobGenerator('testdata', 'testdata-', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen_load, "create", 0, 1, self.item_flag, True, batch_size=20000,
+        self._load_all_buckets(self.main, gen_load, "create", 0, 1, self.item_flag, True, batch_size=20000,
                                pause_secs=5, timeout_secs=180)
         self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
 
@@ -63,7 +63,7 @@ class IBRTests(BackupBaseTest):
         if expected_error:
             for bucket in self.buckets:
                 bucket.kvs[1] = KVStore()
-        self.verify_results(self.master)
+        self.verify_results(self.main)
         self._verify_stats_all_buckets(self.servers[:self.num_servers])
 
     def verify_dir_structure(self, total_backups, buckets, nodes):
@@ -143,7 +143,7 @@ class IBRTests(BackupBaseTest):
         for count in range(10):
             # Update data
             gen_update = BlobGenerator('testdata', 'testdata-', self.value_size, end=self.num_items)
-            self._load_all_buckets(self.master, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
+            self._load_all_buckets(self.main, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
                                    pause_secs=5, timeout_secs=180)
             self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
 
@@ -161,7 +161,7 @@ class IBRTests(BackupBaseTest):
     def testIncrBackupDirStructure(self):
         # Update data
         gen_update = BlobGenerator('testdata', 'testdata-', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
+        self._load_all_buckets(self.main, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
                                pause_secs=5, timeout_secs=180)
         self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
 
@@ -179,7 +179,7 @@ class IBRTests(BackupBaseTest):
         for count in range(10):
             # Update data
             gen_update = BlobGenerator('testdata', 'testdata-', self.value_size, end=self.num_items)
-            self._load_all_buckets(self.master, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
+            self._load_all_buckets(self.main, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
                                    pause_secs=5, timeout_secs=180)
             self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
 
@@ -199,7 +199,7 @@ class IBRTests(BackupBaseTest):
         for count in range(10):
             # Update data
             gen_update = BlobGenerator('testdata', 'testdata-', self.value_size, end=self.num_items)
-            self._load_all_buckets(self.master, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
+            self._load_all_buckets(self.main, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
                                    pause_secs=5, timeout_secs=180)
             self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
 
@@ -219,7 +219,7 @@ class IBRTests(BackupBaseTest):
         for count in range(10):
             # Update data
             gen_update = BlobGenerator('testdata', 'testdata-', self.value_size, end=self.num_items)
-            self._load_all_buckets(self.master, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
+            self._load_all_buckets(self.main, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
                                    pause_secs=5, timeout_secs=180)
             self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
 
@@ -232,7 +232,7 @@ class IBRTests(BackupBaseTest):
 
             # Update data
             gen_update = BlobGenerator('testdata', 'testdata-', self.value_size, end=self.num_items)
-            self._load_all_buckets(self.master, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
+            self._load_all_buckets(self.main, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
                                    pause_secs=5, timeout_secs=180)
             self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
 
@@ -251,7 +251,7 @@ class IBRTests(BackupBaseTest):
         for count in range(10):
             # Update data
             gen_update = BlobGenerator('testdata', 'testdata-', self.value_size, end=self.num_items)
-            self._load_all_buckets(self.master, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
+            self._load_all_buckets(self.main, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
                                    pause_secs=5, timeout_secs=180)
             self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
 
@@ -264,7 +264,7 @@ class IBRTests(BackupBaseTest):
 
             # Update data
             gen_update = BlobGenerator('testdata', 'testdata-', self.value_size, end=self.num_items)
-            self._load_all_buckets(self.master, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
+            self._load_all_buckets(self.main, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
                                    pause_secs=5, timeout_secs=180)
             self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
 
@@ -277,7 +277,7 @@ class IBRTests(BackupBaseTest):
 
             # Update data
             gen_update = BlobGenerator('testdata', 'testdata-', self.value_size, end=self.num_items)
-            self._load_all_buckets(self.master, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
+            self._load_all_buckets(self.main, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
                                    pause_secs=5, timeout_secs=180)
             self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
 
@@ -294,7 +294,7 @@ class IBRTests(BackupBaseTest):
     def testDiffBackupDirStructure(self):
         # Update data
         gen_update = BlobGenerator('testdata', 'testdata-', self.value_size, end=5)
-        self._load_all_buckets(self.master, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
+        self._load_all_buckets(self.main, gen_update, "update", 0, 1, self.item_flag, True, batch_size=20000,
                                pause_secs=5, timeout_secs=180)
         self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
 
@@ -313,16 +313,16 @@ class IBRTests(BackupBaseTest):
         extra_items_deleted_flag = 0
 
         if(self.doc_ops is not None):
-            self._load_all_buckets(self.master, gen_extra, "create", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
+            self._load_all_buckets(self.main, gen_extra, "create", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
             if("update" in self.doc_ops):
-                self._load_all_buckets(self.master, gen_extra, "update", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
+                self._load_all_buckets(self.main, gen_extra, "update", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
             if("delete" in self.doc_ops):
-                self._load_all_buckets(self.master, gen_extra, "delete", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
+                self._load_all_buckets(self.main, gen_extra, "delete", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
                 extra_items_deleted_flag = 1
             if("expire" in self.doc_ops):
                 if extra_items_deleted_flag == 1:
-                    self._load_all_buckets(self.master, gen_extra, "create", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
-                self._load_all_buckets(self.master, gen_extra, "update", self.expire_time, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
+                    self._load_all_buckets(self.main, gen_extra, "create", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
+                self._load_all_buckets(self.main, gen_extra, "update", self.expire_time, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
 
 
         #Take a incremental backup
@@ -336,7 +336,7 @@ class IBRTests(BackupBaseTest):
         bucket_names = [bucket.name for bucket in self.buckets]
 
         # Delete all buckets
-        self._all_buckets_delete(self.master)
+        self._all_buckets_delete(self.main)
         gc.collect()
 
         self._bucket_creation()
@@ -352,16 +352,16 @@ class IBRTests(BackupBaseTest):
         extra_items_deleted_flag = 0
 
         if(self.doc_ops is not None):
-            self._load_all_buckets(self.master, gen_extra, "create", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
+            self._load_all_buckets(self.main, gen_extra, "create", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
             if("update" in self.doc_ops):
-                self._load_all_buckets(self.master, gen_extra, "update", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
+                self._load_all_buckets(self.main, gen_extra, "update", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
             if("delete" in self.doc_ops):
-                self._load_all_buckets(self.master, gen_extra, "delete", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
+                self._load_all_buckets(self.main, gen_extra, "delete", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
                 extra_items_deleted_flag = 1
             if("expire" in self.doc_ops):
                 if extra_items_deleted_flag == 1:
-                    self._load_all_buckets(self.master, gen_extra, "create", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
-                self._load_all_buckets(self.master, gen_extra, "update", self.expire_time, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
+                    self._load_all_buckets(self.main, gen_extra, "create", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
+                self._load_all_buckets(self.main, gen_extra, "update", self.expire_time, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
 
 
         self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
@@ -377,7 +377,7 @@ class IBRTests(BackupBaseTest):
         bucket_names = [bucket.name for bucket in self.buckets]
 
         # Delete all buckets
-        self._all_buckets_delete(self.master)
+        self._all_buckets_delete(self.main)
         gc.collect()
 
         self._bucket_creation()
@@ -393,7 +393,7 @@ class IBRTests(BackupBaseTest):
         bucket_names = [bucket.name for bucket in self.buckets]
 
         # Delete all buckets
-        self._all_buckets_delete(self.master)
+        self._all_buckets_delete(self.main)
         gc.collect()
 
         self._bucket_creation()
@@ -407,16 +407,16 @@ class IBRTests(BackupBaseTest):
         extra_items_deleted_flag = 0
 
         if(self.doc_ops is not None):
-            self._load_all_buckets(self.master, gen_extra, "create", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
+            self._load_all_buckets(self.main, gen_extra, "create", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
             if("update" in self.doc_ops):
-                self._load_all_buckets(self.master, gen_extra, "update", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
+                self._load_all_buckets(self.main, gen_extra, "update", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
             if("delete" in self.doc_ops):
-                self._load_all_buckets(self.master, gen_extra, "delete", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
+                self._load_all_buckets(self.main, gen_extra, "delete", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
                 extra_items_deleted_flag = 1
             if("expire" in self.doc_ops):
                 if extra_items_deleted_flag == 1:
-                    self._load_all_buckets(self.master, gen_extra, "create", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
-                self._load_all_buckets(self.master, gen_extra, "update", self.expire_time, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
+                    self._load_all_buckets(self.main, gen_extra, "create", 0, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
+                self._load_all_buckets(self.main, gen_extra, "update", self.expire_time, 1, self.item_flag, True, batch_size=20000, pause_secs=5, timeout_secs=180)
 
         #Take a incremental backup
         options = self.command_options + [' -m accu']
@@ -429,7 +429,7 @@ class IBRTests(BackupBaseTest):
         bucket_names = [bucket.name for bucket in self.buckets]
 
         # Delete all buckets
-        self._all_buckets_delete(self.master)
+        self._all_buckets_delete(self.main)
         gc.collect()
         self.lww = self.num_mutate_items = self.input.param("lww_new", False)
         self._bucket_creation()
@@ -444,7 +444,7 @@ class IBRJsonTests(BackupBaseTest):
         template = '{{ "mutated" : 0, "age": {0}, "first_name": "{1}" }}'
         gen_load = DocumentGenerator('load_by_id_test', template, range(5),\
                              ['james', 'john'], start=0, end=self.num_items)
-        self._load_all_buckets(self.master, gen_load, "create", 0, 1,\
+        self._load_all_buckets(self.main, gen_load, "create", 0, 1,\
                               self.item_flag, True, batch_size=20000,\
                                        pause_secs=5, timeout_secs=180)
         self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
@@ -459,7 +459,7 @@ class IBRJsonTests(BackupBaseTest):
             for ddoc_count in xrange(self.num_ddocs):
                 design_doc_name = prefix_ddoc + str(ddoc_count)
                 view_list = self.make_default_views("views", self.num_views_per_ddoc)
-                self.create_views(self.master, design_doc_name, view_list,\
+                self.create_views(self.main, design_doc_name, view_list,\
                                              bucket, self.wait_timeout * 2)
                 ddoc_view_map[design_doc_name] = view_list
             self.bucket_ddoc_map[bucket] = ddoc_view_map
@@ -481,7 +481,7 @@ class IBRJsonTests(BackupBaseTest):
         bucket_names = [bucket.name for bucket in self.buckets]
 
         # Delete all buckets
-        self._all_buckets_delete(self.master)
+        self._all_buckets_delete(self.main)
         gc.collect()
 
         self._bucket_creation()
@@ -499,7 +499,7 @@ class IBRJsonTests(BackupBaseTest):
                                        self.backup_location, bucket_names)
         self.sleep(10)
         self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
-        self.verify_results(self.master)
+        self.verify_results(self.main)
         self._verify_stats_all_buckets(self.servers[:self.num_servers])
         """ add design doc and view """
         if self.test_with_view:
@@ -510,7 +510,7 @@ class IBRJsonTests(BackupBaseTest):
                 for ddoc_name, view_list in ddoc_view_map.items():
                     for view in view_list:
                         try:
-                            result = self.cluster.query_view(self.master,\
+                            result = self.cluster.query_view(self.main,\
                                              ddoc_name, view.name, query,\
                                                self.num_items, timeout=10)
                         except Exception:
@@ -554,7 +554,7 @@ class IBRJsonTests(BackupBaseTest):
             template = '{{ "mutated" : {0}, "age": {0}, "first_name": "{1}" }}'
             gen_update = DocumentGenerator('load_by_id_test', template, range(5),\
                                    ['james', 'john'], start=0, end=self.num_items)
-            self._load_all_buckets(self.master, gen_update, "update", 0, 1,\
+            self._load_all_buckets(self.main, gen_update, "update", 0, 1,\
                                     self.item_flag, True, batch_size=20000,\
                                              pause_secs=5, timeout_secs=180)
             self._wait_for_stats_all_buckets(self.servers[:self.num_servers])
@@ -570,7 +570,7 @@ class IBRJsonTests(BackupBaseTest):
         bucket_names = [bucket.name for bucket in self.buckets]
 
         # Delete all buckets
-        self._all_buckets_delete(self.master)
+        self._all_buckets_delete(self.main)
         gc.collect()
 
         self._bucket_creation()
@@ -582,7 +582,7 @@ class IBRSpatialTests(SpatialQueryTests):
     def setUp(self):
         self.input = TestInputSingleton.input
         self.servers = self.input.servers
-        self.master = self.servers[0]
+        self.main = self.servers[0]
         self.log = logger.Logger.get_logger()
         self.helper = SpatialHelper(self, "default")
         self.helper.setup_cluster()
@@ -592,7 +592,7 @@ class IBRSpatialTests(SpatialQueryTests):
         self.standard_buckets = self.input.param("standard_buckets", 0)
         self.memcached_buckets = self.input.param("memcached_buckets", 0)
         self.servers = self.helper.servers
-        self.shell = RemoteMachineShellConnection(self.master)
+        self.shell = RemoteMachineShellConnection(self.main)
         info = self.shell.extract_remote_info()
         self.os = info.type.lower()
         self.couchbase_login_info = "%s:%s" % (self.input.membase_settings.rest_username,
@@ -621,7 +621,7 @@ class IBRSpatialTests(SpatialQueryTests):
         self.shell.execute_cluster_backup(self.couchbase_login_info, self.backup_location, options)
         time.sleep(2)
 
-        self.buckets = RestConnection(self.master).get_buckets()
+        self.buckets = RestConnection(self.main).get_buckets()
         bucket_names = [bucket.name for bucket in self.buckets]
         BucketOperationHelper.delete_all_buckets_or_assert(self.servers, self)
         gc.collect()

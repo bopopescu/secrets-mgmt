@@ -185,7 +185,7 @@ class CBASBucketOperations(CBASBaseTest):
         self.setup_for_test()
 
         # Flush the CB bucket
-        self.cluster.bucket_flush(server=self.master,
+        self.cluster.bucket_flush(server=self.main,
                                   bucket=self.cb_bucket_name)
 
         # Validate no. of items in CBAS dataset
@@ -201,7 +201,7 @@ class CBASBucketOperations(CBASBaseTest):
         self.disconnect_from_bucket(self.cbas_bucket_name)
 
         # Flush the CB bucket
-        self.cluster.bucket_flush(server=self.master,
+        self.cluster.bucket_flush(server=self.main,
                                   bucket=self.cb_bucket_name)
 
         # Connect to Bucket
@@ -218,7 +218,7 @@ class CBASBucketOperations(CBASBaseTest):
         self.setup_for_test()
 
         # Delete the CB bucket
-        self.cluster.bucket_delete(server=self.master,
+        self.cluster.bucket_delete(server=self.main,
                                    bucket=self.cb_bucket_name)
 
         # Validate no. of items in CBAS dataset
@@ -234,7 +234,7 @@ class CBASBucketOperations(CBASBaseTest):
         self.disconnect_from_bucket(self.cbas_bucket_name)
 
         # Delete the CB bucket
-        self.cluster.bucket_delete(server=self.master,
+        self.cluster.bucket_delete(server=self.main,
                                    bucket=self.cb_bucket_name)
 
         # Connect to Bucket
@@ -251,7 +251,7 @@ class CBASBucketOperations(CBASBaseTest):
         self.setup_for_test()
 
         # Compact the CB bucket
-        self.cluster.compact_bucket(server=self.master,
+        self.cluster.compact_bucket(server=self.main,
                                     bucket=self.cb_bucket_name)
 
         # Validate no. of items in CBAS dataset
@@ -267,7 +267,7 @@ class CBASBucketOperations(CBASBaseTest):
         self.disconnect_from_bucket(self.cbas_bucket_name)
 
         # Compact the CB bucket
-        self.cluster.compact_bucket(server=self.master,
+        self.cluster.compact_bucket(server=self.main,
                                     bucket=self.cb_bucket_name)
 
         # Connect to Bucket
@@ -337,7 +337,7 @@ class CBASBucketOperations(CBASBaseTest):
                 "No. of items in CBAS dataset do not match that in the CB bucket")
 
         # Count no. of items in CB & CBAS Buckets
-        items_in_cb_bucket = self.get_item_count(self.master,
+        items_in_cb_bucket = self.get_item_count(self.main,
                                                  self.cb_bucket_name)
         items_in_cbas_bucket, _ = self.get_num_items_in_cbas_dataset(
             self.cbas_dataset_name)
@@ -349,9 +349,9 @@ class CBASBucketOperations(CBASBaseTest):
             self.fail(
                 "Before Rollback : # Items in CBAS bucket does not match that in the CB bucket")
 
-        # Kill memcached on Node A so that Node B becomes master
+        # Kill memcached on Node A so that Node B becomes main
         self.log.info("Kill Memcached process on NodeA")
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         shell.kill_memcached()
 
         # Start persistence on Node B
@@ -371,7 +371,7 @@ class CBASBucketOperations(CBASBaseTest):
         self.sleep(120)
 
         # Count no. of items in CB & CBAS Buckets
-        items_in_cb_bucket = self.get_item_count(self.master,
+        items_in_cb_bucket = self.get_item_count(self.main,
                                                  self.cb_bucket_name)
         items_in_cbas_bucket, _ = self.get_num_items_in_cbas_dataset(
             self.cbas_dataset_name)

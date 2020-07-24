@@ -28,7 +28,7 @@ class GatewayConfigBaseTest(GatewayBaseTest):
         self.sync_port = self.input.param("sync_port", "4984")
         self.admin_port = self.input.param("admin_port", "4985")
         self.dbs = self.input.clusters
-        self.db_master = self.dbs[0]
+        self.db_main = self.dbs[0]
         # parameters for accounts
         self.admin_channels = self.input.param("admin_channels", "")
         self.admin_roles = self.input.param("admin_roles", "")
@@ -41,8 +41,8 @@ class GatewayConfigBaseTest(GatewayBaseTest):
         self.role_channels = self.input.param("role_channels", "")
         self.roles = self.input.param("roles", "")
         self.expect_channels = self.input.param("expect_channels", "")
-        self.param = self.input.param("param", "").replace("LOCAL_IP", self.master.ip)
-        self.expected_log = self.input.param("expected_log", "").replace("LOCAL_IP", self.master.ip)
+        self.param = self.input.param("param", "").replace("LOCAL_IP", self.main.ip)
+        self.expected_log = self.input.param("expected_log", "").replace("LOCAL_IP", self.main.ip)
 
     def generate_sync_gateways_config(self, template_filename, output_config_file):
         loader = FileSystemLoader('pytests/sg/resources')
@@ -59,21 +59,21 @@ class GatewayConfigBaseTest(GatewayBaseTest):
                     port=self.port,
                     bucket=self.bucket,
                     feedtype=self.feedtype,
-                    db_ip=self.db_master[0].ip
+                    db_ip=self.db_main[0].ip
                 ))
         elif template_filename == 'gateway_config_template_nobucket.json':
             with open(output_config_file, 'w') as fh:
                 fh.write(template.render(
                     password=password_str,
                     port=self.port,
-                    db_ip=self.db_master[0].ip
+                    db_ip=self.db_main[0].ip
                 ))
         else:
             with open(output_config_file, 'w') as fh:
                 fh.write(template.render(
                     password=password_str,
                     port=self.port,
-                    db_ip=self.db_master[0].ip
+                    db_ip=self.db_main[0].ip
                 ))
 
     def start_sync_gateway(self, shell):

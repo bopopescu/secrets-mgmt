@@ -117,7 +117,7 @@ class NewUpgradeBaseTest(BaseTestCase):
             #self.full_docs_list_after_ops = self.generate_full_docs_list_after_ops(self.docs_gen_map)
         if self.max_verify is None:
             self.max_verify = min(self.num_items, 100000)
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         type = shell.extract_remote_info().distribution_type
         shell.disconnect()
         if type.lower() == 'windows':
@@ -159,7 +159,7 @@ class NewUpgradeBaseTest(BaseTestCase):
                 # cleanup only nodes that are in cluster
                 # not all servers have been installed
                 if self.rest is None:
-                    self._new_master(self.master)
+                    self._new_main(self.main)
                 nodes = self.rest.get_nodes()
                 temp = []
                 for server in self.servers:
@@ -210,7 +210,7 @@ class NewUpgradeBaseTest(BaseTestCase):
                 if not success:
                     sys.exit("some nodes were not install successfully!")
         if self.rest is None:
-            self._new_master(self.master)
+            self._new_main(self.main)
         if self.use_hostnames:
             for server in self.servers[:self.nodes_init]:
                 hostname = RemoteUtilHelper.use_hostname_for_server_settings(server)
@@ -252,7 +252,7 @@ class NewUpgradeBaseTest(BaseTestCase):
                                             services=set_services)
 
         if self.port and self.port != '8091':
-            self.rest = RestConnection(self.master)
+            self.rest = RestConnection(self.main)
             self.rest_helper = RestHelper(self.rest)
         if 5.0 <= float(self.initial_version[:3]):
             self.add_built_in_server_user()
@@ -283,7 +283,7 @@ class NewUpgradeBaseTest(BaseTestCase):
                     client.stop_persistence()
             self.sleep(10)
         gen_load = BlobGenerator('upgrade', 'upgrade-', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen_load, "create", self.expire_time, flag=self.item_flag)
+        self._load_all_buckets(self.main, gen_load, "create", self.expire_time, flag=self.item_flag)
         if not self.stop_persistence:
             self._wait_for_stats_all_buckets(servers)
         else:
@@ -385,9 +385,9 @@ class NewUpgradeBaseTest(BaseTestCase):
             upgrade_thread.start()
         return upgrade_threads
 
-    def _new_master(self, server):
-        self.master = server
-        self.rest = RestConnection(self.master)
+    def _new_main(self, server):
+        self.main = server
+        self.rest = RestConnection(self.main)
         self.rest_helper = RestHelper(self.rest)
 
     def verification(self, servers, check_items=True):
@@ -397,11 +397,11 @@ class NewUpgradeBaseTest(BaseTestCase):
                 new_hostname = node_info.hostname
                 self.assertEqual("%s:%s" % (server.hostname, server.port), new_hostname,
                                  "Hostname is incorrect for server %s. Settings are %s" % (server.ip, new_hostname))
-        if self.master.ip != self.rest.ip or \
-           self.master.ip == self.rest.ip and str(self.master.port) != str(self.rest.port):
+        if self.main.ip != self.rest.ip or \
+           self.main.ip == self.rest.ip and str(self.main.port) != str(self.rest.port):
             if self.port:
-                self.master.port = self.port
-            self.rest = RestConnection(self.master)
+                self.main.port = self.port
+            self.rest = RestConnection(self.main)
             self.rest_helper = RestHelper(self.rest)
         if self.port and self.port != '8091':
             settings = self.rest.get_cluster_settings()
@@ -502,15 +502,15 @@ class NewUpgradeBaseTest(BaseTestCase):
                     self.perform_verify_queries(len(ddoc.views), prefix, ddoc.name, query, bucket=bucket)
 
     def failover(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         nodes = rest.node_statuses()
         nodes = [node for node in nodes
-                if node.ip != self.master.ip or str(node.port) != self.master.port]
+                if node.ip != self.main.ip or str(node.port) != self.main.port]
         self.failover_node = nodes[0]
         rest.fail_over(self.failover_node.id)
 
     def add_back_failover(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         rest.add_back_node(self.failover_node.id)
 
     def create_ddocs_and_views(self, queue=None):
@@ -524,7 +524,7 @@ class NewUpgradeBaseTest(BaseTestCase):
                     self.ddocs.append(ddoc)
                     for view in views:
                         try:
-                            self.cluster.create_view(self.master, ddoc.name, view,
+                            self.cluster.create_view(self.main, ddoc.name, view,
                                                                    bucket=bucket)
                         except Exception, e:
                             print e
@@ -548,17 +548,17 @@ class NewUpgradeBaseTest(BaseTestCase):
         for bucket in self.buckets:
             if bucket.type == 'memcached':
                 continue
-            ready = BucketOperationHelper.wait_for_memcached(self.master,
+            ready = BucketOperationHelper.wait_for_memcached(self.main,
                                                           bucket.name)
             self.assertTrue(ready, "wait_for_memcached failed")
-            client = VBucketAwareMemcached(RestConnection(self.master), bucket)
+            client = VBucketAwareMemcached(RestConnection(self.main), bucket)
             valid_keys, deleted_keys = bucket.kvs[1].key_set()
             for valid_key in valid_keys:
                 try:
                     _, flags, exp, seqno, cas = client.memcached(valid_key).getMeta(valid_key)
                 except MemcachedError, e:
                     print e
-                    client.reset(RestConnection(self.master))
+                    client.reset(RestConnection(self.main))
                     _, flags, exp, seqno, cas = client.memcached(valid_key).getMeta(valid_key)
                 self.assertTrue((comparator == '==' and seqno == seqno_expected) or
                                 (comparator == '>=' and seqno >= seqno_expected),
@@ -628,12 +628,12 @@ class NewUpgradeBaseTest(BaseTestCase):
                                        (upgrade_version in COUCHBASE_VERSION_3 or \
                                         upgrade_version in SHERLOCK_VERSION):
             if int(self.initial_vbuckets) >= 512:
-                if self.master.ip != self.rest.ip or \
-                   self.master.ip == self.rest.ip and \
-                   str(self.master.port) != str(self.rest.port):
+                if self.main.ip != self.rest.ip or \
+                   self.main.ip == self.rest.ip and \
+                   str(self.main.port) != str(self.rest.port):
                     if self.port:
-                        self.master.port = self.port
-                    self.rest = RestConnection(self.master)
+                        self.main.port = self.port
+                    self.rest = RestConnection(self.main)
                     self.rest_helper = RestHelper(self.rest)
                 if self.rest._rebalance_progress_status() == 'running':
                     self.log.info("Start monitoring DCP upgrade from {0} to {1}"\
@@ -652,8 +652,8 @@ class NewUpgradeBaseTest(BaseTestCase):
             else:
                 self.fail("Need vbuckets setting >= 256 for upgrade from 2.x.x to 3+")
         else:
-            if self.master.ip != self.rest.ip:
-                self.rest = RestConnection(self.master)
+            if self.main.ip != self.rest.ip:
+                self.rest = RestConnection(self.main)
                 self.rest_helper = RestHelper(self.rest)
             self.log.info("No need to do DCP rebalance upgrade")
 
@@ -775,10 +775,10 @@ class NewUpgradeBaseTest(BaseTestCase):
             try:
                 from sdk_client import SDKClient
                 scheme = "couchbase"
-                host=self.master.ip
-                if self.master.ip == "127.0.0.1":
+                host=self.main.ip
+                if self.main.ip == "127.0.0.1":
                     scheme = "http"
-                    host="{0}:{1}".format(self.master.ip,self.master.port)
+                    host="{0}:{1}".format(self.main.ip,self.main.port)
                 return SDKClient(scheme=scheme,hosts = [host], bucket = bucket.name)
             except Exception, ex:
                 self.log.info("cannot load sdk client due to error {0}".format(str(ex)))
@@ -919,7 +919,7 @@ class NewUpgradeBaseTest(BaseTestCase):
     def _verify_backup_events_definition(self, bk_fxn):
         backup_path = self.backupset.directory + "/backup/{0}/".format(self.backups[0])
         events_file_name = "events.json"
-        bk_file_events_dir = "/tmp/backup_events{0}/".format(self.master.ip)
+        bk_file_events_dir = "/tmp/backup_events{0}/".format(self.main.ip)
         bk_file_events_path = bk_file_events_dir + events_file_name
 
         shell = RemoteMachineShellConnection(self.backupset.backup_host)
@@ -936,14 +936,14 @@ class NewUpgradeBaseTest(BaseTestCase):
             if v != bk_fxn[0]["settings"][k]:
                 self.log.info("key {0} has value not match".format(k))
                 self.log.info("{0} : {1}".format(v, bk_fxn[0]["settings"][k]))
-        self.log.info("remove tmp file in slave")
+        self.log.info("remove tmp file in subordinate")
         if os.path.exists(bk_file_events_dir):
             shutil.rmtree(bk_file_events_dir)
 
     def _verify_restore_events_definition(self, bk_fxn):
         backup_path = self.backupset.directory + "/backup/{0}/".format(self.backups[0])
         events_file_name = "events.json"
-        bk_file_events_dir = "/tmp/backup_events{0}/".format(self.master.ip)
+        bk_file_events_dir = "/tmp/backup_events{0}/".format(self.main.ip)
         bk_file_events_path = bk_file_events_dir + events_file_name
         rest = RestConnection(self.backupset.restore_cluster_host)
         rs_fxn = rest.get_all_functions()
@@ -1026,7 +1026,7 @@ class NewUpgradeBaseTest(BaseTestCase):
                 self.sleep(20)
                 num_actual = 0
                 if not servers:
-                    num_actual = self.get_item_count(self.master,bucketName)
+                    num_actual = self.get_item_count(self.main,bucketName)
                 else:
                     for server in servers:
                         num_actual += self.get_item_count(server,bucketName)

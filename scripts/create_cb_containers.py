@@ -3,16 +3,16 @@ import os,sys,argparse,json,subprocess,paramiko,requests,time,threading
 from scp import SCPClient
 
 spark_worker_container='spark_worker'
-spark_master_container='spark_master'
+spark_main_container='spark_main'
 couchbase_container='couchbase_base'
 couchbase_ips = []
 spark_worker_ips = []
-spark_master_ips = []
+spark_main_ips = []
 container_prefix = "dockercb"
 cluster_config_file = "config.json"
 buckets = ['default']
-masterIp = None
-masterClient = None
+mainIp = None
+mainClient = None
 
 def run_command(args):
 	p = subprocess.Popen(args)
@@ -46,10 +46,10 @@ def get_ips_and_configure(cb_nodes, prefix, download_url, descfile):
 
 	lock = threading.Lock()
 	for i in range(0, int(cb_nodes)):
-		isMaster = False
+		isMain = False
 		if i == 0:
-			isMaster = True
-		task = threading.Thread(target=install_couchbase, args=(couchbase_ips[i],download_url, isMaster))
+			isMain = True
+		task = threading.Thread(target=install_couchbase, args=(couchbase_ips[i],download_url, isMain))
 		task.start()
 		tasks.append(task)
 	[task.join() for task in tasks]
@@ -64,30 +64,30 @@ def get_ips_and_configure(cb_nodes, prefix, download_url, descfile):
 
 	#initialize_nodes_rebalance(couchbase_ips)
 
-def install_couchbase(ip, url, isMaster):
+def install_couchbase(ip, url, isMain):
 	client = paramiko.SSHClient()
 	client.load_system_host_keys()
 	client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         print 'the ip is', ip
 	client.connect(ip, username="root", password="root")
 	scp = SCPClient(client.get_transport())
-	if isMaster == True:
-		global masterClient
-		masterClient = client
-		global masterIp
-		masterIp = ip
+	if isMain == True:
+		global mainClient
+		mainClient = client
+		global mainIp
+		mainIp = ip
 	scp = SCPClient(client.get_transport())
 	scp.put('cluster-install.py', 'cluster-install.py')
 	command = "python cluster-install.py {0}".format(url)
 	(stdin, stdout, stderr) = client.exec_command(command)
 	for line in stdout.readlines():
 		print line
-	if isMaster != True:
+	if isMain != True:
 		client.close()
 
 def start_environment(cbnodes, prefix):
 	cb_args = "couchbase_base={0}".format(cbnodes)
-	args = ["docker-compose", "-p='{0}'".format(prefix), "scale", cb_args] #,  "spark_master=1",  spark_worker_args]
+	args = ["docker-compose", "-p='{0}'".format(prefix), "scale", cb_args] #,  "spark_main=1",  spark_worker_args]
         print 'start environment args are', args
 	run_command(args)
 
@@ -95,7 +95,7 @@ def cleanup_environment():
 	args = ["python", "stop_cluster.py", "--prefix={0}".format(container_prefix)]
 	run_command(args)
 
-parser = argparse.ArgumentParser(description='Setup couchbase and spark clusters. Currently supports one spark master')
+parser = argparse.ArgumentParser(description='Setup couchbase and spark clusters. Currently supports one spark main')
 parser.add_argument('--cb-nodes', dest='cbnodes', required=True, help='Number of couchbase nodes in cb cluster')
 parser.add_argument('--desc-file', dest='descfile', required=True, help='File to put the IPs in')
 parser.add_argument('--url', dest='url', required=True, help='Couchbase-server version')

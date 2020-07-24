@@ -7,7 +7,7 @@ class RebalanceProgressTests(RebalanceBaseTest):
 
     def setUp(self):
         super(RebalanceProgressTests, self).setUp()
-        self.rest = RestConnection(self.master)
+        self.rest = RestConnection(self.main)
         self.num_views = self.input.param("num_views", 3)
         if self.num_views:
             self._create_indexes()
@@ -221,7 +221,7 @@ class RebalanceProgressTests(RebalanceBaseTest):
         for bucket in self.buckets:
             temp = self.make_default_views(self.default_view_name, self.num_views,
                                            False, different_map=True)
-            temp_tasks = self.async_create_views(self.master, self.default_view_name,
+            temp_tasks = self.async_create_views(self.main, self.default_view_name,
                                                  temp, bucket)
             tasks += temp_tasks
             views += temp
@@ -235,5 +235,5 @@ class RebalanceProgressTests(RebalanceBaseTest):
         for bucket in self.buckets:
             for view in views:
                 # run queries to create indexes
-                self.cluster.query_view(self.master, self.default_view_name, view.name,
+                self.cluster.query_view(self.main, self.default_view_name, view.name,
                                         {"stale" : "false", "limit" : 1000})

@@ -15,9 +15,9 @@ class bidirectional(XDCRNewBaseTest):
     def setUp(self):
         super(bidirectional, self).setUp()
         self.src_cluster = self.get_cb_cluster_by_name('C1')
-        self.src_master = self.src_cluster.get_master_node()
+        self.src_main = self.src_cluster.get_main_node()
         self.dest_cluster = self.get_cb_cluster_by_name('C2')
-        self.dest_master = self.dest_cluster.get_master_node()
+        self.dest_main = self.dest_cluster.get_main_node()
 
     def tearDown(self):
         super(bidirectional, self).tearDown()
@@ -94,13 +94,13 @@ class bidirectional(XDCRNewBaseTest):
         self.sleep(self._wait_timeout / 2)
         self.verify_results()
 
-    def load_with_async_ops_with_warmup_master(self):
+    def load_with_async_ops_with_warmup_main(self):
         self.setup_xdcr_and_load()
         warmupnodes = []
         if "C1" in self._warmup:
-            warmupnodes.append(self.src_cluster.warmup_node(master=True))
+            warmupnodes.append(self.src_cluster.warmup_node(main=True))
         if "C2" in self._warmup:
-            warmupnodes.append(self.dest_cluster.warmup_node(master=True))
+            warmupnodes.append(self.dest_cluster.warmup_node(main=True))
 
         self.sleep(self._wait_timeout)
         NodeHelper.wait_warmup_completed(warmupnodes)
@@ -128,13 +128,13 @@ class bidirectional(XDCRNewBaseTest):
 
         self.verify_results()
 
-    def load_with_async_ops_and_joint_sets_with_warmup_master(self):
+    def load_with_async_ops_and_joint_sets_with_warmup_main(self):
         self.setup_xdcr_and_load()
         warmupnodes = []
         if "C1" in self._warmup:
-            warmupnodes.append(self.src_cluster.warmup_node(master=True))
+            warmupnodes.append(self.src_cluster.warmup_node(main=True))
         if "C2" in self._warmup:
-            warmupnodes.append(self.dest_cluster.warmup_node(master=True))
+            warmupnodes.append(self.dest_cluster.warmup_node(main=True))
 
         self.sleep(self._wait_timeout)
         self.async_perform_update_delete()
@@ -173,13 +173,13 @@ class bidirectional(XDCRNewBaseTest):
 
         self.verify_results()
 
-    def load_with_failover_master(self):
+    def load_with_failover_main(self):
         self.setup_xdcr_and_load()
 
         if "C1" in self._failover:
-            self.src_cluster.failover_and_rebalance_master()
+            self.src_cluster.failover_and_rebalance_main()
         if "C2" in self._failover:
-            self.dest_cluster.failover_and_rebalance_master()
+            self.dest_cluster.failover_and_rebalance_main()
 
         self.sleep(self._wait_timeout / 6)
         self.perform_update_delete()
@@ -361,7 +361,7 @@ class bidirectional(XDCRNewBaseTest):
 
         self.verify_results()
 
-    def replication_while_rebooting_a_non_master_src_dest_node(self):
+    def replication_while_rebooting_a_non_main_src_dest_node(self):
         bucket_type = self._input.param("bucket_type", "membase")
         if bucket_type == "ephemeral":
             self.log.info("Test case does not apply to ephemeral")
@@ -389,7 +389,7 @@ class bidirectional(XDCRNewBaseTest):
 
         zip_file = "%s.zip" % (self._input.param("file_name", "collectInfo"))
         try:
-            for node in [self.src_master, self.dest_master]:
+            for node in [self.src_main, self.dest_main]:
                 self.shell = RemoteMachineShellConnection(node)
                 self.shell.execute_cbcollect_info(zip_file)
                 if self.shell.extract_remote_info().type.lower() != "windows":
@@ -402,9 +402,9 @@ class bidirectional(XDCRNewBaseTest):
                     output, _ = self.shell.execute_command(cmd)
                 else:
                     cmd = "curl -0 http://{1}:{2}@{0}:8091/diag 2>/dev/null | grep 'Approaching full disk warning.'".format(
-                                                        self.src_master.ip,
-                                                        self.src_master.rest_username,
-                                                        self.src_master.rest_password)
+                                                        self.src_main.ip,
+                                                        self.src_main.rest_username,
+                                                        self.src_main.rest_password)
                     output, _ = self.shell.execute_command(cmd)
                 self.assertNotEquals(len(output), 0, "Full disk warning not generated as expected in %s" % node.ip)
                 self.log.info("Full disk warning generated as expected in %s" % node.ip)
@@ -443,8 +443,8 @@ class bidirectional(XDCRNewBaseTest):
         # Perform mutations on the bucket
         self.async_perform_update_delete()
 
-        rest1 = RestConnection(self.src_cluster.get_master_node())
-        rest2 = RestConnection(self.dest_cluster.get_master_node())
+        rest1 = RestConnection(self.src_cluster.get_main_node())
+        rest2 = RestConnection(self.dest_cluster.get_main_node())
 
         # Fetch count of docs in src and dest cluster
         _count1 = rest1.fetch_bucket_stats(bucket=bucket.name)["op"]["samples"]["curr_items"][-1]
@@ -452,10 +452,10 @@ class bidirectional(XDCRNewBaseTest):
 
         self.log.info("Before rollback src cluster count = {0} dest cluster count = {1}".format(_count1, _count2))
 
-        # Kill memcached on Node A so that Node B becomes master
-        shell = RemoteMachineShellConnection(self.src_cluster.get_master_node())
+        # Kill memcached on Node A so that Node B becomes main
+        shell = RemoteMachineShellConnection(self.src_cluster.get_main_node())
         shell.kill_memcached()
-        shell = RemoteMachineShellConnection(self.dest_cluster.get_master_node())
+        shell = RemoteMachineShellConnection(self.dest_cluster.get_main_node())
         shell.kill_memcached()
 
         # Start persistence on Node B
@@ -506,7 +506,7 @@ class bidirectional(XDCRNewBaseTest):
         """
         self.setup_xdcr()
         self.sleep(60, "wait before checking logs")
-        for node in [self.src_cluster.get_master_node()]+[self.dest_cluster.get_master_node()]:
+        for node in [self.src_cluster.get_main_node()]+[self.dest_cluster.get_main_node()]:
             count = NodeHelper.check_goxdcr_log(node,
                         "HttpAuthMech=ScramSha for remote cluster reference remote_cluster")
             if count <= 0:
@@ -520,14 +520,14 @@ class bidirectional(XDCRNewBaseTest):
         Start with ordinary replication, then switch to use scram_sha_auth
         Search for success log stmtsS
         """
-        old_count = NodeHelper.check_goxdcr_log(self.src_cluster.get_master_node(),
+        old_count = NodeHelper.check_goxdcr_log(self.src_cluster.get_main_node(),
                                                 "HttpAuthMech=ScramSha for remote cluster reference remote_cluster")
         self.setup_xdcr()
         # modify remote cluster ref to use scramsha
         for remote_cluster in self.src_cluster.get_remote_clusters()+self.dest_cluster.get_remote_clusters():
             remote_cluster.use_scram_sha_auth()
         self.sleep(60, "wait before checking the logs for using scram-sha")
-        for node in [self.src_cluster.get_master_node()]+[self.dest_cluster.get_master_node()]:
+        for node in [self.src_cluster.get_main_node()]+[self.dest_cluster.get_main_node()]:
             count = NodeHelper.check_goxdcr_log(node, "HttpAuthMech=ScramSha for remote cluster reference remote_cluster")
             if count <= old_count:
                 self.fail("Node {0} does not use SCRAM-SHA authentication".format(node.ip))

@@ -17,20 +17,20 @@ log = logger.Logger.get_logger()
 class RebalanceHelper():
     @staticmethod
     #bucket is a json object that contains name,port,password
-    def wait_for_mc_stats_all_nodes(master, bucket, stat_key, stat_value, timeout_in_seconds=120, verbose=True):
+    def wait_for_mc_stats_all_nodes(main, bucket, stat_key, stat_value, timeout_in_seconds=120, verbose=True):
         log.info("waiting for bucket {0} stat : {1} to match {2} on {3}".format(bucket, stat_key, \
-                                                                                stat_value, master.ip))
+                                                                                stat_value, main.ip))
         time_to_timeout = 0
         previous_stat_value = -1
         curr_stat_value = -1
         verified = False
         all_stats = {}
         while not verified:
-            rest = RestConnection(master)
+            rest = RestConnection(main)
             nodes = rest.node_statuses()
             for node in nodes:
-                _server = {"ip": node.ip, "port": node.port, "username": master.rest_username,
-                           "password": master.rest_password}
+                _server = {"ip": node.ip, "port": node.port, "username": main.rest_username,
+                           "password": main.rest_password}
                 #failed over node is part of node_statuses but since its failed over memcached connections
                 #to this node will fail
                 node_self = RestConnection(_server).get_nodes_self()
@@ -101,15 +101,15 @@ class RebalanceHelper():
 
     @staticmethod
     #bucket is a json object that contains name,port,password
-    def wait_for_stats(master, bucket, stat_key, stat_value, timeout_in_seconds=120, verbose=True):
+    def wait_for_stats(main, bucket, stat_key, stat_value, timeout_in_seconds=120, verbose=True):
         log.info("waiting for bucket {0} stat : {1} to match {2} on {3}".format(bucket, stat_key, \
-                                                                                stat_value, master.ip))
+                                                                                stat_value, main.ip))
         time_to_timeout = 0
         previous_stat_value = -1
         curr_stat_value = -1
         verified = False
         while not verified:
-            rest = RestConnection(master)
+            rest = RestConnection(main)
             try:
                 stats = rest.get_bucket_stats(bucket)
                 if stats and stat_key in stats and stats[stat_key] == stat_value:
@@ -139,7 +139,7 @@ class RebalanceHelper():
                     else:
                         time.sleep(2)
             except:
-                log.info("unable to collect stats from server {0}".format(master))
+                log.info("unable to collect stats from server {0}".format(main))
                 verified = True  #TODO: throw ex and assume caller catches
                 break
             # wait for 5 seconds for the next check
@@ -148,10 +148,10 @@ class RebalanceHelper():
         return verified
 
     @staticmethod
-    def wait_for_stats_no_timeout(master, bucket, stat_key, stat_value, timeout_in_seconds=-1, verbose=True):
+    def wait_for_stats_no_timeout(main, bucket, stat_key, stat_value, timeout_in_seconds=-1, verbose=True):
         log.info("waiting for bucket {0} stat : {1} to match {2} on {3}".format(bucket, stat_key, \
-                                                                                stat_value, master.ip))
-        rest = RestConnection(master)
+                                                                                stat_value, main.ip))
+        rest = RestConnection(main)
         stats = rest.get_bucket_stats(bucket)
 
         while stats.get(stat_key, -1) != stat_value:
@@ -163,13 +163,13 @@ class RebalanceHelper():
 
     @staticmethod
     #bucket is a json object that contains name,port,password
-    def wait_for_mc_stats(master, bucket, stat_key, stat_value, timeout_in_seconds=120, verbose=True):
+    def wait_for_mc_stats(main, bucket, stat_key, stat_value, timeout_in_seconds=120, verbose=True):
         log.info("waiting for bucket {0} stat : {1} to match {2} on {3}".format(bucket, stat_key, \
-                                                                                stat_value, master.ip))
+                                                                                stat_value, main.ip))
         start = time.time()
         verified = False
         while (time.time() - start) <= timeout_in_seconds:
-            c = MemcachedClient(master.ip, 11210)
+            c = MemcachedClient(main.ip, 11210)
             stats = c.stats()
             c.close()
             if stats and stat_key in stats and str(stats[stat_key]) == str(stat_value):
@@ -187,14 +187,14 @@ class RebalanceHelper():
         return verified
 
     @staticmethod
-    def wait_for_mc_stats_no_timeout(master, bucket, stat_key, stat_value, timeout_in_seconds=-1, verbose=True):
+    def wait_for_mc_stats_no_timeout(main, bucket, stat_key, stat_value, timeout_in_seconds=-1, verbose=True):
         log.info("waiting for bucket {0} stat : {1} to match {2} on {3}".format(bucket, stat_key, \
-                                                                                stat_value, master.ip))
+                                                                                stat_value, main.ip))
         # keep retrying until reaches the server
         stats = {}
         while not stats:
             try:
-                c = MemcachedClient(master.ip, 11210)
+                c = MemcachedClient(main.ip, 11210)
                 c.sasl_auth_plain(bucket, '')
                 stats = c.stats()
             except Exception as e:
@@ -205,7 +205,7 @@ class RebalanceHelper():
                 c.close()
 
         while str(stats[stat_key]) != str(stat_value):
-            c = MemcachedClient(master.ip, 11210)
+            c = MemcachedClient(main.ip, 11210)
             c.sasl_auth_plain(bucket, '')
             stats = c.stats()
             c.close()
@@ -216,13 +216,13 @@ class RebalanceHelper():
 
     @staticmethod
     #bucket is a json object that contains name,port,password
-    def wait_for_stats_int_value(master, bucket, stat_key, stat_value, option="==", timeout_in_seconds=120, verbose=True):
+    def wait_for_stats_int_value(main, bucket, stat_key, stat_value, option="==", timeout_in_seconds=120, verbose=True):
         log.info("waiting for bucket {0} stat : {1} to {2} {3} on {4}".format(bucket, stat_key, option, \
-                                                                                stat_value, master.ip))
+                                                                                stat_value, main.ip))
         start = time.time()
         verified = False
         while (time.time() - start) <= timeout_in_seconds:
-            rest = RestConnection(master)
+            rest = RestConnection(main)
             stats = rest.get_bucket_stats(bucket)
             #some stats are in memcached
             if stats and stat_key in stats:
@@ -247,10 +247,10 @@ class RebalanceHelper():
 
     @staticmethod
     #bucket is a json object that contains name,port,password
-    def wait_for_stats_on_all(master, bucket, stat_key, stat_value, timeout_in_seconds=120,
+    def wait_for_stats_on_all(main, bucket, stat_key, stat_value, timeout_in_seconds=120,
                               fn=None):
         fn = fn or RebalanceHelper.wait_for_stats
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         servers = rest.get_nodes()
         verified = False
         start_time = time.time()
@@ -265,7 +265,7 @@ class RebalanceHelper():
         return verified
 
     @staticmethod
-    def wait_till_total_numbers_match(master,
+    def wait_till_total_numbers_match(main,
                                       bucket,
                                       timeout_in_seconds=120):
 
@@ -274,7 +274,7 @@ class RebalanceHelper():
         verified = False
         while (time.time() - start) <= timeout_in_seconds:
             try:
-                if RebalanceHelper.verify_items_count(master, bucket):
+                if RebalanceHelper.verify_items_count(main, bucket):
                     verified = True
                     break
                 else:
@@ -283,24 +283,24 @@ class RebalanceHelper():
                 log.error("unable to retrieve stats for any node! Print taps for all nodes:")
                 break
         if not verified:
-            rest = RestConnection(master)
+            rest = RestConnection(main)
             RebalanceHelper.print_taps_from_all_nodes(rest, bucket)
         return verified
 
     @staticmethod
-    def wait_for_persistence(master, bucket, bucket_type='memcache', timeout=120):
+    def wait_for_persistence(main, bucket, bucket_type='memcache', timeout=120):
 
         if bucket_type == 'ephemeral':
             return True
         verified = True
         verified &= RebalanceHelper.wait_for_mc_stats_all_nodes(
-            master, bucket, "ep_queue_size", 0,
+            main, bucket, "ep_queue_size", 0,
             timeout_in_seconds=timeout)
         verified &= RebalanceHelper.wait_for_mc_stats_all_nodes(
-            master, bucket, "ep_flusher_todo", 0,
+            main, bucket, "ep_flusher_todo", 0,
             timeout_in_seconds=timeout)
         verified &= RebalanceHelper.wait_for_mc_stats_all_nodes(
-            master, bucket, "ep_uncommitted_items", 0,
+            main, bucket, "ep_uncommitted_items", 0,
             timeout_in_seconds=timeout)
         return verified
 
@@ -334,9 +334,9 @@ class RebalanceHelper():
                     break
 
     @staticmethod
-    def verify_items_count(master, bucket, num_attempt=3, timeout=2):
+    def verify_items_count(main, bucket, num_attempt=3, timeout=2):
         #get the #of buckets from rest
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         if isinstance(bucket, Bucket):
             bucket = bucket.name
         bucket_info = rest.get_bucket(bucket, num_attempt, timeout)
@@ -383,16 +383,16 @@ class RebalanceHelper():
         log.info(msg.format(vbucket_active_sum, vbucket_pending_sum, vbucket_replica_sum))
         msg = 'sum : {0} and sum * (replica_factor + 1) ({1}) : {2}'
         log.info(msg.format(sum, replica_factor + 1, (sum * (replica_factor + 1))))
-        master_stats = rest.get_bucket_stats(bucket)
-        if "curr_items_tot" in master_stats:
-            log.info('curr_items_tot from master: {0}'.format(master_stats["curr_items_tot"]))
+        main_stats = rest.get_bucket_stats(bucket)
+        if "curr_items_tot" in main_stats:
+            log.info('curr_items_tot from main: {0}'.format(main_stats["curr_items_tot"]))
         else:
            raise Exception("bucket {O} stats doesnt contain 'curr_items_tot':".format(bucket))
         if replica_factor >= len(nodes):
             log.warn("the number of nodes is less than replica requires")
-            delta = sum * (len(nodes)) - master_stats["curr_items_tot"]
+            delta = sum * (len(nodes)) - main_stats["curr_items_tot"]
         else:
-            delta = sum * (replica_factor + 1) - master_stats["curr_items_tot"]
+            delta = sum * (replica_factor + 1) - main_stats["curr_items_tot"]
         delta = abs(delta)
 
         if delta > 0:
@@ -414,10 +414,10 @@ class RebalanceHelper():
     def verify_maps(vbucket_map_before, vbucket_map_after):
         #for each bucket check the replicas
         for i in range(0, len(vbucket_map_before)):
-            if not vbucket_map_before[i].master == vbucket_map_after[i].master:
+            if not vbucket_map_before[i].main == vbucket_map_after[i].main:
                 log.error(
-                    'vbucket[{0}].master mismatch {1} vs {2}'.format(i, vbucket_map_before[i].master,
-                                                                     vbucket_map_after[i].master))
+                    'vbucket[{0}].main mismatch {1} vs {2}'.format(i, vbucket_map_before[i].main,
+                                                                     vbucket_map_after[i].main))
                 return False
             for j in range(0, len(vbucket_map_before[i].replica)):
                 if not (vbucket_map_before[i].replica[j]) == (vbucket_map_after[i].replica[j]):
@@ -453,7 +453,7 @@ class RebalanceHelper():
         nodeIps = ["{0}:{1}".format(node.ip, node.port) for node in nodes]
         log.info("current nodes : {0}".format(nodeIps))
         toBeAdded = []
-        master = servers[0]
+        main = servers[0]
         selection = servers[1:]
         if do_shuffle:
             shuffle(selection)
@@ -474,7 +474,7 @@ class RebalanceHelper():
             raise Exception("unable to find {0} nodes to rebalance_in".format(how_many))
 
         for server in toBeAdded:
-            otpNode = rest.add_node(master.rest_username, master.rest_password,
+            otpNode = rest.add_node(main.rest_username, main.rest_password,
                                     server.ip, server.port)
         otpNodes = [node.id for node in rest.node_statuses()]
         started = rest.rebalance(otpNodes, [])
@@ -567,17 +567,17 @@ class RebalanceHelper():
             return False, ejections + additions
 
     @staticmethod
-    def begin_rebalance_in(master, servers, timeout=5):
+    def begin_rebalance_in(main, servers, timeout=5):
         log = logger.Logger.get_logger()
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         otpNode = None
 
         for server in servers:
-            if server == master:
+            if server == main:
                 continue
             log.info("adding node {0}:{1} to cluster".format(server.ip, server.port))
             try:
-                otpNode = rest.add_node(master.rest_username, master.rest_password, server.ip, server.port)
+                otpNode = rest.add_node(main.rest_username, main.rest_password, server.ip, server.port)
                 msg = "unable to add node {0}:{1} to the cluster"
                 assert otpNode, msg.format(server.ip, server.port)
             except ServerAlreadyJoinedException:
@@ -589,18 +589,18 @@ class RebalanceHelper():
             log.error("rebalance failed, trying again after {0} seconds".format(timeout))
 
     @staticmethod
-    def begin_rebalance_out(master, servers, timeout=5):
+    def begin_rebalance_out(main, servers, timeout=5):
         log = logger.Logger.get_logger()
-        rest = RestConnection(master)
+        rest = RestConnection(main)
 
-        master_node = rest.get_nodes_self()
+        main_node = rest.get_nodes_self()
 
         allNodes = []
         ejectedNodes = []
         nodes = rest.node_statuses()
         for server in servers:
             server_node = RestConnection(server).get_nodes_self()
-            if server_node == master_node:
+            if server_node == main_node:
                 continue
             log.info("removing node {0}:{1} from cluster".format(server_node.ip, server_node.port))
             for node in nodes:
@@ -613,9 +613,9 @@ class RebalanceHelper():
             log.error("rebalance failed, trying again after {0} seconds".format(timeout))
 
     @staticmethod
-    def end_rebalance(master):
+    def end_rebalance(main):
         log = logger.Logger.get_logger()
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         result = False
         try:
             result = rest.monitorRebalance()
@@ -625,24 +625,24 @@ class RebalanceHelper():
         log.info("rebalance finished")
 
     @staticmethod
-    def getOtpNodeIds(master):
-        rest = RestConnection(master)
+    def getOtpNodeIds(main):
+        rest = RestConnection(main)
         nodes = rest.node_statuses()
         otpNodeIds = [node.id for node in nodes]
         return otpNodeIds
 
     @staticmethod
-    def verify_vBuckets_info(master, bucket="default"):
+    def verify_vBuckets_info(main, bucket="default"):
         '''
         verify vBuckets' state and items count(for active/replica) in them related to vBucketMap for all nodes in cluster
         '''
-        awareness = VBucketAwareMemcached(RestConnection(master), bucket)
+        awareness = VBucketAwareMemcached(RestConnection(main), bucket)
         vb_map = awareness.vBucketMap
         vb_mapReplica = awareness.vBucketMapReplica
         replica_num = len(vb_mapReplica[0])
 
         #get state and count items for all vbuckets for each node
-        node_stats = RebalanceHelper.get_vBuckets_info(master)
+        node_stats = RebalanceHelper.get_vBuckets_info(main)
         state = True
         #iterate throught all vbuckets by their numbers
         for num in vb_map:
@@ -679,20 +679,20 @@ class RebalanceHelper():
         return state
 
     @staticmethod
-    def get_vBuckets_info(master):
+    def get_vBuckets_info(main):
         """
         return state and count items for all vbuckets for each node
         format: dict: {u'1node_ip1': {'vb_79': ['replica', '0'], 'vb_78': ['active', '0']..}, u'1node_ip1':....}
         """
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         port = rest.get_nodes_self().memcached
         nodes = rest.node_statuses()
         _nodes_stats = {}
         for node in nodes:
             stat = {}
             buckets = []
-            _server = {"ip": node.ip, "port": node.port, "username": master.rest_username,
-                           "password": master.rest_password}
+            _server = {"ip": node.ip, "port": node.port, "username": main.rest_username,
+                           "password": main.rest_password}
             try:
                 buckets = rest.get_buckets()
                 mc = MemcachedClient(node.ip, port)
@@ -715,8 +715,8 @@ class RebalanceHelper():
 
 
     @staticmethod
-    def pick_node(master):
-        rest = RestConnection(master)
+    def pick_node(main):
+        rest = RestConnection(main)
         nodes = rest.node_statuses()
         node_picked = None
         nodes_on_same_ip = True
@@ -730,15 +730,15 @@ class RebalanceHelper():
         for node in nodes:
             node_picked = node
             if not nodes_on_same_ip:
-                if node_picked.ip != master.ip:
+                if node_picked.ip != main.ip:
                     log.info(
                         "Picked node ... {0}:{1}".format(node_picked.ip, node_picked.port))
                     break
             else:
-                # temp fix - port numbers of master(machine ip and localhost: 9000 match
+                # temp fix - port numbers of main(machine ip and localhost: 9000 match
                 if int(node_picked.port) == int(
-                    master.port):
-                    log.info("Not picking the master node {0}:{1}.. try again...".format(node_picked.ip,
+                    main.port):
+                    log.info("Not picking the main node {0}:{1}.. try again...".format(node_picked.ip,
                         node_picked.port))
                 else:
                     log.info(
@@ -747,12 +747,12 @@ class RebalanceHelper():
         return node_picked
 
     @staticmethod
-    def pick_nodes(master, howmany=1, target_node = None):
-        rest = RestConnection(master)
+    def pick_nodes(main, howmany=1, target_node = None):
+        rest = RestConnection(main)
         nodes = rest.node_statuses()
         picked = []
         for node_for_stat in nodes:
-            if (node_for_stat.ip != master.ip or  str(node_for_stat.port) != master.port) and node_for_stat.replication > 0:
+            if (node_for_stat.ip != main.ip or  str(node_for_stat.port) != main.port) and node_for_stat.replication > 0:
                 if target_node ==  None:
                     picked.append(node_for_stat)
                 elif target_node.ip == node_for_stat.ip:

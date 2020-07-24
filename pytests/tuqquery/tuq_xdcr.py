@@ -43,8 +43,8 @@ class XDCRTests(QueryTests, XDCRReplicationBaseTest):
         XDCRReplicationBaseTest.setUp(self)
         self.load(self.gens_load)
         self._wait_for_replication_to_catchup()
-        bucket = UpgradeTests._get_bucket('default', self.src_master)
-        self.do_merge_bucket(self.src_master, self.dest_master, False, bucket)
+        bucket = UpgradeTests._get_bucket('default', self.src_main)
+        self.do_merge_bucket(self.src_main, self.dest_main, False, bucket)
         fn = getattr(self, self.method_name)
         fn()
         if self.with_reb == 'src':

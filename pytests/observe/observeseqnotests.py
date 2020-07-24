@@ -99,7 +99,7 @@ class ObserveSeqNoTests(BaseTestCase):
 
         self.log.info('\n\nStarting test_new_response_fields')
 
-        client = VBucketAwareMemcached(RestConnection(self.master), 'default')
+        client = VBucketAwareMemcached(RestConnection(self.main), 'default')
 
 
         h = client.sendHellos( memcacheConstants.PROTOCOL_BINARY_FEATURE_MUTATION_SEQNO );
@@ -188,7 +188,7 @@ class ObserveSeqNoTests(BaseTestCase):
         self.log.info('\n\nStarting test_basic_operations')
 
 
-        client = VBucketAwareMemcached(RestConnection(self.master), 'default')
+        client = VBucketAwareMemcached(RestConnection(self.main), 'default')
         h = client.sendHellos( memcacheConstants.PROTOCOL_BINARY_FEATURE_MUTATION_SEQNO );
 
         all_clients = []
@@ -217,7 +217,7 @@ class ObserveSeqNoTests(BaseTestCase):
         self.log.info('\n\nVerify responses are correct when keys are not persisted')
         for i in all_clients:
             i.stop_persistence()
-        mc = MemcachedClientHelper.direct_client(self.master, "default")
+        mc = MemcachedClientHelper.direct_client(self.main, "default")
 
 
         self.log.info('setting the kv')
@@ -284,7 +284,7 @@ class ObserveSeqNoTests(BaseTestCase):
 
         self.log.info('\n\nStarting test_failover')
 
-        client = VBucketAwareMemcached(RestConnection(self.master), 'default')
+        client = VBucketAwareMemcached(RestConnection(self.main), 'default')
         h = client.sendHellos( memcacheConstants.PROTOCOL_BINARY_FEATURE_MUTATION_SEQNO );
 
 
@@ -308,10 +308,10 @@ class ObserveSeqNoTests(BaseTestCase):
         self.log.info('\n\nserver {0} has the key and it will be failed over'.format(server_with_key))
 
 
-        RebalanceHelper.wait_for_persistence(self.master, self.default_bucket_name)
+        RebalanceHelper.wait_for_persistence(self.main, self.default_bucket_name)
 
         # now failover
-        RestConnection(self.master).fail_over(otpNode = 'ns_1@' + server_with_key, graceful=True)
+        RestConnection(self.main).fail_over(otpNode = 'ns_1@' + server_with_key, graceful=True)
 
         if server_with_key in self.servers:
             self.servers.remove(server_with_key)
@@ -322,7 +322,7 @@ class ObserveSeqNoTests(BaseTestCase):
 
         time.sleep(5)
         # reinstantiate the client so we get the new view of the world
-        client = VBucketAwareMemcached(RestConnection(self.master), 'default')
+        client = VBucketAwareMemcached(RestConnection(self.main), 'default')
         server_with_key = client.memcached( 'failoverkey').host
         self.log.info('\n\nkey is now on server {0}'.format(server_with_key))
 
@@ -356,7 +356,7 @@ class ObserveSeqNoTests(BaseTestCase):
 
 
         # now failover
-        RestConnection(self.master).fail_over(otpNode = 'ns_1@' + server_with_key, graceful=False)
+        RestConnection(self.main).fail_over(otpNode = 'ns_1@' + server_with_key, graceful=False)
 
         if server_with_key in self.servers:
             self.servers.remove(server_with_key)
@@ -367,7 +367,7 @@ class ObserveSeqNoTests(BaseTestCase):
 
         time.sleep(10)
         # reinstantiate the client so we get the new view of the world
-        client = VBucketAwareMemcached(RestConnection(self.master), 'default')
+        client = VBucketAwareMemcached(RestConnection(self.main), 'default')
         server_with_key = client.memcached( 'hardfailoverkey').host
         self.log.info('\n\nkey is now on server {0}'.format(server_with_key))
 

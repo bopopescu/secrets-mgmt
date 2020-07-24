@@ -6,8 +6,8 @@ from tuq_monitoring import QueryMonitoringTests
 class QueryProfilingTests(QueryMonitoringTests):
     def setUp(self):
         super(QueryProfilingTests, self).setUp()
-        self.rest.set_profiling(self.master, "off")
-        self.rest.set_profiling_controls(self.master, False)
+        self.rest.set_profiling(self.main, "off")
+        self.rest.set_profiling_controls(self.main, False)
 
     def suite_setUp(self):
         super(QueryProfilingTests, self).suite_setUp()
@@ -21,59 +21,59 @@ class QueryProfilingTests(QueryMonitoringTests):
     '''Check that the profiling settings can be changed, and that those changes happen per node not cluster wide.'''
     def test_set_profile_settings(self):
         # Check that the profile setting can be changed and that the change is on a per node basis
-        self.rest.set_profiling(self.master, "phases")
-        result = self.rest.get_query_admin_settings(self.master)
+        self.rest.set_profiling(self.main, "phases")
+        result = self.rest.get_query_admin_settings(self.main)
         self.assertTrue(result['profile'] == 'phases')
         node2= self.rest.get_query_admin_settings(self.servers[1])
         self.assertTrue(node2['profile'] == 'off')
 
-        self.rest.set_profiling(self.master, "timings")
-        result = self.rest.get_query_admin_settings(self.master)
+        self.rest.set_profiling(self.main, "timings")
+        result = self.rest.get_query_admin_settings(self.main)
         self.assertTrue(result['profile'] == 'timings')
         node2 = self.rest.get_query_admin_settings(self.servers[1])
         self.assertTrue(node2['profile'] == 'off')
 
         # If an invalid setting is specified, the setting is not changed 'on' is not a valid setting for profile
-        self.rest.set_profiling(self.master, "on")
-        result = self.rest.get_query_admin_settings(self.master)
+        self.rest.set_profiling(self.main, "on")
+        result = self.rest.get_query_admin_settings(self.main)
         self.assertTrue(result['profile'] == 'timings')
         node2 = self.rest.get_query_admin_settings(self.servers[1])
         self.assertTrue(node2['profile'] == 'off')
 
-        self.rest.set_profiling(self.master, "off")
-        result = self.rest.get_query_admin_settings(self.master)
+        self.rest.set_profiling(self.main, "off")
+        result = self.rest.get_query_admin_settings(self.main)
         self.assertTrue(result['profile'] == 'off')
         node2 = self.rest.get_query_admin_settings(self.servers[1])
         self.assertTrue(node2['profile'] == 'off')
 
     '''Check that the controls settings can be changed, and that those changes happen per node not cluster wide.'''
     def test_set_controls_settings(self):
-        self.rest.set_profiling_controls(self.master, True)
-        result = self.rest.get_query_admin_settings(self.master)
+        self.rest.set_profiling_controls(self.main, True)
+        result = self.rest.get_query_admin_settings(self.main)
         self.assertTrue(result['controls'] == True)
         node2 = self.rest.get_query_admin_settings(self.servers[1])
         self.assertTrue(node2['controls'] == False)
 
         # Check an invalid value, the setting should be unchanged by an invalid value
-        self.rest.set_profiling_controls(self.master, "hello")
-        result = self.rest.get_query_admin_settings(self.master)
+        self.rest.set_profiling_controls(self.main, "hello")
+        result = self.rest.get_query_admin_settings(self.main)
         self.assertTrue(result['controls'] == True)
         node2 = self.rest.get_query_admin_settings(self.servers[1])
         self.assertTrue(node2['controls'] == False)
 
-        self.rest.set_profiling_controls(self.master, False)
-        result = self.rest.get_query_admin_settings(self.master)
+        self.rest.set_profiling_controls(self.main, False)
+        result = self.rest.get_query_admin_settings(self.main)
         self.assertTrue(result['controls'] == False)
         node2 = self.rest.get_query_admin_settings(self.servers[1])
         self.assertTrue(node2['controls'] == False)
 
     '''Basic check for the profiling setting profile=phases
         -Check that the default profile setting does not contain phaseTimes information
-        -Check that setting profile = phases on the master node does not change the setting on other nodes
+        -Check that setting profile = phases on the main node does not change the setting on other nodes
         -Check that you can change profile to phases in the middle of a query.'''
     def test_profiling_phases(self):
         # Test 1: Check to see if profiling = off is effective
-        self.rest.set_profiling(self.master,"off")
+        self.rest.set_profiling(self.main,"off")
         e = threading.Event()
         thread1 = threading.Thread(name='run_parallel_query', target=self.run_parallel_query,
                                    args=[self.servers[0]])
@@ -90,9 +90,9 @@ class QueryProfilingTests(QueryMonitoringTests):
         self.run_cbq_query('delete from system:completed_requests')
 
         # Test 2: Turn profiling = phases and make sure it impacts only the node whose setting was changed
-        self.rest.set_profiling(self.master, "phases")
+        self.rest.set_profiling(self.main, "phases")
         e = threading.Event()
-        thread1 = threading.Thread(name='run_parallel_query_master', target=self.run_parallel_query,
+        thread1 = threading.Thread(name='run_parallel_query_main', target=self.run_parallel_query,
                                    args=[self.servers[0]])
         thread2 = threading.Thread(name='run_parallel_query_second', target=self.run_parallel_query,
                                    args=[self.servers[1]])
@@ -114,14 +114,14 @@ class QueryProfilingTests(QueryMonitoringTests):
         self.run_cbq_query('delete from system:completed_requests')
 
         # Test 3: Set profiling to phases in the middle of the running query and see if it takes effect.
-        self.rest.set_profiling(self.master, "off")
+        self.rest.set_profiling(self.main, "off")
         e = threading.Event()
         thread1 = threading.Thread(name='run_parallel_query', target=self.run_parallel_query,
                                    args=[self.servers[0]])
         thread1.start()
         e.set()
         # Change profiling to phases in the middle of the query run and see if phaseTimes is included in active_requests
-        self.rest.set_profiling(self.master, "phases")
+        self.rest.set_profiling(self.main, "phases")
         result = self.run_cbq_query('select * from system:active_requests')
         self.assertTrue('phaseTimes' in result['results'][0]['active_requests'])
         thread1.join()
@@ -131,11 +131,11 @@ class QueryProfilingTests(QueryMonitoringTests):
 
     '''Basic check for the profiling setting profile=timings
         -Check that the default profile setting does not contain phaseTimes
-        -Check that setting profile = timings on the master node does not change the setting on other nodes
+        -Check that setting profile = timings on the main node does not change the setting on other nodes
         -Check that you can change profile to timings in the middle of a query.'''
     def test_profiling_timings(self):
         # Test 1: Check to see if profiling = off
-        self.rest.set_profiling(self.master, "off")
+        self.rest.set_profiling(self.main, "off")
         e = threading.Event()
         thread1 = threading.Thread(name='run_parallel_query', target=self.run_parallel_query,
                                    args=[self.servers[0]])
@@ -152,9 +152,9 @@ class QueryProfilingTests(QueryMonitoringTests):
         self.run_cbq_query('delete from system:completed_requests')
 
         # Test 2: Set profile = timings and make sure it impacts only the node whose setting was changed
-        self.rest.set_profiling(self.master, "timings")
+        self.rest.set_profiling(self.main, "timings")
         e = threading.Event()
-        thread1 = threading.Thread(name='run_parallel_query_master', target=self.run_parallel_query,
+        thread1 = threading.Thread(name='run_parallel_query_main', target=self.run_parallel_query,
                                    args=[self.servers[0]])
         thread2 = threading.Thread(name='run_parallel_query_second', target=self.run_parallel_query,
                                    args=[self.servers[1]])
@@ -178,14 +178,14 @@ class QueryProfilingTests(QueryMonitoringTests):
         self.run_cbq_query('delete from system:completed_requests')
 
         # Test 3: Set profiling to phases in the middle of the running query and see if it takes effect.
-        self.rest.set_profiling(self.master, "off")
+        self.rest.set_profiling(self.main, "off")
         e = threading.Event()
         thread1 = threading.Thread(name='run_parallel_query', target=self.run_parallel_query,
                                    args=[self.servers[0]])
         thread1.start()
         e.set()
         # Change profiling to phases in the middle of the query run and see if phaseTimes is included in active_requests
-        self.rest.set_profiling(self.master, "timings")
+        self.rest.set_profiling(self.main, "timings")
         result = self.run_cbq_query('select *, meta().plan from system:active_requests')
         self.assertTrue('plan' in result['results'][0] and 'phaseTimes' in result['results'][0]['active_requests'])
         thread1.join()
@@ -194,7 +194,7 @@ class QueryProfilingTests(QueryMonitoringTests):
         self.assertTrue('plan' in result['results'][0] and 'phaseTimes' in result['results'][0]['completed_requests'])
 
     def test_profiling_controls(self):
-        self.rest.get_query_admin_settings(self.master)
+        self.rest.get_query_admin_settings(self.main)
         e = threading.Event()
         thread1 = threading.Thread(name='run_controlled_query', target=self.run_controlled_query,
                                    args=[self.servers[0]])
@@ -206,8 +206,8 @@ class QueryProfilingTests(QueryMonitoringTests):
         result = self.run_cbq_query('select * from system:completed_requests')
         self.log.info(json.dumps(result, sort_keys=True, indent=3))
 
-        self.rest.set_profiling_controls(self.master, True)
-        result = self.rest.get_query_admin_settings(self.master)
+        self.rest.set_profiling_controls(self.main, True)
+        result = self.rest.get_query_admin_settings(self.main)
         self.log.info(result)
         e = threading.Event()
         thread1 = threading.Thread(name='run_controlled_query', target=self.run_controlled_query,

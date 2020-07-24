@@ -20,7 +20,7 @@ class ConcurrentTests(QuerySanityTests, QueryTests):
         super(ConcurrentTests, self).suite_setUp()
 
     def tearDown(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         if rest._rebalance_progress_status() == 'running':
             self.log.warning("rebalancing is still running, test should be verified")
             stopped = rest.stop_rebalance()

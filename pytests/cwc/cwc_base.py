@@ -55,7 +55,7 @@ class CWCBaseTest(BaseTestCase):
             self._load_all_buckets(self.servers[0], self.gen_load, "create", 0)
         else:
             self._load_doc_data_all_buckets()
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         type = shell.extract_remote_info().distribution_type
         shell.disconnect()
         self.log_path = ""
@@ -87,7 +87,7 @@ class CWCBaseTest(BaseTestCase):
     def _get_dict(self, shell):
         command = "couchbase-cli collect-logs-status"
         output, e = shell.execute_command("{0}{1} -c {2}:8091 -u Administrator -p password " \
-                                     .format(self.bin_path, command, self.master.ip))
+                                     .format(self.bin_path, command, self.main.ip))
         shell.log_command_output(output, e)
         result = {}
         if "runCmd" in output[0]:
@@ -197,7 +197,7 @@ class CWCBaseTest(BaseTestCase):
         cancel_status = False
         command = "couchbase-cli collect-logs-stop"
         o, e = shell.execute_command("{0}{1} -c {2}:8091 -u Administrator -p password " \
-                                     .format(self.bin_path, command, self.master.ip))
+                                     .format(self.bin_path, command, self.main.ip))
         shell.log_command_output(o, e)
         if "SUCCESS" in o:
             cancel_status = True

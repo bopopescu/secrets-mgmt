@@ -17,9 +17,9 @@ def create_headers(username, password):
 
 if __name__ == "__main__":
     input = TestInputParser.get_test_input(sys.argv)
-    master = input.servers[0]
-    print "Streaming events from {0}".format(master.ip)
-    diag_url = "http://{0}:{1}/diag/masterEvents".format(master.ip, master.port)
+    main = input.servers[0]
+    print "Streaming events from {0}".format(main.ip)
+    diag_url = "http://{0}:{1}/diag/mainEvents".format(main.ip, main.port)
     print diag_url
     try:
         req = urllib2.Request(diag_url)
@@ -30,8 +30,8 @@ if __name__ == "__main__":
             print line.rstrip()
 
     except urllib2.URLError as error:
-        print "unable to stream masterEvents from {0}".format(diag_url)
+        print "unable to stream mainEvents from {0}".format(diag_url)
     except BadStatusLine:
-        print "unable to stream masterEvents from {0}".format(diag_url)
+        print "unable to stream mainEvents from {0}".format(diag_url)
     except Exception:
-        print "unable to stream masterEvents from {0}".format(diag_url)
+        print "unable to stream mainEvents from {0}".format(diag_url)

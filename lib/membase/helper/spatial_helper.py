@@ -24,8 +24,8 @@ class SpatialHelper:
         self.bucket = bucket
         self.input = TestInputSingleton.input
         self.servers = self.input.servers
-        self.master = self.servers[0]
-        self.rest = RestConnection(self.master)
+        self.main = self.servers[0]
+        self.rest = RestConnection(self.main)
         self.log = logger.Logger.get_logger()
         self.num_nodes_to_add = self.input.param('num_nodes_to_add', 0)
         self.num_nodes_to_remove = self.input.param('num_nodes_to_remove', 0)
@@ -45,15 +45,15 @@ class SpatialHelper:
         node_ram_ratio = BucketOperationHelper.base_bucket_ratio(self.servers)
         mem_quota = int(self.rest.get_nodes_self().mcdMemoryReserved *
                         node_ram_ratio)
-        self.rest.init_cluster(self.master.rest_username,
-                               self.master.rest_password)
-        self.rest.init_cluster_memoryQuota(self.master.rest_username,
-                                      self.master.rest_password,
+        self.rest.init_cluster(self.main.rest_username,
+                               self.main.rest_password)
+        self.rest.init_cluster_memoryQuota(self.main.rest_username,
+                                      self.main.rest_password,
                                       memoryQuota=mem_quota)
         for server in self.servers:
             ClusterOperationHelper.cleanup_cluster([server])
         ClusterOperationHelper.wait_for_ns_servers_or_assert(
-            [self.master], self.testcase)
+            [self.main], self.testcase)
 
         if not self.skip_rebalance:
             rebalanced = ClusterOperationHelper.add_and_rebalance(
@@ -93,7 +93,7 @@ class SpatialHelper:
     def insert_docs(self, num_of_docs, prefix='doc', extra_values={},
                     return_docs=False):
         random.seed(12345)
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         smart = VBucketAwareMemcached(rest, self.bucket)
         doc_names = []
         for i in range(0, num_of_docs):
@@ -160,7 +160,7 @@ class SpatialHelper:
                                         spatial_views=[views[i]]))
         for ddoc in ddocs:
             for view in ddoc.spatial_views:
-                self.testcase.cluster.create_view(self.testcase.master, ddoc.name, view,
+                self.testcase.cluster.create_view(self.testcase.main, ddoc.name, view,
                                                   bucket=self.testcase.bucket_name)
         return ddocs
 
@@ -250,7 +250,7 @@ class SpatialHelper:
     # Returns the keys of the deleted documents
     # If you try to delete a document that doesn't exists, just skip it
     def delete_docs(self, num_of_docs, prefix='doc'):
-        smart = VBucketAwareMemcached(RestConnection(self.master), self.bucket)
+        smart = VBucketAwareMemcached(RestConnection(self.main), self.bucket)
         doc_names = []
         for i in range(0, num_of_docs):
             key = "{0}-{1}".format(prefix, i)
@@ -361,7 +361,7 @@ class SpatialHelper:
                 available_ram = 256
             self.rest.create_bucket(bucket=self.bucket,
                                     ramQuotaMB=available_ram)
-            ready = BucketOperationHelper.wait_for_memcached(self.master,
+            ready = BucketOperationHelper.wait_for_memcached(self.main,
                                                              self.bucket)
             self.testcase.assertTrue(ready, "wait_for_memcached failed")
         self.testcase.assertTrue(

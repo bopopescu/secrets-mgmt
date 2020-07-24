@@ -46,7 +46,7 @@ class SGConfigTests(GatewayConfigBaseTest):
             shutil.copy2('pytests/sg/resources/gateway_config_backup.json', 'pytests/sg/resources/gateway_config.json')
             BucketOperationHelper.delete_all_buckets_or_assert(self.servers, self)
             self.cluster = Cluster()
-            shared_params=self._create_bucket_params(server=self.master, size=150)
+            shared_params=self._create_bucket_params(server=self.main, size=150)
             self.cluster.create_default_bucket(shared_params)
             task = self.cluster.async_create_sasl_bucket(name='test_%E-.5',password='password',
                                                          bucket_params=shared_params)

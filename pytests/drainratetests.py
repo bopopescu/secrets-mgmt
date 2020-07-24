@@ -15,17 +15,17 @@ class DrainRateTests(unittest.TestCase):
         self.log = logger.Logger.get_logger()
         self.input = TestInputSingleton.input
         self.assertTrue(self.input, msg="input parameters missing...")
-        self.master = self.input.servers[0]
+        self.main = self.input.servers[0]
         self.bucket = "default"
         self.number_of_items = -1
         # Add built-in user
         testuser = [{'id': 'cbadminbucket', 'name': 'cbadminbucket', 'password': 'password'}]
-        RbacBase().create_user_source(testuser, 'builtin', self.master)
+        RbacBase().create_user_source(testuser, 'builtin', self.main)
         time.sleep(10)
 
         # Assign user to role
         role_list = [{'id': 'cbadminbucket', 'name': 'cbadminbucket', 'roles': 'admin'}]
-        RbacBase().add_user_role(role_list, RestConnection(self.master), 'builtin')
+        RbacBase().add_user_role(role_list, RestConnection(self.main), 'builtin')
         time.sleep(10)
 
         self._create_default_bucket()
@@ -37,8 +37,8 @@ class DrainRateTests(unittest.TestCase):
         self._log_start()
 
     def tearDown(self):
-        BucketOperationHelper.delete_all_buckets_or_assert([self.master], self)
-        rest = RestConnection(self.master)
+        BucketOperationHelper.delete_all_buckets_or_assert([self.main], self)
+        rest = RestConnection(self.main)
         # Remove rbac user in teardown
         role_del = ['cbadminbucket']
         temp = RbacBase().remove_user_role(role_del, rest)
@@ -61,9 +61,9 @@ class DrainRateTests(unittest.TestCase):
 
     def _create_default_bucket(self, replica=1):
         name = "default"
-        master = self.input.servers[0]
-        rest = RestConnection(master)
-        helper = RestHelper(RestConnection(master))
+        main = self.input.servers[0]
+        rest = RestConnection(main)
+        helper = RestHelper(RestConnection(main))
         if not helper.bucket_exists(name):
             node_ram_ratio = BucketOperationHelper.base_bucket_ratio(self.input.servers)
             info = rest.get_nodes_self()
@@ -71,14 +71,14 @@ class DrainRateTests(unittest.TestCase):
             if(available_ram < 256):
                 available_ram = 256
             rest.create_bucket(bucket=name, ramQuotaMB=int(available_ram), replicaNumber=replica)
-            ready = BucketOperationHelper.wait_for_memcached(master, name)
+            ready = BucketOperationHelper.wait_for_memcached(main, name)
             self.assertTrue(ready, msg="wait_for_memcached failed")
         self.assertTrue(helper.bucket_exists(name),
                         msg="unable to create {0} bucket".format(name))
 
 
     def _load_data_for_buckets(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         buckets = rest.get_buckets()
         distribution = {128: 1.0}
         self.bucket_data = {}
@@ -87,7 +87,7 @@ class DrainRateTests(unittest.TestCase):
             self.bucket_data[name] = {}
             self.bucket_data[name]["inserted_keys"], self.bucket_data[name]["rejected_keys"] = \
             MemcachedClientHelper.load_bucket_and_return_the_keys(name=self.bucket,
-                                                                  servers=[self.master],
+                                                                  servers=[self.main],
                                                                   value_size_distribution=distribution,
                                                                   number_of_threads=1,
                                                                   number_of_items=self.number_of_items,
@@ -95,25 +95,25 @@ class DrainRateTests(unittest.TestCase):
                                                                   moxi=True)
 
     def _parallel_read(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         buckets = rest.get_buckets()
         while not self.reader_shutdown:
             for bucket in buckets:
                 name = bucket.name.encode("ascii", "ignore")
-                mc = MemcachedClientHelper.direct_client(self.master, name)
+                mc = MemcachedClientHelper.direct_client(self.main, name)
                 for key in self.bucket_data[name]["inserted_keys"]:
                     mc.get(key)
 
 
     def _monitor_drain_queue(self):
         #start whenever drain_queue is > 0
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         start = time.time()
         self.log.info("wait 2 seconds for bucket stats are up")
         time.sleep(2)
         stats = rest.get_bucket_stats(self.bucket)
         self.log.info("current ep_queue_size: {0}".format(stats["ep_queue_size"]))
-        self.drained = RebalanceHelper.wait_for_persistence(self.master, self.bucket, timeout=300)
+        self.drained = RebalanceHelper.wait_for_persistence(self.main, self.bucket, timeout=300)
         self.drained_in_seconds = time.time() - start
 
 

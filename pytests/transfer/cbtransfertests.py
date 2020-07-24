@@ -12,7 +12,7 @@ class CBTransferTests(TransferBaseTest):
     def setUp(self):
         super(CBTransferTests, self).setUp()
         self.origin_buckets = list(self.buckets)
-        self.master = self.server_recovery
+        self.main = self.server_recovery
         self._bucket_creation()
         self.buckets = list(self.origin_buckets)
 
@@ -59,7 +59,7 @@ class CBTransferTests(TransferBaseTest):
         template = '{{ "mutated" : 0, "age": {0}, "first_name": "{1}" }}'
         gen_load = DocumentGenerator('cbtransfer', template, range(5), ['james', 'john'], start=0, end=self.num_items)
         client = MemcachedClient(self.server_origin.ip,
-                                 int(bucket.vbuckets[0].master.split(':')[1]))
+                                 int(bucket.vbuckets[0].main.split(':')[1]))
         kv_value_dict = {}
         vb_id_to_check = bucket.vbuckets[-1].id
         for vb_id in xrange(len(bucket.vbuckets)):
@@ -77,7 +77,7 @@ class CBTransferTests(TransferBaseTest):
         output = self.shell.execute_cbtransfer(transfer_source, transfer_destination,
                                       "-b %s -B %s -i %s" % (bucket.name, bucket.name, vb_id_to_check))
         client = MemcachedClient(self.server_recovery.ip,
-                                 int(bucket.vbuckets[0].master.split(':')[1]))
+                                 int(bucket.vbuckets[0].main.split(':')[1]))
         for key, value in kv_value_dict.iteritems():
             _, _, d = client.get(key, vbucket=vb_id_to_check)
             self.assertEquals(d, value, 'Key: %s expected. Value expected %s. Value actual %s' % (

@@ -17,9 +17,9 @@ class unidirectional(XDCRNewBaseTest):
     def setUp(self):
         super(unidirectional, self).setUp()
         self.src_cluster = self.get_cb_cluster_by_name('C1')
-        self.src_master = self.src_cluster.get_master_node()
+        self.src_main = self.src_cluster.get_main_node()
         self.dest_cluster = self.get_cb_cluster_by_name('C2')
-        self.dest_master = self.dest_cluster.get_master_node()
+        self.dest_main = self.dest_cluster.get_main_node()
 
     def tearDown(self):
         super(unidirectional, self).tearDown()
@@ -72,13 +72,13 @@ class unidirectional(XDCRNewBaseTest):
 
         self.verify_results()
 
-    def load_with_ops_with_warmup_master(self):
+    def load_with_ops_with_warmup_main(self):
         self.setup_xdcr_and_load()
         warmupnodes = []
         if "C1" in self._warmup:
-            warmupnodes.append(self.src_cluster.warmup_node(master=True))
+            warmupnodes.append(self.src_cluster.warmup_node(main=True))
         if "C2" in self._warmup:
-            warmupnodes.append(self.dest_cluster.warmup_node(master=True))
+            warmupnodes.append(self.dest_cluster.warmup_node(main=True))
 
         self.sleep(self._wait_timeout)
         self.perform_update_delete()
@@ -108,7 +108,7 @@ class unidirectional(XDCRNewBaseTest):
 
         self.verify_results()
 
-    def load_with_async_ops_with_warmup_master(self):
+    def load_with_async_ops_with_warmup_main(self):
         bucket_type = self._input.param("bucket_type", "membase")
         if bucket_type == "ephemeral":
             "Test case does not apply for Ephemeral buckets"
@@ -116,9 +116,9 @@ class unidirectional(XDCRNewBaseTest):
         self.setup_xdcr_and_load()
         warmupnodes = []
         if "C1" in self._warmup:
-            warmupnodes.append(self.src_cluster.warmup_node(master=True))
+            warmupnodes.append(self.src_cluster.warmup_node(main=True))
         if "C2" in self._warmup:
-            warmupnodes.append(self.dest_cluster.warmup_node(master=True))
+            warmupnodes.append(self.dest_cluster.warmup_node(main=True))
 
         self.sleep(self._wait_timeout)
         self.async_perform_update_delete()
@@ -162,13 +162,13 @@ class unidirectional(XDCRNewBaseTest):
     Create/Update/Delete are performed in parallel based on doc-ops specified by the user.
     Verifying whether XDCR replication is successful on subsequent destination clusters. """
 
-    def load_with_failover_master(self):
+    def load_with_failover_main(self):
         self.setup_xdcr_and_load()
 
         if "C1" in self._failover:
-            self.src_cluster.failover_and_rebalance_master()
+            self.src_cluster.failover_and_rebalance_main()
         if "C2" in self._failover:
-            self.dest_cluster.failover_and_rebalance_master()
+            self.dest_cluster.failover_and_rebalance_main()
 
         self.sleep(self._wait_timeout / 6)
         self.perform_update_delete()
@@ -285,7 +285,7 @@ class unidirectional(XDCRNewBaseTest):
         self.sleep(600)
         self.verify_results()
 
-    def replication_while_rebooting_a_non_master_destination_node(self):
+    def replication_while_rebooting_a_non_main_destination_node(self):
         self.setup_xdcr_and_load()
         self.src_cluster.set_xdcr_param("xdcrFailureRestartInterval", 1)
         self.perform_update_delete()
@@ -300,9 +300,9 @@ class unidirectional(XDCRNewBaseTest):
         self.setup_xdcr_and_load()
         self.perform_update_delete()
 
-        NodeHelper.enable_firewall(self.dest_master)
+        NodeHelper.enable_firewall(self.dest_main)
         self.sleep(30)
-        NodeHelper.disable_firewall(self.dest_master)
+        NodeHelper.disable_firewall(self.dest_main)
         self.verify_results()
 
     """Testing Unidirectional append ( Loading only at source) Verifying whether XDCR replication is successful on
@@ -327,7 +327,7 @@ class unidirectional(XDCRNewBaseTest):
         self.load_with_ops()
         self.node_down = self._input.param("node_down", False)
         self.log_filename = self._input.param("file_name", "collectInfo")
-        self.shell = RemoteMachineShellConnection(self.src_master)
+        self.shell = RemoteMachineShellConnection(self.src_main)
         self.shell.execute_cbcollect_info("%s.zip" % (self.log_filename))
         from clitest import collectinfotest
         # HACK added self.buckets data member.
@@ -340,7 +340,7 @@ class unidirectional(XDCRNewBaseTest):
     def verify_replications_deleted_after_bucket_deletion(self):
         self.setup_xdcr_and_load()
         self.verify_results()
-        rest_conn = RestConnection(self.src_master)
+        rest_conn = RestConnection(self.src_main)
         replications = rest_conn.get_replications()
         self.assertTrue(replications, "Number of replications should not be 0")
         self.src_cluster.delete_all_buckets()
@@ -356,7 +356,7 @@ class unidirectional(XDCRNewBaseTest):
         min_item_size = self._input.param("min_item_size", 128)
         num_docs = self._input.param("num_docs", 30000)
         # start load, max_ops_per_second is the combined limit for all buckets
-        mcsodaLoad = LoadWithMcsoda(self.src_master, num_docs, prefix='')
+        mcsodaLoad = LoadWithMcsoda(self.src_main, num_docs, prefix='')
         mcsodaLoad.cfg["max-ops"] = 0
         mcsodaLoad.cfg["max-ops-per-sec"] = max_ops_per_second
         mcsodaLoad.cfg["exit-after-creates"] = 1
@@ -368,7 +368,7 @@ class unidirectional(XDCRNewBaseTest):
         loadDataThread.daemon = True
         loadDataThread.start()
 
-        src_remote_shell = RemoteMachineShellConnection(self.src_master)
+        src_remote_shell = RemoteMachineShellConnection(self.src_main)
         machine_type = src_remote_shell.extract_remote_info().type.lower()
         while (loadDataThread.isAlive() and machine_type == 'linux'):
             command = "netstat -lpnta | grep 11210 | grep TIME_WAIT | wc -l"
@@ -391,7 +391,7 @@ class unidirectional(XDCRNewBaseTest):
     def verify_ssl_private_key_not_present_in_logs(self):
         zip_file = "%s.zip" % (self._input.param("file_name", "collectInfo"))
         try:
-            self.shell = RemoteMachineShellConnection(self.src_master)
+            self.shell = RemoteMachineShellConnection(self.src_main)
             self.load_with_ops()
             self.shell.execute_cbcollect_info(zip_file)
             if self.shell.extract_remote_info().type.lower() != "windows":
@@ -404,9 +404,9 @@ class unidirectional(XDCRNewBaseTest):
                 output, _ = self.shell.execute_command(cmd)
             else:
                 cmd = "curl -0 http://{1}:{2}@{0}:8091/diag 2>/dev/null | grep 'BEGIN RSA PRIVATE KEY'".format(
-                                                    self.src_master.ip,
-                                                    self.src_master.rest_username,
-                                                    self.src_master.rest_password)
+                                                    self.src_main.ip,
+                                                    self.src_main.rest_username,
+                                                    self.src_main.rest_password)
                 output, _ = self.shell.execute_command(cmd)
             self.assertTrue(not output, "XDCR SSL Private Key is found diag logs -> %s" % output)
         finally:
@@ -447,15 +447,15 @@ class unidirectional(XDCRNewBaseTest):
         shell.start_couchbase()
         shell.disconnect()
 
-    def test_node_crash_master(self):
+    def test_node_crash_main(self):
         self.setup_xdcr_and_load()
 
         crashed_nodes = []
         crash = self._input.param("crash", "").split('-')
         if "C1" in crash:
-            crashed_nodes.append(self.src_master)
+            crashed_nodes.append(self.src_main)
         if "C2" in crash:
-            crashed_nodes.append(self.dest_master)
+            crashed_nodes.append(self.dest_main)
 
         self.__kill_processes(crashed_nodes)
 
@@ -561,7 +561,7 @@ class unidirectional(XDCRNewBaseTest):
                 src_bucket_name = replication.get_src_bucket().name
                 opt_repl_threshold = replication.get_xdcr_setting(REPL_PARAM.OPTIMISTIC_THRESHOLD)
                 docs_opt_replicated_stat = 'replications/%s/docs_opt_repd' %replication.get_repl_id()
-                opt_replicated = RestConnection(self.src_master).fetch_bucket_xdcr_stats(
+                opt_replicated = RestConnection(self.src_main).fetch_bucket_xdcr_stats(
                                         src_bucket_name
                                         )['op']['samples'][docs_opt_replicated_stat][-1]
                 self.log.info("Bucket: %s, value size: %s, optimistic threshold: %s"
@@ -597,7 +597,7 @@ class unidirectional(XDCRNewBaseTest):
 
         zip_file = "%s.zip" % (self._input.param("file_name", "collectInfo"))
         try:
-            for node in [self.src_master, self.dest_master]:
+            for node in [self.src_main, self.dest_main]:
                 self.shell = RemoteMachineShellConnection(node)
                 self.shell.execute_cbcollect_info(zip_file)
                 if self.shell.extract_remote_info().type.lower() != "windows":
@@ -610,9 +610,9 @@ class unidirectional(XDCRNewBaseTest):
                     output, _ = self.shell.execute_command(cmd)
                 else:
                     cmd = "curl -0 http://{1}:{2}@{0}:8091/diag 2>/dev/null | grep 'Approaching full disk warning.'".format(
-                                                        self.src_master.ip,
-                                                        self.src_master.rest_username,
-                                                        self.src_master.rest_password)
+                                                        self.src_main.ip,
+                                                        self.src_main.rest_username,
+                                                        self.src_main.rest_password)
                     output, _ = self.shell.execute_command(cmd)
                 self.assertNotEquals(len(output), 0, "Full disk warning not generated as expected in %s" % node.ip)
                 self.log.info("Full disk warning generated as expected in %s" % node.ip)
@@ -634,7 +634,7 @@ class unidirectional(XDCRNewBaseTest):
                      + '/goxdcr.log*'
 
         # block port 11210 on target to simulate a connection error
-        shell = RemoteMachineShellConnection(self.dest_master)
+        shell = RemoteMachineShellConnection(self.dest_main)
         out, err = shell.execute_command("/sbin/iptables -A INPUT -p tcp --dport"
                                          " 11210 -j DROP")
         shell.log_command_output(out, err)
@@ -682,7 +682,7 @@ class unidirectional(XDCRNewBaseTest):
         goxdcr_log = NodeHelper.get_goxdcr_log_dir(self._input.servers[0])\
                      + '/goxdcr.log*'
 
-        conn = RemoteMachineShellConnection(self.dest_cluster.get_master_node())
+        conn = RemoteMachineShellConnection(self.dest_cluster.get_main_node())
         conn.stop_couchbase()
 
         for task in load_tasks:
@@ -706,7 +706,7 @@ class unidirectional(XDCRNewBaseTest):
         goxdcr_log = NodeHelper.get_goxdcr_log_dir(self._input.servers[0])\
                      + '/goxdcr.log*'
 
-        self.dest_cluster.failover_and_rebalance_master()
+        self.dest_cluster.failover_and_rebalance_main()
 
         for task in load_tasks:
             task.result()
@@ -750,7 +750,7 @@ class unidirectional(XDCRNewBaseTest):
         gen = BlobGenerator("C1-", "C1-", self._value_size, end=100000)
         load_tasks = self.src_cluster.async_load_all_buckets_from_generator(gen)
 
-        self.src_cluster.failover_and_rebalance_master()
+        self.src_cluster.failover_and_rebalance_main()
 
         for task in load_tasks:
             task.result()
@@ -771,7 +771,7 @@ class unidirectional(XDCRNewBaseTest):
         self.verify_results()
 
     def test_verify_mb20463(self):
-        src_version = NodeHelper.get_cb_version(self.src_cluster.get_master_node())
+        src_version = NodeHelper.get_cb_version(self.src_cluster.get_main_node())
         if float(src_version[:3]) != 4.5:
             self.log.info("Source cluster has to be at 4.5 for this test")
             return
@@ -794,7 +794,7 @@ class unidirectional(XDCRNewBaseTest):
 
         self.log.info("4.1.2 installed successfully on target cluster")
 
-        conn = RestConnection(self.dest_cluster.get_master_node())
+        conn = RestConnection(self.dest_cluster.get_main_node())
         conn.add_node(user=self._input.servers[3].rest_username, password=self._input.servers[3].rest_password,
                       remoteIp=self._input.servers[3].ip)
         self.sleep(30)
@@ -806,9 +806,9 @@ class unidirectional(XDCRNewBaseTest):
 
         self.sleep(30)
 
-        NodeHelper.enable_firewall(self.dest_master)
+        NodeHelper.enable_firewall(self.dest_main)
         self.sleep(30)
-        NodeHelper.disable_firewall(self.dest_master)
+        NodeHelper.disable_firewall(self.dest_main)
 
         for task in tasks:
             task.result()
@@ -840,8 +840,8 @@ class unidirectional(XDCRNewBaseTest):
         # Perform mutations on the bucket
         self.async_perform_update_delete()
 
-        rest1 = RestConnection(self.src_cluster.get_master_node())
-        rest2 = RestConnection(self.dest_cluster.get_master_node())
+        rest1 = RestConnection(self.src_cluster.get_main_node())
+        rest2 = RestConnection(self.dest_cluster.get_main_node())
 
         # Fetch count of docs in src and dest cluster
         _count1 = rest1.fetch_bucket_stats(bucket=bucket.name)["op"]["samples"]["curr_items"][-1]
@@ -849,8 +849,8 @@ class unidirectional(XDCRNewBaseTest):
 
         self.log.info("Before rollback src cluster count = {0} dest cluster count = {1}".format(_count1, _count2))
 
-        # Kill memcached on Node A so that Node B becomes master
-        shell = RemoteMachineShellConnection(self.src_cluster.get_master_node())
+        # Kill memcached on Node A so that Node B becomes main
+        shell = RemoteMachineShellConnection(self.src_cluster.get_main_node())
         shell.kill_memcached()
 
         # Start persistence on Node B
@@ -886,7 +886,7 @@ class unidirectional(XDCRNewBaseTest):
         goxdcr_log = NodeHelper.get_goxdcr_log_dir(self._input.servers[0]) \
                      + '/goxdcr.log*'
 
-        self.dest_cluster.failover_and_rebalance_master()
+        self.dest_cluster.failover_and_rebalance_main()
 
         for task in load_tasks:
             task.result()
@@ -905,8 +905,8 @@ class unidirectional(XDCRNewBaseTest):
         repeat = self._input.param("repeat", 5)
         load_tasks = self.setup_xdcr_async_load()
 
-        conn = RemoteMachineShellConnection(self.src_cluster.get_master_node())
-        output, error = conn.execute_command("netstat -an | grep " + self.src_cluster.get_master_node().ip
+        conn = RemoteMachineShellConnection(self.src_cluster.get_main_node())
+        output, error = conn.execute_command("netstat -an | grep " + self.src_cluster.get_main_node().ip
                                              + ":11210 | wc -l")
         conn.log_command_output(output, error)
         before = output[0]
@@ -919,7 +919,7 @@ class unidirectional(XDCRNewBaseTest):
 
             self.sleep(self._wait_timeout)
 
-            output, error = conn.execute_command("netstat -an | grep " + self.src_cluster.get_master_node().ip
+            output, error = conn.execute_command("netstat -an | grep " + self.src_cluster.get_main_node().ip
                                                  + ":11210 | wc -l")
             conn.log_command_output(output, error)
             self.log.info("No. of memcached connections in iteration {0}:  {1}".format(i+1, output[0]))
@@ -937,7 +937,7 @@ class unidirectional(XDCRNewBaseTest):
         self._wait_for_replication_to_catchup()
         self.sleep(maxttl, "waiting for docs to expire per maxttl properly")
         for bucket in self.src_cluster.get_buckets():
-            items = RestConnection(self.src_master).get_active_key_count(bucket)
+            items = RestConnection(self.src_main).get_active_key_count(bucket)
             self.log.info("Docs in source bucket is {0} after maxttl has elapsed".format(items))
             if items != 0:
                 self.fail("Docs in source bucket is not 0 after maxttl has elapsed")

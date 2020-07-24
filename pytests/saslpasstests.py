@@ -14,7 +14,7 @@ class SaslPassTests(BaseTestCase):
 
     def pass_encrypted_in_logs_test(self):
         self.bucket_size = self._get_bucket_size(self.quota, 1)
-        self._create_sasl_buckets(self.master, 1, password='mysuperpass')
+        self._create_sasl_buckets(self.main, 1, password='mysuperpass')
         bucket = self.buckets[-1]
 
         if self.input.param("load", 0):
@@ -27,7 +27,7 @@ class SaslPassTests(BaseTestCase):
                                   'function (doc, meta) {'
                                   'emit(meta.id, "emitted_value%s");}' % str(i),
                                   None, False))
-            self.create_views(self.master, "ddoc", views, bucket)
+            self.create_views(self.main, "ddoc", views, bucket)
         if self.input.param("rebalance", 0):
             self.cluster.rebalance(self.servers[:self.nodes_init],
                                    self.servers[self.nodes_init:self.nodes_init + self.input.param("rebalance", 0)],

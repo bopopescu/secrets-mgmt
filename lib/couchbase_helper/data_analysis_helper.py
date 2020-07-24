@@ -753,7 +753,7 @@ class DataCollector(object):
         return headerInfo, bucketMap
 
     def get_kv_dump_from_backup_file(self, server, cli_command, cmd_ext,
-                                     backup_dir, master_key, buckets):
+                                     backup_dir, main_key, buckets):
         """
             Extract key value from database file shard_0.fdb
             Return: key, kv store name, status and value
@@ -766,12 +766,12 @@ class DataCollector(object):
             output, error = conn.execute_command("ls %s/backup/201*/%s*/data "\
                                                         % (backup_dir, bucket.name))
             if "shard_0.fdb" in output:
-                if master_key == "random_keys":
-                    master_key = ".\{12\}$"
+                if main_key == "random_keys":
+                    main_key = ".\{12\}$"
                 cmd = "%sforestdb_dump%s --plain-meta "\
                       "%s/backup/201*/%s*/data/shard_0.fdb | grep -A 8 '^Doc\sID:\s%s' "\
                                                     % (cli_command, cmd_ext,\
-                                                       backup_dir, bucket.name, master_key)
+                                                       backup_dir, bucket.name, main_key)
                 dump_output, error = conn.execute_command(cmd)
                 if dump_output:
                     """ remove empty element """

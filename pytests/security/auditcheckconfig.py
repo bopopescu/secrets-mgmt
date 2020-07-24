@@ -61,7 +61,7 @@ class auditcheckconfig(BaseTestCase):
             shell.disconnect()
 
     def changePathWindows(self, path):
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         os_type = shell.extract_remote_info().distribution_type
         self.log.info ("OS type is {0}".format(os_type))
         if os_type == 'windows':
@@ -103,7 +103,7 @@ class auditcheckconfig(BaseTestCase):
     Test cases to validate default state of audit for first install
     '''
     def getDefaultState(self):
-        auditIns = audit(host=self.master)
+        auditIns = audit(host=self.main)
 
         #Validate that status of enabled is false
         tempStatus = auditIns.getAuditStatus()
@@ -117,11 +117,11 @@ class auditcheckconfig(BaseTestCase):
     Check enabled disable and reload of config
     '''
     def test_AuditEvent(self):
-        auditIns = audit(host=self.master)
+        auditIns = audit(host=self.main)
         ops = self.input.param("ops", None)
         source = 'internal'
         user = 'couchbase'
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         #status = rest.setAuditSettings(enabled='true')
         auditIns.setAuditEnable('true')
         if (ops in ['enable', 'disable']):
@@ -133,34 +133,34 @@ class auditcheckconfig(BaseTestCase):
                 auditIns.setAuditEnable('true')
 
         if ops == 'disable':
-            shell = RemoteMachineShellConnection(self.master)
+            shell = RemoteMachineShellConnection(self.main)
             try:
                 result = shell.file_exists(auditIns.getAuditLogPath(), auditIns.AUDITLOGFILENAME)
             finally:
                 shell.disconnect()
             self.assertFalse(result, 'Issue with file getting create in new directory')
         else:
-            auditIns = audit(host=self.master)
+            auditIns = audit(host=self.main)
             expectedResults = {"auditd_enabled":auditIns.getAuditStatus(),
                                "descriptors_path":self.changePathWindows(auditIns.getAuditConfigElement('descriptors_path')),
                                "log_path":self.changePathWindows((auditIns.getAuditLogPath())[:-1]), "source":"internal",
-                               "user":"couchbase", "rotate_interval":86400, "version":1, 'hostname':self.getHostName(self.master)}
-            self.checkConfig(self.AUDITCONFIGRELOAD, self.master, expectedResults)
+                               "user":"couchbase", "rotate_interval":86400, "version":1, 'hostname':self.getHostName(self.main)}
+            self.checkConfig(self.AUDITCONFIGRELOAD, self.main, expectedResults)
 
     #Test error on setting of Invalid Log file path
     def test_invalidLogPath(self):
-        auditIns = audit(host=self.master)
+        auditIns = audit(host=self.main)
         newPath = auditIns.getAuditLogPath() + 'test'
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         status, content = rest.setAuditSettings(logPath=newPath)
         self.assertFalse(status, "Audit is able to set invalid path")
         self.assertEqual(content['errors']['logPath'], 'The value must be a valid directory', 'No error or error changed')
 
     #Test error on setting of Invalid log file in cluster
     def test_invalidLogPathCluster(self):
-        auditIns = audit(host=self.master)
+        auditIns = audit(host=self.main)
         newPath = auditIns.getAuditLogPath() + 'test'
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         status, content = rest.setAuditSettings(logPath=newPath)
         self.assertFalse(status, "Audit is able to set invalid path")
         self.assertEqual(content['errors']['logPath'], 'The value must be a valid directory', 'No error or error changed')
@@ -168,14 +168,14 @@ class auditcheckconfig(BaseTestCase):
     #Test changing of log file path
     def test_changeLogPath(self):
         nodes_init = self.input.param("nodes_init", 0)
-        auditMaster = audit(host=self.servers[0])
+        auditMain = audit(host=self.servers[0])
         auditSecNode = audit(host=self.servers[1])
         #Capture original Audit Log Path
-        originalPath = auditMaster.getAuditLogPath()
+        originalPath = auditMain.getAuditLogPath()
 
         #Create folders on CB server machines and change permission
         try:
-            newPath = auditMaster.getAuditLogPath() + "folder"
+            newPath = auditMain.getAuditLogPath() + "folder"
 
             for server in self.servers[:nodes_init]:
                 shell = RemoteMachineShellConnection(server)
@@ -187,8 +187,8 @@ class auditcheckconfig(BaseTestCase):
                     shell.disconnect()
 
             source = 'ns_server'
-            user = self.master.rest_username
-            auditMaster.setAuditLogPath(newPath)
+            user = self.main.rest_username
+            auditMain.setAuditLogPath(newPath)
 
             #Create an event of Updating autofailover settings
             for server in self.servers[:nodes_init]:
@@ -200,7 +200,7 @@ class auditcheckconfig(BaseTestCase):
                 #check for audit.log remotely
                 shell = RemoteMachineShellConnection(server)
                 try:
-                    result = shell.file_exists(newPath, auditMaster.AUDITLOGFILENAME)
+                    result = shell.file_exists(newPath, auditMain.AUDITLOGFILENAME)
                 finally:
                     shell.disconnect()
 
@@ -208,17 +208,17 @@ class auditcheckconfig(BaseTestCase):
                     self.assertTrue(result, 'Issue with file getting create in new directory')
 
         finally:
-            auditMaster.setAuditLogPath(originalPath)
+            auditMain.setAuditLogPath(originalPath)
 
     #Check file rollover for different Server operations
     def test_cbServerOps(self):
         ops = self.input.param("ops", None)
-        auditIns = audit(host=self.master)
+        auditIns = audit(host=self.main)
 
         #Capture timestamp from first event for filename
         firstEventTime = self.getTimeStampForFile(auditIns)
 
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
 
         #Kill memcached to check for file roll over and new audit.log
         if (ops == "kill"):
@@ -235,9 +235,9 @@ class auditcheckconfig(BaseTestCase):
 
         #Check for audit.log and for roll over file
         self.sleep(120, 'Waiting for server to start after shutdown')
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         #Create an Event for Bucket Creation
-        #expectedResults = self.createBucketAudit(self.master, "TestBucketKillShutdown")
+        #expectedResults = self.createBucketAudit(self.main, "TestBucketKillShutdown")
         status, content = rest.validateLogin("Administrator", "password", True, getContent=True)
         self.sleep(30)
         result = shell.file_exists(auditIns.pathLogFile, audit.AUDITLOGFILENAME)
@@ -282,37 +282,37 @@ class auditcheckconfig(BaseTestCase):
                            "log_path":self.changePathWindows(auditIns.getAuditLogPath().strip()[:-2]),
                            'source':'internal', 'user':'couchbase',
                            "rotate_interval":auditIns.getAuditConfigElement('rotate_interval'),
-                           "version":1, 'hostname':self.getHostName(self.master)}
-        self.checkConfig(self.AUDITCONFIGRELOAD, self.master, expectedResults)
+                           "version":1, 'hostname':self.getHostName(self.main)}
+        self.checkConfig(self.AUDITCONFIGRELOAD, self.main, expectedResults)
 
 
     #Disable audit event and check if event is printed in audit.log
     def test_eventDisabled(self):
         disableEvent = self.input.param("disableEvent", None)
-        Audit = audit(host=self.master)
+        Audit = audit(host=self.main)
         temp = Audit.getAuditConfigElement('all')
         temp['disabled'] = [disableEvent]
         Audit.writeFile(lines=temp)
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         rest.update_autofailover_settings(True, 120)
-        auditIns = audit(eventID=disableEvent, host=self.master)
+        auditIns = audit(eventID=disableEvent, host=self.main)
         status = auditIns.checkLastEvent()
         self.assertFalse(status, "Event still getting printed after getting disabled")
 
     '''Test roll over of audit.log as per rotate interval'''
     def test_rotateInterval(self):
         intervalSec = self.input.param("intervalSec", None)
-        auditIns = audit(host=self.master)
-        rest = RestConnection(self.master)
+        auditIns = audit(host=self.main)
+        rest = RestConnection(self.main)
         originalInt = auditIns.getAuditRotateInterval()
         try:
             firstEventTime = self.getTimeStampForFile(auditIns)
             self.log.info ("first time evetn is {0}".format(firstEventTime))
             auditIns.setAuditRotateInterval(intervalSec)
             self.sleep(intervalSec + 20, 'Sleep for log roll over to happen')
-            status, content = rest.validateLogin(self.master.rest_username, self.master.rest_password, True, getContent=True)
+            status, content = rest.validateLogin(self.main.rest_username, self.main.rest_password, True, getContent=True)
             self.sleep(120)
-            shell = RemoteMachineShellConnection(self.master)
+            shell = RemoteMachineShellConnection(self.main)
             try:
                 hostname = shell.execute_command("hostname")
                 archiveFile = hostname[0][0] + '-' + firstEventTime + "-audit.log"
@@ -332,7 +332,7 @@ class auditcheckconfig(BaseTestCase):
     def test_rotateIntervalCluster(self):
         intervalSec = self.input.param("intervalSec", None)
         nodes_init = self.input.param("nodes_init", 2)
-        auditIns = audit(host=self.master)
+        auditIns = audit(host=self.main)
 	auditIns.setAuditEnable('true')
         originalInt = auditIns.getAuditRotateInterval()
         auditIns.setAuditRotateInterval(intervalSec)
@@ -348,7 +348,7 @@ class auditcheckconfig(BaseTestCase):
             for i in range(len(self.servers[:nodes_init])):
                 shell = RemoteMachineShellConnection(self.servers[i])
                 rest = RestConnection(self.servers[i])
-                status, content = rest.validateLogin(self.master.rest_username, self.master.rest_password, True, getContent=True)
+                status, content = rest.validateLogin(self.main.rest_username, self.main.rest_password, True, getContent=True)
                 self.sleep(120, "sleeping for log file creation")
                 try:
                     hostname = shell.execute_command("hostname")
@@ -368,7 +368,7 @@ class auditcheckconfig(BaseTestCase):
     ''' Test enabling/disabling in a cluster'''
     def test_enableStatusCluster(self):
         nodes_init = self.input.param("nodes_init", 2)
-        auditIns = audit(host=self.master)
+        auditIns = audit(host=self.main)
         origState = auditIns.getAuditStatus()
         auditIns.setAuditEnable('true')
 
@@ -395,7 +395,7 @@ class auditcheckconfig(BaseTestCase):
     '''Boundary Condition for rotate interval'''
     def test_rotateIntervalShort(self):
         intervalSec = self.input.param("intervalSec", None)
-        auditIns = audit(host=self.master)
+        auditIns = audit(host=self.main)
         auditIns.setAuditRotateInterval(intervalSec)
         originalInt = auditIns.getAuditRotateInterval()
         status, content = auditIns.setAuditRotateInterval(intervalSec)
@@ -404,7 +404,7 @@ class auditcheckconfig(BaseTestCase):
 
     #Add test case where folder update does not exist in 2nd node - MB-13442
     def test_folderMisMatchCluster(self):
-        auditIns = audit(host=self.master)
+        auditIns = audit(host=self.main)
         orginalPath = auditIns.getAuditLogPath()
         newPath = originalPath + 'testFolderMisMatch'
         shell = RemoteMachineShellConnection(self.servers[0])
@@ -437,11 +437,11 @@ class auditcheckconfig(BaseTestCase):
 
     #Add test case for MB-13511
     def test_fileRotate20MB(self):
-        auditIns = audit(host=self.master)
+        auditIns = audit(host=self.main)
         firstEventTime = self.getTimeStampForFile(auditIns)
         tempEventCounter = 0
-        rest = RestConnection(self.master)
-        shell = RemoteMachineShellConnection(self.master)
+        rest = RestConnection(self.main)
+        shell = RemoteMachineShellConnection(self.main)
         filePath = auditIns.pathLogFile + auditIns.AUDITLOGFILENAME
         number = int (shell.get_data_file_size(filePath))
         hostname = shell.execute_command("hostname")
@@ -519,13 +519,13 @@ class auditCLITest(CliBaseTest):
         self.ldapUser = self.input.param('ldapUser', 'Administrator')
         self.ldapPass = self.input.param('ldapPass', 'password')
         self.source = self.input.param('source', None)
-        self.shell = RemoteMachineShellConnection(self.master)
+        self.shell = RemoteMachineShellConnection(self.main)
         info = self.shell.extract_remote_info()
         type = info.type.lower()
         if type == 'windows' and self.source == 'saslauthd':
             raise Exception(" Ldap Tests cannot run on windows");
         elif self.source == 'saslauthd':
-                rest = RestConnection(self.master)
+                rest = RestConnection(self.main)
                 self.setupLDAPSettings(rest)
                 #rest.ldapUserRestOperation(True, [[self.ldapUser]], exclude=None)
                 self.set_user_role(rest,self.ldapUser)
@@ -558,8 +558,8 @@ class auditCLITest(CliBaseTest):
 
 
     def test_enableDisableAudit(self):
-        auditIns = audit(host=self.master)
-        remote_client = RemoteMachineShellConnection(self.master)
+        auditIns = audit(host=self.main)
+        remote_client = RemoteMachineShellConnection(self.main)
         tempEnable = auditIns.getAuditStatus()
         try:
             cli_command = 'setting-audit'
@@ -577,12 +577,12 @@ class auditCLITest(CliBaseTest):
             auditIns.setAuditEnable(self.returnBoolVal(tempEnable))
 
     def test_setAuditParam(self):
-        auditIns = audit(host=self.master)
+        auditIns = audit(host=self.main)
         tempEnable = auditIns.getAuditStatus()
         tempLogPath = auditIns.getAuditLogPath()
         tempRotateInt = auditIns.getAuditRotateInterval()
         try:
-            remote_client = RemoteMachineShellConnection(self.master)
+            remote_client = RemoteMachineShellConnection(self.main)
             cli_command = "setting-audit"
             options = " --audit-enable={0}".format(self.enableStatus)
             options += " --audit-log-rotate-interval={0}".format(self.rotateInt)
@@ -599,7 +599,7 @@ class auditCLITest(CliBaseTest):
 
 
     def validateSettings(self, status, log_path, rotate_interval):
-        auditIns = audit(host=self.master)
+        auditIns = audit(host=self.main)
         tempLogPath = (auditIns.getAuditLogPath())[:-1]
         tempStatus = auditIns.getAuditStatus()
         tempRotateInt = auditIns.getAuditRotateInterval()

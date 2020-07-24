@@ -19,10 +19,10 @@ class SDKClientTests(BaseTestCase):
             Test SDK Client Calls
         """
         scheme = "couchbase"
-        host=self.master.ip
-        if self.master.ip == "127.0.0.1":
+        host=self.main.ip
+        if self.main.ip == "127.0.0.1":
             scheme = "http"
-            host="{0}:{1}".format(self.master.ip,self.master.port)
+            host="{0}:{1}".format(self.main.ip,self.main.port)
 
         client = SDKClient(scheme=scheme,hosts = [host], bucket = "default")
         json_document = {"1":1, "2":2, "array": [1]}
@@ -44,10 +44,10 @@ class SDKClientTests(BaseTestCase):
             Test SDK Client Calls
         """
         scheme = "couchbase"
-        host=self.master.ip
-        if self.master.ip == "127.0.0.1":
+        host=self.main.ip
+        if self.main.ip == "127.0.0.1":
             scheme = "http"
-            host="{0}:{1}".format(self.master.ip,self.master.port)
+            host="{0}:{1}".format(self.main.ip,self.main.port)
         client = SDKClient(scheme=scheme,hosts = [host], bucket = "default")
         client.remove("1",quiet=True)
         client.insert("1","{1:2}")

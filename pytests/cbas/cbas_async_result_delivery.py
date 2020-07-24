@@ -16,7 +16,7 @@ class CBASAsyncResultDeliveryTests(CBASBaseTest):
         super(CBASAsyncResultDeliveryTests, self).tearDown()
 
     def setupForTest(self):
-        self.load_sample_buckets(servers=[self.master], bucketName="travel-sample", total_items=self.travel_sample_docs_count)
+        self.load_sample_buckets(servers=[self.main], bucketName="travel-sample", total_items=self.travel_sample_docs_count)
 
         # Create bucket on CBAS
         self.create_bucket_on_cbas(cbas_bucket_name=self.cbas_bucket_name,
@@ -57,20 +57,20 @@ class CBASAsyncResultDeliveryTests(CBASBaseTest):
                 # Retrieve status first. Then, from status URI,
                 # get the handle to retrieve results
                 # Wait for results to be available at the Status URI
-                status, result_handle = self.retrieve_request_status_using_handle(self.master,
+                status, result_handle = self.retrieve_request_status_using_handle(self.main,
                                                                    response_handle)
 
                 while (status.lower() != "success"):
                     self.sleep(5)
                     status, result_handle = self.retrieve_request_status_using_handle(
-                        self.master, response_handle)
+                        self.main, response_handle)
 
-                results = self.retrieve_result_using_handle(self.master,
+                results = self.retrieve_result_using_handle(self.main,
                                                             result_handle)
 
             if self.mode == "deferred":
                 # Retrieve results directly from this handle.
-                results = self.retrieve_result_using_handle(self.master,
+                results = self.retrieve_result_using_handle(self.main,
                                                             response_handle)
 
             # Execute the same query without passing the mode param (legacy mode)
@@ -98,8 +98,8 @@ class CBASAsyncResultDeliveryTests(CBASBaseTest):
 
         # Fetch result using the same handle twice
         if handle:
-            response1 = self.retrieve_result_using_handle(self.master, handle)
-            response2 = self.retrieve_result_using_handle(self.master, handle)
+            response1 = self.retrieve_result_using_handle(self.main, handle)
+            response2 = self.retrieve_result_using_handle(self.main, handle)
 
             # Validate results can not be fetched more than once using the same handle
             if response2:
@@ -114,7 +114,7 @@ class CBASAsyncResultDeliveryTests(CBASBaseTest):
 
         handle = "http://{0}:8095/analytics/service/result/999-0".format(self.cbas_node.ip)
 
-        response = self.retrieve_result_using_handle(self.master, handle)
+        response = self.retrieve_result_using_handle(self.main, handle)
 
         if response:
             self.fail("No error when using an invalid handle")
@@ -176,13 +176,13 @@ class CBASAsyncResultDeliveryTests(CBASBaseTest):
             # Retrive results from handle and compute elapsed time
             a = datetime.datetime.now()
             status, result_handle = self.retrieve_request_status_using_handle(
-                self.master, handle)
+                self.main, handle)
             while (status.lower() != "success"):
                 self.sleep(5)
                 status, result_handle = self.retrieve_request_status_using_handle(
-                    self.master, handle)
+                    self.main, handle)
 
-            response = self.retrieve_result_using_handle(self.master, result_handle)
+            response = self.retrieve_result_using_handle(self.main, result_handle)
             b = datetime.datetime.now()
             c = b - a
             elapsedTime = c.total_seconds() * 1000
@@ -259,7 +259,7 @@ class CBASAsyncResultDeliveryTests(CBASBaseTest):
 
         # Validate if result can be retrieved using the handle
         if deferred_handle:
-            response = self.retrieve_result_using_handle(self.master,
+            response = self.retrieve_result_using_handle(self.main,
                                                          deferred_handle)
             if not response:
                 self.fail("Did not get the response using the handle")
@@ -348,7 +348,7 @@ class CBASAsyncResultDeliveryTests(CBASBaseTest):
         if handle:
             if self.mode == "async":
                 # Retrieve status from handle
-                status, result_handle = self.retrieve_request_status_using_handle(self.master,
+                status, result_handle = self.retrieve_request_status_using_handle(self.main,
                                                                    handle)
                 if status.lower() != "running":
                     self.fail("Status is not RUNNING")
@@ -356,12 +356,12 @@ class CBASAsyncResultDeliveryTests(CBASBaseTest):
                     # Allow the request to be processed, and then check status
                     self.sleep((delay / 1000) + 5)
                     status, result_handle = self.retrieve_request_status_using_handle(
-                        self.master, handle)
+                        self.main, handle)
                     if status.lower() != "success":
                         self.fail("Status is not SUCCESS")
             elif self.mode == "deferred":
                 # Retrieve status from handle
-                status = self.retrieve_request_status_using_handle(self.master,
+                status = self.retrieve_request_status_using_handle(self.main,
                                                                    handle)
                 if status.lower() != "success":
                     self.fail("Status is not SUCCESS")
@@ -372,7 +372,7 @@ class CBASAsyncResultDeliveryTests(CBASBaseTest):
         handle = "http://{0}:8095/analytics/service/status/999-0".format(self.cbas_node.ip)
 
         # Retrive status from handle
-        status, result_handle = self.retrieve_request_status_using_handle(self.master,
+        status, result_handle = self.retrieve_request_status_using_handle(self.main,
                                                            handle)
 
         if status:

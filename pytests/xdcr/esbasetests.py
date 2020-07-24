@@ -38,15 +38,15 @@ class ESReplicationBaseTest(object):
     def verify_es_stats(self, src_nodes, dest_nodes, verification_count=0, doc_type=None):
         xd_ref = self.xd_ref
 
-        src_master = self.xd_ref.src_master
-        dest_master = self.xd_ref.dest_master
+        src_main = self.xd_ref.src_main
+        dest_main = self.xd_ref.dest_main
 
         # prepare for verification
-        xd_ref._wait_flusher_empty(src_master, src_nodes)
-        xd_ref._expiry_pager(src_master)
+        xd_ref._wait_flusher_empty(src_main, src_nodes)
+        xd_ref._expiry_pager(src_main)
         self.sleep(20)
         self._log.info("Verifing couchbase to elasticsearch replication")
-        self.verify_es_num_docs(src_master, dest_master,1, 10, verification_count, doc_type)
+        self.verify_es_num_docs(src_main, dest_main,1, 10, verification_count, doc_type)
 
 
 
@@ -160,9 +160,9 @@ class ESReplicationBaseTest(object):
                                  (bucket.name))
 
     def verify_dest_added(self):
-        src_master = self.xd_ref.src_master
-        dest_master = self.xd_ref.dest_master
-        rest = RestConnection(src_master)
+        src_main = self.xd_ref.src_main
+        dest_main = self.xd_ref.dest_main
+        rest = RestConnection(src_main)
         remoteClusters = rest.get_remote_clusters()
 
         # check remote cluster info to ensure dest cluster has been added
@@ -171,7 +171,7 @@ class ESReplicationBaseTest(object):
             if clusterInfo['deleted'] == False:
                 return
 
-        self.xd_ref.fail("Failed to setup replication to remote cluster %s " % dest_master)
+        self.xd_ref.fail("Failed to setup replication to remote cluster %s " % dest_main)
 
     def _first_level_rebalance_out(self, param_nodes,
                                    available_nodes,
@@ -219,7 +219,7 @@ class ESReplicationBaseTest(object):
 
 
     def update_configurations(self, command):
-        node = self.xd_ref.dest_master
+        node = self.xd_ref.dest_main
         es_rest = RestConnection(node)
         #es_rest.eject_node(node)
         es_rest.update_configuration(node, commands=command)
@@ -229,7 +229,7 @@ class ESReplicationBaseTest(object):
 
 
     def reset_configurations(self):
-        node = self.xd_ref.dest_master
+        node = self.xd_ref.dest_main
         es_rest = RestConnection(node)
         es_rest.reset_configuration(node, self.config_updates_count)
         es_rest.start_es_node(node)
@@ -250,8 +250,8 @@ class ESReplicationBaseTest(object):
 
 
     def replication_setting(self, param, value):
-        src_master = self.xd_ref.src_master
-        rest = RestConnection(src_master)
+        src_main = self.xd_ref.src_main
+        rest = RestConnection(src_main)
         buckets = rest.get_buckets()
         for bucket in buckets:
             rest.set_xdcr_param(bucket.name, bucket.name, param, value)

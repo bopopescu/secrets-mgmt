@@ -95,7 +95,7 @@ class StatsCrashRepro(BaseTestCase):
 
         while 1:
 
-#            read_data_task = self.cluster.async_verify_data(self.master, self.buckets[0], self.buckets[0].kvs[1])
+#            read_data_task = self.cluster.async_verify_data(self.main, self.buckets[0], self.buckets[0].kvs[1])
 
             read_data_task = Thread(target=self._run_get)
             read_data_task.start()

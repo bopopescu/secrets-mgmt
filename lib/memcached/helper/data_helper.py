@@ -775,19 +775,19 @@ class VBucketAwareMemcached(object):
         nodes = rest.get_nodes()
         for vBucket in forward_map:
             if vBucket.id in vbucketids_set:
-                self.vBucketMap[vBucket.id] = vBucket.master
-                masterIp = vBucket.master.rsplit(":", 1)[0]
-                masterPort = int(vBucket.master.rsplit(":", 1)[1])
+                self.vBucketMap[vBucket.id] = vBucket.main
+                mainIp = vBucket.main.rsplit(":", 1)[0]
+                mainPort = int(vBucket.main.rsplit(":", 1)[1])
                 if self.vBucketMap[vBucket.id] not in self.memcacheds:
                     server = TestInputServer()
                     server.rest_username = rest.username
                     server.rest_password = rest.password
                     for node in nodes:
-                        if node.ip == masterIp and node.memcached == masterPort:
+                        if node.ip == mainIp and node.memcached == mainPort:
                             server.port = node.port
-                    server.ip = masterIp
+                    server.ip = mainIp
                     self.log.info("Received forward map, reset vbucket map, new direct_client")
-                    self.memcacheds[vBucket.master] = MemcachedClientHelper.direct_client(server, self.bucket,
+                    self.memcacheds[vBucket.main] = MemcachedClientHelper.direct_client(server, self.bucket,
                                                                     admin_user=admin_user,admin_pass=admin_pass)
                 # if no one is using that memcached connection anymore just close the connection
                 used_nodes = set([self.vBucketMap[vb_name] for vb_name in self.vBucketMap])
@@ -812,8 +812,8 @@ class VBucketAwareMemcached(object):
             raise Exception("vbucket map is not ready for bucket {0}".format(bucket))
         vBuckets = rest.get_vbuckets(bucket)
         for vBucket in vBuckets:
-            vBucketMap[vBucket.id] = vBucket.master
-            self.add_memcached(vBucket.master, memcacheds, rest, bucket)
+            vBucketMap[vBucket.id] = vBucket.main
+            self.add_memcached(vBucket.main, memcacheds, rest, bucket)
 
             vBucketMapReplica[vBucket.id] = vBucket.replica
             for replica in vBucket.replica:
@@ -1360,7 +1360,7 @@ class VBucketAwareMemcached(object):
         counter = 0
         for vbucket in vBucketMap:
             vbucketInfo = vBucket()
-            vbucketInfo.master = serverList[vbucket[0]]
+            vbucketInfo.main = serverList[vbucket[0]]
             if vbucket:
                 for i in range(1, len(vbucket)):
                     if vbucket[i] != -1:
@@ -1744,10 +1744,10 @@ class DocumentGenerator(object):
 
 class LoadWithMcsoda(object):
 
-    def __init__(self, master, num_docs, prefix='', bucket='default', rest_user='Administrator',
+    def __init__(self, main, num_docs, prefix='', bucket='default', rest_user='Administrator',
                  rest_password="password", protocol='membase-binary', port=11211):
 
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         self.bucket = bucket
         vBuckets = rest.get_vbuckets(self.bucket)
         self.vbucket_count = len(vBuckets)
@@ -1781,10 +1781,10 @@ class LoadWithMcsoda(object):
         self.rest_password = rest_password
 
         if protocol == 'membase-binary':
-            self.host_port = "{0}:{1}:{2}".format(master.ip, master.port, port)
+            self.host_port = "{0}:{1}:{2}".format(main.ip, main.port, port)
 
         elif protocol == 'memcached-binary':
-            self.host_port = "{0}:{1}:{1}".format(master.ip, port)
+            self.host_port = "{0}:{1}:{1}".format(main.ip, port)
 
         self.ctl = { 'run_ok': True }
 

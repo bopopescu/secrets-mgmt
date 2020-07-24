@@ -32,7 +32,7 @@ class RebalanceStartStopTests(RebalanceBaseTest):
         The oder of add/remove nodes looks like:
         self.nodes_init|servs_in|extra_nodes_in|extra_nodes_out|servs_out
         """
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         self._wait_for_stats_all_buckets(self.servs_init)
         self.log.info("Current nodes : {0}".format([node.id for node in rest.node_statuses()]))
         self.log.info("Adding nodes {0} to cluster".format(self.servs_in))
@@ -67,7 +67,7 @@ class RebalanceStartStopTests(RebalanceBaseTest):
                 break
             else:
                 self.log.info("Rebalance is still required. Verifying the data in the buckets")
-                self._verify_all_buckets(self.master, timeout=None, max_verify=self.max_verify, batch_size=1)
+                self._verify_all_buckets(self.main, timeout=None, max_verify=self.max_verify, batch_size=1)
                 self.verify_cluster_stats(result_nodes, check_bucket_stats=False, verify_total_items=False)
         self.verify_unacked_bytes_all_buckets()
 
@@ -87,7 +87,7 @@ class RebalanceStartStopTests(RebalanceBaseTest):
             The oder of add/remove nodes looks like:
             self.nodes_init|servs_in|extra_nodes_in|extra_nodes_out|servs_out
             """
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         self._wait_for_stats_all_buckets(self.servs_init)
         self.log.info("Current nodes : {0}".format([node.id for node in rest.node_statuses()]))
         self.log.info("Adding nodes {0} to cluster".format(self.servs_in))
@@ -98,7 +98,7 @@ class RebalanceStartStopTests(RebalanceBaseTest):
         # that also is verified and tracked
         for i in range(1, 6):
             if self.withMutationOps:
-                tasks = self._async_load_all_buckets(self.master, self.gen_update, "update", 0)
+                tasks = self._async_load_all_buckets(self.main, self.gen_update, "update", 0)
             if i == 1:
                 rebalance = self.cluster.async_rebalance(self.servs_init[:self.nodes_init], self.servs_in,
                                                          self.servs_out)
@@ -128,7 +128,7 @@ class RebalanceStartStopTests(RebalanceBaseTest):
                 break
             else:
                 self.log.info("Rebalance is still required. Verifying the data in the buckets")
-                self._verify_all_buckets(self.master, timeout=None, max_verify=self.max_verify, batch_size=1)
+                self._verify_all_buckets(self.main, timeout=None, max_verify=self.max_verify, batch_size=1)
                 self.verify_cluster_stats(result_nodes, check_bucket_stats=False, verify_total_items=False)
         self.verify_unacked_bytes_all_buckets()
 
@@ -146,7 +146,7 @@ class RebalanceStartStopTests(RebalanceBaseTest):
             The oder of add/remove nodes looks like:
             self.nodes_init|servs_in|extra_nodes_in|extra_nodes_out|servs_out
             """
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         self._wait_for_stats_all_buckets(self.servs_init)
         self.log.info("Current nodes : {0}".format([node.id for node in rest.node_statuses()]))
         self.log.info("Adding nodes {0} to cluster".format(self.servs_in))
@@ -173,9 +173,9 @@ class RebalanceStartStopTests(RebalanceBaseTest):
                 self.log.info("Stop the rebalance")
                 stopped = rest.stop_rebalance(wait_timeout=self.wait_timeout / 3)
                 self.assertTrue(stopped, msg="Unable to stop rebalance")
-                self._verify_all_buckets(self.master, timeout=None, max_verify=self.max_verify, batch_size=1)
+                self._verify_all_buckets(self.main, timeout=None, max_verify=self.max_verify, batch_size=1)
                 if self.withMutationOps:
-                    tasks = self._async_load_all_buckets(self.master, self.gen_update, "update", 0)
+                    tasks = self._async_load_all_buckets(self.main, self.gen_update, "update", 0)
                 if self.withMutationOps:
                     for tasks in tasks:
                         tasks.result(self.wait_timeout * 20)
@@ -188,7 +188,7 @@ class RebalanceStartStopTests(RebalanceBaseTest):
                 break
             else:
                 self.log.info("Rebalance is still required. Verifying the data in the buckets.")
-                self._verify_all_buckets(self.master, timeout=None, max_verify=self.max_verify, batch_size=1)
+                self._verify_all_buckets(self.main, timeout=None, max_verify=self.max_verify, batch_size=1)
                 self.verify_cluster_stats(result_nodes, check_bucket_stats=False, verify_total_items=False)
         self.verify_unacked_bytes_all_buckets()
 
@@ -205,8 +205,8 @@ class RebalanceStartStopTests(RebalanceBaseTest):
             """
         fail_over = self.input.param("fail_over", False)
         gen = BlobGenerator('mike', 'mike-', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen, "create", 0)
-        tasks = self._async_load_all_buckets(self.master, gen, "update", 0)
+        self._load_all_buckets(self.main, gen, "create", 0)
+        tasks = self._async_load_all_buckets(self.main, gen, "update", 0)
         for task in tasks:
             task.result(self.wait_timeout * 20)
         self._verify_stats_all_buckets(self.servers[:self.nodes_init], timeout=120)
@@ -217,26 +217,26 @@ class RebalanceStartStopTests(RebalanceBaseTest):
         disk_replica_dataset, disk_active_dataset = self.get_and_compare_active_replica_data_set_all(
             self.servers[:self.nodes_init], self.buckets, path=None)
         self.compare_vbucketseq_failoverlogs(prev_vbucket_stats, prev_failover_stats)
-        self.rest = RestConnection(self.master)
-        chosen = RebalanceHelper.pick_nodes(self.master, howmany=1)
+        self.rest = RestConnection(self.main)
+        chosen = RebalanceHelper.pick_nodes(self.main, howmany=1)
         result_nodes = list(set(self.servers[:self.nodes_init] + self.servs_in) - set(self.servs_out))
         for node in self.servs_in:
-            self.rest.add_node(self.master.rest_username, self.master.rest_password, node.ip, node.port)
+            self.rest.add_node(self.main.rest_username, self.main.rest_password, node.ip, node.port)
         # Mark Node for failover
         self.rest.fail_over(chosen[0].id, graceful=fail_over)
         rebalance = self.cluster.async_rebalance(self.servers[:self.nodes_init], self.servs_in, self.servs_out)
         expected_progress = 50
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         reached = RestHelper(rest).rebalance_reached(expected_progress)
         self.assertTrue(reached, "Rebalance failed or did not reach {0}%".format(expected_progress))
         if not RestHelper(rest).is_cluster_rebalanced():
             self.log.info("Stop the rebalance")
             stopped = rest.stop_rebalance(wait_timeout=self.wait_timeout / 3)
             self.assertTrue(stopped, msg="Unable to stop rebalance")
-            self._verify_all_buckets(self.master, timeout=None, max_verify=self.max_verify, batch_size=1)
+            self._verify_all_buckets(self.main, timeout=None, max_verify=self.max_verify, batch_size=1)
         self.shuffle_nodes_between_zones_and_rebalance()
         self.verify_cluster_stats(result_nodes, check_ep_items_remaining=True, check_bucket_stats=False)
         self.sleep(30)
         self.verify_unacked_bytes_all_buckets()
-        nodes = self.get_nodes_in_cluster(self.master)
+        nodes = self.get_nodes_in_cluster(self.main)
         self.vb_distribution_analysis(servers=nodes, std=1.0, total_vbuckets=self.total_vbuckets)

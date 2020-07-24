@@ -105,7 +105,7 @@ class XDCRBaseTest(unittest.TestCase):
             if self._checkpoint_interval:
                 self.set_xdcr_param('xdcrCheckpointInterval', self._checkpoint_interval)
             self._optimistic_xdcr_threshold = self._input.param("optimistic_xdcr_threshold", 256)
-            if self.src_master.ip != self.dest_master.ip:  # Only if it's not a cluster_run
+            if self.src_main.ip != self.dest_main.ip:  # Only if it's not a cluster_run
                 if self._optimistic_xdcr_threshold != 256:
                     self.set_xdcr_param('xdcrOptimisticReplicationThreshold', self._optimistic_xdcr_threshold)
 
@@ -116,13 +116,13 @@ class XDCRBaseTest(unittest.TestCase):
             self.__stats_threads = []
             if str(self.__class__).find('upgradeXDCR') == -1  and \
                str(self.__class__).find('tuq_xdcr') == -1 and self.print_stats:
-                self.__stats_threads.append(Thread(target=self._replication_stat_keeper, args=["replication_data_replicated", self.src_master]))
-                self.__stats_threads.append(Thread(target=self._replication_stat_keeper, args=["xdc_ops", self.dest_master]))
-                self.__stats_threads.append(Thread(target=self._replication_stat_keeper, args=["data_replicated", self.src_master]))
+                self.__stats_threads.append(Thread(target=self._replication_stat_keeper, args=["replication_data_replicated", self.src_main]))
+                self.__stats_threads.append(Thread(target=self._replication_stat_keeper, args=["xdc_ops", self.dest_main]))
+                self.__stats_threads.append(Thread(target=self._replication_stat_keeper, args=["data_replicated", self.src_main]))
                 if self._replication_direction_str == XDCRConstants.REPLICATION_DIRECTION_BIDIRECTION:
-                    self.__stats_threads.append(Thread(target=self._replication_stat_keeper, args=["replication_data_replicated", self.dest_master]))
-                    self.__stats_threads.append(Thread(target=self._replication_stat_keeper, args=["xdc_ops", self.src_master]))
-                    self.__stats_threads.append(Thread(target=self._replication_stat_keeper, args=["data_replicated", self.dest_master]))
+                    self.__stats_threads.append(Thread(target=self._replication_stat_keeper, args=["replication_data_replicated", self.dest_main]))
+                    self.__stats_threads.append(Thread(target=self._replication_stat_keeper, args=["xdc_ops", self.src_main]))
+                    self.__stats_threads.append(Thread(target=self._replication_stat_keeper, args=["data_replicated", self.dest_main]))
 
                 [st_thread.setDaemon(True) for st_thread in self.__stats_threads]
                 [st_thread.start() for st_thread in self.__stats_threads]
@@ -158,9 +158,9 @@ class XDCRBaseTest(unittest.TestCase):
                               .format(self.case_number, self._testMethodName))
                 [st_thread.join() for st_thread in self.__stats_threads]
                 self.log.info("Type of run: %s XDCR" % XDCRConstants.REPLICATION_DIRECTION_BIDIRECTION.upper())
-                self._print_stats(self.src_master)
+                self._print_stats(self.src_main)
                 if self._replication_direction_str == XDCRConstants.REPLICATION_DIRECTION_BIDIRECTION:
-                    self._print_stats(self.dest_master)
+                    self._print_stats(self.dest_main)
 
                 self.log.info("============== = = = = = = = = END = = = = = = = = = = ==============")
             self.log.info("==============  XDCRbasetests cleanup is started for test #{0} {1} =============="\
@@ -196,10 +196,10 @@ class XDCRBaseTest(unittest.TestCase):
             collect_data_files.cbdatacollectRunner(server, logs_folder).run()
 
     def _print_stats(self, node):
-        if node == self.src_master:
-            node1 = self.dest_master
+        if node == self.src_main:
+            node1 = self.dest_main
         else:
-            node1 = self.src_master
+            node1 = self.src_main
         self.log.info("STATS with source at {0} and destination at {1}".format(node.ip, node1.ip))
         for the_bucket in self._get_cluster_buckets(node):
             self.log.info("Bucket: {0}".format(the_bucket.name))
@@ -348,8 +348,8 @@ class XDCRBaseTest(unittest.TestCase):
             self.dest_nodes = self.src_nodes
             self.src_nodes = temp
 
-        self.src_master = self.src_nodes[0]
-        self.dest_master = self.dest_nodes[0]
+        self.src_main = self.src_nodes[0]
+        self.dest_main = self.dest_nodes[0]
 
         self._defaul_map_func = "function (doc) {\n  emit(doc._id, doc);\n}"
         self._default_view_name = "default_view"
@@ -367,8 +367,8 @@ class XDCRBaseTest(unittest.TestCase):
     def _log_start(self):
         try:
             msg = "{0} : {1} started ".format(datetime.datetime.now(), self._testMethodName)
-            RestConnection(self.src_master[0]).log_client_error(msg)
-            RestConnection(self.dest_master[0]).log_client_error(msg)
+            RestConnection(self.src_main[0]).log_client_error(msg)
+            RestConnection(self.dest_main[0]).log_client_error(msg)
         except:
             pass
 
@@ -376,8 +376,8 @@ class XDCRBaseTest(unittest.TestCase):
     def _log_finish(self):
         try:
             msg = "{0} : {1} finished ".format(datetime.datetime.now(), self._testMethodName)
-            RestConnection(self.src_master[0]).log_client_error(msg)
-            RestConnection(self.dest_master[0]).log_client_error(msg)
+            RestConnection(self.src_main[0]).log_client_error(msg)
+            RestConnection(self.dest_main[0]).log_client_error(msg)
         except:
             pass
 
@@ -388,9 +388,9 @@ class XDCRBaseTest(unittest.TestCase):
     def _replication_stat_keeper(self, arg, node):
         while not self._end_replication_flag == 1:
             if node in self._clusters_dic[0]:
-                consider_node = self.src_master
+                consider_node = self.src_main
             elif node in self._clusters_dic[1]:
-                consider_node = self.dest_master
+                consider_node = self.dest_main
             if arg == "replication_data_replicated":
                 rest = RestConnection(consider_node)
                 for the_bucket in self._get_cluster_buckets(consider_node):
@@ -416,10 +416,10 @@ class XDCRBaseTest(unittest.TestCase):
                         self._xdc_replication_ops[node][the_bucket.name].append((float)(_x_))
             elif arg == "data_replicated":
                 rest1 = RestConnection(consider_node)
-                if consider_node == self.src_master:
-                    rest2 = RestConnection(self.dest_master)
+                if consider_node == self.src_main:
+                    rest2 = RestConnection(self.dest_main)
                 else:
-                    rest2 = RestConnection(self.src_master)
+                    rest2 = RestConnection(self.src_main)
                 dest_uuid = rest2.get_pools_info()["uuid"]
                 for the_bucket in self._get_cluster_buckets(consider_node):
                     argument = "{0}/{1}/{2}/{3}/{4}".format("replications", dest_uuid, the_bucket.name, the_bucket.name, arg)
@@ -558,7 +558,7 @@ class XDCRBaseTest(unittest.TestCase):
             rolelist = [{'id': 'cbadminbucket', 'name': 'cbadminbucket',
                                                       'roles': 'admin'}]
         if node is None:
-            node = self.master
+            node = self.main
         self.log.info("**** add built-in '%s' user to node %s ****" % (testuser[0]["name"],
                                                                                   node.ip))
         RbacBase().create_user_source(testuser, 'builtin', node)
@@ -615,7 +615,7 @@ class XDCRBaseTest(unittest.TestCase):
 
             self.buckets.append(Bucket(name=name, authType="sasl", saslPassword="password",
                                    num_replicas=self._num_replicas, bucket_size=bucket_size,
-                                   master_id=server_id, eviction_policy=self.eviction_policy))
+                                   main_id=server_id, eviction_policy=self.eviction_policy))
 
         for task in bucket_tasks:
             task.result(self.wait_timeout * 10)
@@ -632,7 +632,7 @@ class XDCRBaseTest(unittest.TestCase):
 
             self.buckets.append(Bucket(name=name, authType=None, saslPassword=None,
                                     num_replicas=self._num_replicas, bucket_size=bucket_size,
-                                    port=STANDARD_BUCKET_PORT + i, master_id=server_id, eviction_policy=self.eviction_policy))
+                                    port=STANDARD_BUCKET_PORT + i, main_id=server_id, eviction_policy=self.eviction_policy))
 
         for task in bucket_tasks:
             task.result(self.wait_timeout * 10)
@@ -640,51 +640,51 @@ class XDCRBaseTest(unittest.TestCase):
     def _create_buckets(self, nodes):
         if self._dgm_run:
             self._mem_quota_int = 256
-        master_node = nodes[0]
+        main_node = nodes[0]
         total_buckets = self._sasl_buckets + self._default_bucket + self._standard_buckets + self._extra_buckets
         #to enable tests to skip creating buckets in setup and create them later
         if not total_buckets:
             return
         bucket_size = self._get_bucket_size(self._mem_quota_int, total_buckets)
-        rest = RestConnection(master_node)
-        master_id = rest.get_nodes_self().id
+        rest = RestConnection(main_node)
+        main_id = rest.get_nodes_self().id
         if len(set([server.ip for server in self._servers])) != 1:  # if not cluster run use ip addresses instead of lh
-            master_id = master_id.replace("127.0.0.1", master_node.ip).replace("localhost", master_node.ip)
+            main_id = main_id.replace("127.0.0.1", main_node.ip).replace("localhost", main_node.ip)
 
-        self._create_sasl_buckets(master_node, self._sasl_buckets, master_id, bucket_size)
-        self._create_standard_buckets(master_node, self._standard_buckets, master_id, bucket_size)
+        self._create_sasl_buckets(main_node, self._sasl_buckets, main_id, bucket_size)
+        self._create_standard_buckets(main_node, self._standard_buckets, main_id, bucket_size)
         if self._default_bucket:
-            bucket_params = self._create_bucket_params(server=master_node, size=bucket_size,
+            bucket_params = self._create_bucket_params(server=main_node, size=bucket_size,
                                                               replicas=self._num_replicas,
                                                               eviction_policy=self.eviction_policy)
             self.cluster.create_default_bucket(bucket_params)
             self.buckets.append(Bucket(name="default", authType="sasl", saslPassword="",
-                                       num_replicas=self._num_replicas, bucket_size=bucket_size, master_id=master_id,
+                                       num_replicas=self._num_replicas, bucket_size=bucket_size, main_id=main_id,
                                        eviction_policy=self.eviction_policy))
 
     def _get_bucket_size(self, mem_quota, num_buckets):
         #min size is 100MB now
         return max(100, int(float(mem_quota) / float(num_buckets)))
 
-    def _get_cluster_buckets(self, master_server):
-        rest = RestConnection(master_server)
-        master_id = rest.get_nodes_self().id
+    def _get_cluster_buckets(self, main_server):
+        rest = RestConnection(main_server)
+        main_id = rest.get_nodes_self().id
 
-        if master_id.find('es') != 0:
+        if main_id.find('es') != 0:
 
             # verify if node_ids were changed for cluster_run
             for bucket in self.buckets:
-                if ("127.0.0.1" in bucket.master_id and "127.0.0.1" not in master_id) or \
-                   ("localhost" in bucket.master_id and "localhost" not in master_id):
-                    new_ip = master_id[master_id.index("@") + 1:]
-                    bucket.master_id = bucket.master_id.replace("127.0.0.1", new_ip).\
+                if ("127.0.0.1" in bucket.main_id and "127.0.0.1" not in main_id) or \
+                   ("localhost" in bucket.main_id and "localhost" not in main_id):
+                    new_ip = main_id[main_id.index("@") + 1:]
+                    bucket.main_id = bucket.main_id.replace("127.0.0.1", new_ip).\
                     replace("localhost", new_ip)
 
         if len(set([server.ip for server in self._servers])) != 1:  # if not cluster run use ip addresses instead of lh
-            master_id = master_id.replace("127.0.0.1", master_server.ip).replace("localhost", master_server.ip)
-        buckets = filter(lambda bucket: bucket.master_id == master_id, self.buckets)
+            main_id = main_id.replace("127.0.0.1", main_server.ip).replace("localhost", main_server.ip)
+        buckets = filter(lambda bucket: bucket.main_id == main_id, self.buckets)
         if not buckets:
-            self.log.warn("No bucket(s) found on the server %s" % master_server)
+            self.log.warn("No bucket(s) found on the server %s" % main_server)
         return buckets
 
     def do_a_warm_up(self, node):
@@ -694,24 +694,24 @@ class XDCRBaseTest(unittest.TestCase):
         shell.start_couchbase()
         shell.disconnect()
 
-    def adding_back_a_node(self, master, server):
-        rest = RestConnection(master)
+    def adding_back_a_node(self, main, server):
+        rest = RestConnection(main)
         nodes = rest.node_statuses()
         for node in nodes:
             if server.ip == node.ip and int(server.port) == int(node.port):
                 rest.add_back_node(node.id)
 
-    def _get_active_replica_count_from_cluster(self, master):
-        buckets = self._get_cluster_buckets(master)
+    def _get_active_replica_count_from_cluster(self, main):
+        buckets = self._get_cluster_buckets(main)
         for bucket in buckets:
             keys_loaded = sum([len(kv_store) for kv_store in bucket.kvs.values()])
             self.log.info("Keys loaded into bucket {0}:{1}".format(bucket.name,
                                                                    keys_loaded))
             self.log.info("Stat: vb_active_curr_items = {0}".
-                          format(MemcachedClientHelper.direct_client(master,
+                          format(MemcachedClientHelper.direct_client(main,
                                  bucket.name).stats()['vb_active_curr_items']))
             self.log.info("Stat: vb_replica_curr_items = {0}".
-                          format(MemcachedClientHelper.direct_client(master,
+                          format(MemcachedClientHelper.direct_client(main,
                                  bucket.name).stats()['vb_replica_curr_items']))
 
     def _async_failover(self, nodes, failover_nodes):
@@ -726,34 +726,34 @@ class XDCRBaseTest(unittest.TestCase):
         tasks.append(self.cluster.async_rebalance(nodes, to_add_node, to_remove_node))
         return tasks
 
-    # Change the master_id of buckets to new master node
-    def __change_masterid_buckets(self, new_master, buckets):
-        new_master_id = RestConnection(new_master).get_nodes_self().id
+    # Change the main_id of buckets to new main node
+    def __change_mainid_buckets(self, new_main, buckets):
+        new_main_id = RestConnection(new_main).get_nodes_self().id
         for bucket in buckets:
-            bucket.master_id = new_master_id
+            bucket.main_id = new_main_id
 
     # Initiates a rebalance-out asynchronously on both clusters
-    def _async_rebalance_out(self, master=False):
+    def _async_rebalance_out(self, main=False):
         tasks = []
         if "source" in self._rebalance and self._num_rebalance < len(self.src_nodes):
-            src_buckets = self._get_cluster_buckets(self.src_master)
-            tasks += self.__async_rebalance_out_cluster(self.src_nodes, self.src_master, master=master)
-            if master:
-                self.src_master = self.src_nodes[0]
-                self.__change_masterid_buckets(self.src_master, src_buckets)
+            src_buckets = self._get_cluster_buckets(self.src_main)
+            tasks += self.__async_rebalance_out_cluster(self.src_nodes, self.src_main, main=main)
+            if main:
+                self.src_main = self.src_nodes[0]
+                self.__change_mainid_buckets(self.src_main, src_buckets)
 
         if "destination" in self._rebalance and self._num_rebalance < len(self.dest_nodes):
-            dest_buckets = self._get_cluster_buckets(self.dest_master)
-            tasks += self.__async_rebalance_out_cluster(self.dest_nodes, self.dest_master, master=master, cluster_type="source")
-            if master:
-                self.dest_master = self.dest_nodes[0]
-                self.__change_masterid_buckets(self.dest_master, dest_buckets)
+            dest_buckets = self._get_cluster_buckets(self.dest_main)
+            tasks += self.__async_rebalance_out_cluster(self.dest_nodes, self.dest_main, main=main, cluster_type="source")
+            if main:
+                self.dest_main = self.dest_nodes[0]
+                self.__change_mainid_buckets(self.dest_main, dest_buckets)
         return tasks
 
-    def __async_rebalance_out_cluster(self, cluster_nodes, master_node, master=False, cluster_type="source"):
+    def __async_rebalance_out_cluster(self, cluster_nodes, main_node, main=False, cluster_type="source"):
         remove_nodes = []
-        if master:
-            remove_nodes = [master_node]
+        if main:
+            remove_nodes = [main_node]
         else:
             remove_nodes = cluster_nodes[len(cluster_nodes) - self._num_rebalance:]
         if self._failover and cluster_type in self._failover:
@@ -763,7 +763,7 @@ class XDCRBaseTest(unittest.TestCase):
         tasks = self._async_rebalance(cluster_nodes, [], remove_nodes)
         remove_node_ips = [remove_node.ip for remove_node in remove_nodes]
         self.log.info(" Starting rebalance-out nodes:{0} at {1} cluster {2}".
-                          format(remove_node_ips, cluster_type, master_node.ip))
+                          format(remove_node_ips, cluster_type, main_node.ip))
         map(cluster_nodes.remove, remove_nodes)
         return tasks
 
@@ -771,49 +771,49 @@ class XDCRBaseTest(unittest.TestCase):
     def _async_rebalance_in(self):
         tasks = []
         if "source" in self._rebalance:
-            tasks += self.__async_rebalance_in_cluster(self.src_nodes, self.src_master)
+            tasks += self.__async_rebalance_in_cluster(self.src_nodes, self.src_main)
 
         if "destination" in self._rebalance:
-            tasks += self.__async_rebalance_in_cluster(self.dest_nodes, self.dest_master, cluster_type="destination")
+            tasks += self.__async_rebalance_in_cluster(self.dest_nodes, self.dest_main, cluster_type="destination")
         return tasks
 
-    def __async_rebalance_in_cluster(self, cluster_nodes, master_node, cluster_type="source"):
+    def __async_rebalance_in_cluster(self, cluster_nodes, main_node, cluster_type="source"):
         add_nodes = self._floating_servers_set[0:self._num_rebalance]
         map(self._floating_servers_set.remove, add_nodes)
         tasks = self._async_rebalance(cluster_nodes, add_nodes, [])
         add_nodes_ips = [node.ip for node in add_nodes]
         self.log.info(" Starting rebalance-in nodes:{0} at {1} cluster {2}".
-                          format(add_nodes_ips, cluster_type, master_node.ip))
+                          format(add_nodes_ips, cluster_type, main_node.ip))
         map(cluster_nodes.append, add_nodes)
         return tasks
 
     # Initiates a swap-rebalance asynchronously on both clusters
-    def _async_swap_rebalance(self, master=False):
+    def _async_swap_rebalance(self, main=False):
         tasks = []
         if "source" in self._rebalance and self._num_rebalance < len(self.src_nodes):
-            src_buckets = self._get_cluster_buckets(self.src_master)
-            tasks += self.__async_swap_rebalance_cluster(self.src_nodes, self.src_master, master=master)
-            if master:
-                self.src_master = self.src_nodes[0]
-                self.__change_masterid_buckets(self.src_master, src_buckets)
+            src_buckets = self._get_cluster_buckets(self.src_main)
+            tasks += self.__async_swap_rebalance_cluster(self.src_nodes, self.src_main, main=main)
+            if main:
+                self.src_main = self.src_nodes[0]
+                self.__change_mainid_buckets(self.src_main, src_buckets)
 
         if "destination" in self._rebalance and self._num_rebalance < len(self.dest_nodes):
-            dest_buckets = self._get_cluster_buckets(self.dest_master)
-            tasks += self.__async_swap_rebalance_cluster(self.dest_nodes, self.dest_master, master=master, cluster_type="destination")
-            if master:
-                self.dest_master = self.dest_nodes[0]
-                self.__change_masterid_buckets(self.dest_master, dest_buckets)
+            dest_buckets = self._get_cluster_buckets(self.dest_main)
+            tasks += self.__async_swap_rebalance_cluster(self.dest_nodes, self.dest_main, main=main, cluster_type="destination")
+            if main:
+                self.dest_main = self.dest_nodes[0]
+                self.__change_mainid_buckets(self.dest_main, dest_buckets)
         return tasks
 
-    def __async_swap_rebalance_cluster(self, cluster_nodes, master_node, master=False, cluster_type="source"):
+    def __async_swap_rebalance_cluster(self, cluster_nodes, main_node, main=False, cluster_type="source"):
         add_node = self._floating_servers_set.pop()
-        if master:
-            remove_node = master_node
+        if main:
+            remove_node = main_node
         else:
             remove_node = cluster_nodes[len(cluster_nodes) - 1]
         tasks = self._async_rebalance(cluster_nodes, [add_node], [remove_node])
         self.log.info(" Starting swap-rebalance [remove_node:{0}] -> [add_node:{1}] at {2} cluster {3}"
-                              .format(remove_node.ip, add_node.ip, cluster_type, master_node.ip))
+                              .format(remove_node.ip, add_node.ip, cluster_type, main_node.ip))
         cluster_nodes.remove(remove_node)
         cluster_nodes.append(add_node)
         return tasks
@@ -920,7 +920,7 @@ class XDCRBaseTest(unittest.TestCase):
         ClusterOperationHelper.wait_for_ns_servers_or_assert([node], self, wait_if_warmup=True)
 
     def disable_compaction(self, server=None, bucket="default"):
-        server = server or self.src_master
+        server = server or self.src_main
         new_config = {"viewFragmntThresholdPercentage" : None,
                       "dbFragmentThresholdPercentage" :  None,
                       "dbFragmentThreshold" : None,
@@ -1020,12 +1020,12 @@ class XDCRBaseTest(unittest.TestCase):
 
         if self._doc_ops is not None:
             if "create" in self._doc_ops:
-                self._load_all_buckets(self.src_master, self.gen_create, "create", 0)
+                self._load_all_buckets(self.src_main, self.gen_create, "create", 0)
             if "update" in self._doc_ops:
-                self._load_all_buckets(self.src_master, self.gen_update, "update", self._expires)
+                self._load_all_buckets(self.src_main, self.gen_update, "update", self._expires)
             if "delete" in self._doc_ops:
-                self._load_all_buckets(self.src_master, self.gen_delete, "delete", 0)
-            self._wait_flusher_empty(self.src_master, self.src_nodes)
+                self._load_all_buckets(self.src_main, self.gen_delete, "delete", 0)
+            self._wait_flusher_empty(self.src_main, self.src_nodes)
             if self._wait_for_expiration and self._expires:
                 self.sleep(self._expires, "Waiting for expiration of updated items")
 
@@ -1035,11 +1035,11 @@ class XDCRBaseTest(unittest.TestCase):
         if self._doc_ops is not None:
             # allows multiple of them but one by one
             if "update" in self._doc_ops:
-                tasks.extend(self._async_load_all_buckets(self.src_master, self.gen_update, "update", self._expires))
+                tasks.extend(self._async_load_all_buckets(self.src_main, self.gen_update, "update", self._expires))
             if "create" in self._doc_ops:
-                tasks.extend(self._async_load_all_buckets(self.src_master, self.gen_create, "create", 0))
+                tasks.extend(self._async_load_all_buckets(self.src_main, self.gen_create, "create", 0))
             if "delete" in self._doc_ops:
-                tasks.extend(self._async_load_all_buckets(self.src_master, self.gen_delete, "delete", 0))
+                tasks.extend(self._async_load_all_buckets(self.src_main, self.gen_delete, "delete", 0))
         for task in tasks:
             task.result()
         if self._wait_for_expiration and self._expires:
@@ -1052,15 +1052,15 @@ class XDCRBaseTest(unittest.TestCase):
         if self._doc_ops is not None:
             # allows multiple of them but one by one on either of the clusters
             if "update" in self._doc_ops:
-                tasks.extend(self._async_load_all_buckets(self.src_master, self.gen_update, "update", self._expires))
+                tasks.extend(self._async_load_all_buckets(self.src_main, self.gen_update, "update", self._expires))
             if "delete" in self._doc_ops:
-                tasks.extend(self._async_load_all_buckets(self.src_master, self.gen_delete, "delete", 0))
+                tasks.extend(self._async_load_all_buckets(self.src_main, self.gen_delete, "delete", 0))
             self.sleep(self.wait_timeout / 6)
         if self._doc_ops_dest is not None:
             if "update" in self._doc_ops_dest:
-                tasks.extend(self._async_load_all_buckets(self.dest_master, self.gen_update2, "update", self._expires))
+                tasks.extend(self._async_load_all_buckets(self.dest_main, self.gen_update2, "update", self._expires))
             if "delete" in self._doc_ops_dest:
-                tasks.extend(self._async_load_all_buckets(self.dest_master, self.gen_delete2, "delete", 0))
+                tasks.extend(self._async_load_all_buckets(self.dest_main, self.gen_delete2, "delete", 0))
             self.sleep(self.wait_timeout / 6)
         for task in tasks:
             task.result()
@@ -1081,7 +1081,7 @@ class XDCRBaseTest(unittest.TestCase):
 # - unidirection
 # - bidirection
 # Note:
-# The first node is consideredn as master node in the respective cluster section
+# The first node is consideredn as main node in the respective cluster section
 # of .ini file.
 # Cluster/Node ordinals are determined by the sequence of entry of node in .ini file.
 #===============================================================================
@@ -1150,38 +1150,38 @@ class XDCRReplicationBaseTest(XDCRBaseTest):
             dest_key = ord_keys[dest_key_index]
             src_cluster_name = self._cluster_names_dic[src_key]
             dest_cluster_name = self._cluster_names_dic[dest_key]
-            self._join_clusters(src_cluster_name, self.src_master, dest_cluster_name, self.dest_master)
+            self._join_clusters(src_cluster_name, self.src_main, dest_cluster_name, self.dest_main)
             dest_key_index += 1
 
     def _set_topology_star(self):
-        src_master_identified = False
+        src_main_identified = False
         for key in self._clusters_keys_olst:
             nodes = self._clusters_dic[key]
-            if not src_master_identified:
+            if not src_main_identified:
                 src_cluster_name = self._cluster_names_dic[key]
-                self.src_master = nodes[0]
-                src_master_identified = True
+                self.src_main = nodes[0]
+                src_main_identified = True
                 continue
             dest_cluster_name = self._cluster_names_dic[key]
-            self.dest_master = nodes[0]
-            self._join_clusters(src_cluster_name, self.src_master, dest_cluster_name, self.dest_master)
+            self.dest_main = nodes[0]
+            self._join_clusters(src_cluster_name, self.src_main, dest_cluster_name, self.dest_main)
 
     def _set_topology_ring(self):
-        src_master_identified = False
+        src_main_identified = False
         src_cluster_name = ""
         dest_cluster_name = ""
         for key in self._clusters_keys_olst:
             nodes = self._clusters_dic[key]
-            if not src_master_identified:
+            if not src_main_identified:
                 src_cluster_name = self._cluster_names_dic[key]
-                self.src_master = nodes[0]
-                src_master_identified = True
+                self.src_main = nodes[0]
+                src_main_identified = True
                 continue
             dest_cluster_name = self._cluster_names_dic[key]
-            self.dest_master = nodes[0]
+            self.dest_main = nodes[0]
             self._join_clusters(self._cluster_names_dic[key - 1], self._clusters_dic[key - 1][0],
-                                dest_cluster_name, self.dest_master)
-        self._join_clusters(dest_cluster_name, self.dest_master, src_cluster_name, self.src_master)
+                                dest_cluster_name, self.dest_main)
+        self._join_clusters(dest_cluster_name, self.dest_main, src_cluster_name, self.src_main)
         self.sleep(30)
 
     def _load_data_chain(self):
@@ -1197,7 +1197,7 @@ class XDCRReplicationBaseTest(XDCRBaseTest):
 
     def set_xdcr_param(self, param, value):
         self.log.info("Setting {0} to {1} ..".format(param, value))
-        src_rest = RestConnection(self.src_master)
+        src_rest = RestConnection(self.src_main)
         replications = src_rest.get_replications()
         for repl in replications:
             src_bucket = repl.get_src_bucket()
@@ -1205,68 +1205,68 @@ class XDCRReplicationBaseTest(XDCRBaseTest):
             src_rest.set_xdcr_param(src_bucket.name, dst_bucket.name, param, value)
 
         if self._replication_direction_str == XDCRConstants.REPLICATION_DIRECTION_BIDIRECTION:
-            dst_rest = RestConnection(self.dest_master)
+            dst_rest = RestConnection(self.dest_main)
             replications = dst_rest.get_replications()
             for repl in replications:
                 src_bucket = repl.get_src_bucket()
                 dst_bucket = repl.get_dest_bucket()
                 dst_rest.set_xdcr_param(src_bucket.name, dst_bucket.name, param, value)
 
-    def _join_clusters(self, src_cluster_name, src_master, dest_cluster_name, dest_master):
-        self._link_clusters(src_master, dest_cluster_name, dest_master)
-        if int(self.dest_master.port) in xrange(9091, 9991):
+    def _join_clusters(self, src_cluster_name, src_main, dest_cluster_name, dest_main):
+        self._link_clusters(src_main, dest_cluster_name, dest_main)
+        if int(self.dest_main.port) in xrange(9091, 9991):
             self.rep_type = 'capi'
-        self._replicate_clusters(src_master, dest_cluster_name)
+        self._replicate_clusters(src_main, dest_cluster_name)
         if self._replication_direction_str == XDCRConstants.REPLICATION_DIRECTION_BIDIRECTION:
-            self._link_clusters(dest_master, src_cluster_name, src_master)
-            self._replicate_clusters(dest_master, src_cluster_name)
+            self._link_clusters(dest_main, src_cluster_name, src_main)
+            self._replicate_clusters(dest_main, src_cluster_name)
 
     # Set up cluster reference
-    def _link_clusters(self, src_master, remote_cluster_name, dest_master):
-        rest_conn_src = RestConnection(src_master)
+    def _link_clusters(self, src_main, remote_cluster_name, dest_main):
+        rest_conn_src = RestConnection(src_main)
         certificate = ""
         if self._demand_encryption:
-            rest_conn_dest = RestConnection(dest_master)
+            rest_conn_dest = RestConnection(dest_main)
             certificate = rest_conn_dest.get_cluster_ceritificate()
-        if int(dest_master.port) in xrange(9091, 9991):
-            rest_conn_src.add_remote_cluster(dest_master.ip, dest_master.port,
-                dest_master.es_username,
-                dest_master.es_password, remote_cluster_name,
+        if int(dest_main.port) in xrange(9091, 9991):
+            rest_conn_src.add_remote_cluster(dest_main.ip, dest_main.port,
+                dest_main.es_username,
+                dest_main.es_password, remote_cluster_name,
                 demandEncryption=self._demand_encryption, certificate=certificate)
         else:
-            rest_conn_src.add_remote_cluster(dest_master.ip, dest_master.port,
-                dest_master.rest_username,
-                dest_master.rest_password, remote_cluster_name,
+            rest_conn_src.add_remote_cluster(dest_main.ip, dest_main.port,
+                dest_main.rest_username,
+                dest_main.rest_password, remote_cluster_name,
                 demandEncryption=self._demand_encryption, certificate=certificate)
 
-    def _modify_clusters(self, src_cluster_name, src_master, dest_cluster_name, dest_master, require_encryption=None):
-        rest_conn_src = RestConnection(src_master)
+    def _modify_clusters(self, src_cluster_name, src_main, dest_cluster_name, dest_main, require_encryption=None):
+        rest_conn_src = RestConnection(src_main)
         certificate = ""
         if require_encryption:
-            rest_conn_dest = RestConnection(dest_master)
+            rest_conn_dest = RestConnection(dest_main)
             certificate = rest_conn_dest.get_cluster_ceritificate()
-        rest_conn_src.modify_remote_cluster(dest_master.ip, dest_master.port,
-            dest_master.rest_username,
-            dest_master.rest_password, dest_cluster_name,
+        rest_conn_src.modify_remote_cluster(dest_main.ip, dest_main.port,
+            dest_main.rest_username,
+            dest_main.rest_password, dest_cluster_name,
             demandEncryption=require_encryption, certificate=certificate)
 
     # Switch to encrypted xdcr
     def _switch_to_encryption(self, cluster):
         if "source" in cluster:
-            src_remote_clusters = RestConnection(self.src_master).get_remote_clusters()
+            src_remote_clusters = RestConnection(self.src_main).get_remote_clusters()
             for remote_cluster in src_remote_clusters:
-                self._modify_clusters(None, self.src_master, remote_cluster['name'], self.dest_master,
+                self._modify_clusters(None, self.src_main, remote_cluster['name'], self.dest_main,
                                       require_encryption=1)
         if "destination" in cluster:
-            dest_remote_clusters = RestConnection(self.dest_master).get_remote_clusters()
+            dest_remote_clusters = RestConnection(self.dest_main).get_remote_clusters()
             for remote_cluster in dest_remote_clusters:
-                self._modify_clusters(None, self.dest_master, remote_cluster['name'], self.src_master,
+                self._modify_clusters(None, self.dest_main, remote_cluster['name'], self.src_main,
                                       require_encryption=1)
 
     # Set up replication
-    def _replicate_clusters(self, src_master, dest_cluster_name):
-        rest_conn_src = RestConnection(src_master)
-        for bucket in self._get_cluster_buckets(src_master):
+    def _replicate_clusters(self, src_main, dest_cluster_name):
+        rest_conn_src = RestConnection(src_main)
+        for bucket in self._get_cluster_buckets(src_main):
             rep_id = rest_conn_src.start_replication(XDCRConstants.REPLICATION_TYPE_CONTINUOUS,
                 bucket.name, dest_cluster_name, self.rep_type)
             self._start_replication_time[bucket.name] = datetime.datetime.now()
@@ -1301,9 +1301,9 @@ class XDCRReplicationBaseTest(XDCRBaseTest):
                 partition1.delete(key)
                 kv_store_first[kvs_num].release_partition(key)
 
-    def __do_merge_buckets(self, src_master, dest_master, bidirection):
-        src_buckets = self._get_cluster_buckets(src_master)
-        dest_buckets = self._get_cluster_buckets(dest_master)
+    def __do_merge_buckets(self, src_main, dest_main, bidirection):
+        src_buckets = self._get_cluster_buckets(src_main)
+        dest_buckets = self._get_cluster_buckets(dest_main)
         for src_bucket in src_buckets:
             for dest_bucket in dest_buckets:
                 if src_bucket.name == dest_bucket.name:
@@ -1311,24 +1311,24 @@ class XDCRReplicationBaseTest(XDCRBaseTest):
                         self.__merge_keys(src_bucket.kvs, dest_bucket.kvs, kvs_num=1)
                     dest_bucket.kvs[1] = src_bucket.kvs[1]
 
-    def merge_buckets(self, src_master, dest_master, bidirection=True):
-        self.log.info("merge buckets {0}->{1}, bidirection:{2}".format(src_master.ip, dest_master.ip, bidirection))
+    def merge_buckets(self, src_main, dest_main, bidirection=True):
+        self.log.info("merge buckets {0}->{1}, bidirection:{2}".format(src_main.ip, dest_main.ip, bidirection))
         # Wait for expiration if not already done
         if self._expires and not self._wait_for_expiration:
             self.sleep(self._expires, "Waiting for expiration of updated items")
         if self._cluster_topology_str == XDCRConstants.CLUSTER_TOPOLOGY_TYPE_CHAIN:
-            self.__do_merge_buckets(src_master, dest_master, bidirection)
+            self.__do_merge_buckets(src_main, dest_main, bidirection)
         elif self._cluster_topology_str == XDCRConstants.CLUSTER_TOPOLOGY_TYPE_STAR:
             for i in range(1, len(self._clusters_dic)):
                 dest_cluster = self._clusters_dic[i]
-                self.__do_merge_buckets(src_master, dest_cluster[0], bidirection)
+                self.__do_merge_buckets(src_main, dest_cluster[0], bidirection)
 
-    def do_merge_bucket(self, src_master, dest_master, bidirection, bucket):
+    def do_merge_bucket(self, src_main, dest_main, bidirection, bucket):
         # Wait for expiration if not already done
         if self._expires and not self._wait_for_expiration:
             self.sleep(self._expires, "Waiting for expiration of updated items")
-        src_buckets = self._get_cluster_buckets(src_master)
-        dest_buckets = self._get_cluster_buckets(dest_master)
+        src_buckets = self._get_cluster_buckets(src_main)
+        dest_buckets = self._get_cluster_buckets(dest_main)
         for src_bucket in src_buckets:
             for dest_bucket in dest_buckets:
                 if src_bucket.name == dest_bucket.name and bucket.name == src_bucket.name:
@@ -1337,12 +1337,12 @@ class XDCRReplicationBaseTest(XDCRBaseTest):
                     dest_bucket.kvs[1] = src_bucket.kvs[1]
 
     def _wait_for_replication_to_catchup(self, timeout=1200):
-        self._expiry_pager(self.src_master)
-        self._expiry_pager(self.dest_master)
+        self._expiry_pager(self.src_main)
+        self._expiry_pager(self.dest_main)
         self.sleep(15)
 
-        rest1 = RestConnection(self.src_master)
-        rest2 = RestConnection(self.dest_master)
+        rest1 = RestConnection(self.src_main)
+        rest2 = RestConnection(self.dest_main)
         # 20 minutes by default
         end_time = time.time() + timeout
 
@@ -1388,16 +1388,16 @@ class XDCRReplicationBaseTest(XDCRBaseTest):
                         self.log.error("%s keys not found on %s:%s" % (len(values), ip, values))
         return error_count
 
-    def _expiry_pager(self, master, val=10):
-        buckets = self._get_cluster_buckets(master)
+    def _expiry_pager(self, main, val=10):
+        buckets = self._get_cluster_buckets(main)
         for bucket in buckets:
-            ClusterOperationHelper.flushctl_set(master, "exp_pager_stime", val, bucket)
+            ClusterOperationHelper.flushctl_set(main, "exp_pager_stime", val, bucket)
             self.log.info("wait for expiry pager to run on all these nodes")
 
-    def _wait_flusher_empty(self, master, servers, timeout=120):
+    def _wait_flusher_empty(self, main, servers, timeout=120):
         tasks = []
-        buckets = self._get_cluster_buckets(master)
-        self.assertTrue(buckets, "No buckets recieved from the server {0} for verification".format(master.ip))
+        buckets = self._get_cluster_buckets(main)
+        self.assertTrue(buckets, "No buckets recieved from the server {0} for verification".format(main.ip))
         for server in servers:
             for bucket in buckets:
                 tasks.append(self.cluster.async_wait_for_stats([server], bucket, '', 'ep_queue_size', '==', 0))
@@ -1415,10 +1415,10 @@ class XDCRReplicationBaseTest(XDCRBaseTest):
         for task in tasks:
             task.result(timeout)
 
-    def _verify_item_count(self, master, servers, timeout=120):
+    def _verify_item_count(self, main, servers, timeout=120):
         stats_tasks = []
-        buckets = self._get_cluster_buckets(master)
-        self.assertTrue(buckets, "No buckets received from the server {0} for verification".format(master.ip))
+        buckets = self._get_cluster_buckets(main)
+        self.assertTrue(buckets, "No buckets received from the server {0} for verification".format(main.ip))
         for bucket in buckets:
             items = sum([len(kv_store) for kv_store in bucket.kvs.values()])
             for stat in ['curr_items', 'vb_active_curr_items']:
@@ -1437,17 +1437,17 @@ class XDCRReplicationBaseTest(XDCRBaseTest):
 
 
     # CBQE-1695 Wait for replication_changes_left (outbound mutations) to be 0.
-    def __wait_for_outbound_mutations_zero(self, master_node, timeout=180):
-        self.log.info("Waiting for Outbound mutation to be zero on cluster node: %s" % master_node.ip)
-        buckets = self._get_cluster_buckets(master_node)
+    def __wait_for_outbound_mutations_zero(self, main_node, timeout=180):
+        self.log.info("Waiting for Outbound mutation to be zero on cluster node: %s" % main_node.ip)
+        buckets = self._get_cluster_buckets(main_node)
         curr_time = time.time()
         end_time = curr_time + timeout
-        rest = RestConnection(master_node)
+        rest = RestConnection(main_node)
         while curr_time < end_time:
             found = 0
             for bucket in buckets:
                 mutations = int(rest.get_xdc_queue_size(bucket.name))
-                self.log.info("Current outbound mutations on cluster node: %s for bucket %s is %s" % (master_node.ip, bucket.name, mutations))
+                self.log.info("Current outbound mutations on cluster node: %s for bucket %s is %s" % (main_node.ip, bucket.name, mutations))
                 if mutations == 0:
                     found = found + 1
             if found == len(buckets):
@@ -1476,32 +1476,32 @@ class XDCRReplicationBaseTest(XDCRBaseTest):
             timeout *= 3
 
         # Wait for ep_queue_size on source to become 0
-        self.log.info("Verify xdcr replication stats at Source Cluster : {0}".format(self.src_master.ip))
-        self._wait_flusher_empty(self.src_master, src_nodes)
+        self.log.info("Verify xdcr replication stats at Source Cluster : {0}".format(self.src_main.ip))
+        self._wait_flusher_empty(self.src_main, src_nodes)
 
         # Wait for ep_queue_size on dest to become 0
-        self.log.info("Verify xdcr replication stats at Destination Cluster : {0}".format(self.dest_master.ip))
-        self._wait_flusher_empty(self.dest_master, dest_nodes)
+        self.log.info("Verify xdcr replication stats at Destination Cluster : {0}".format(self.dest_main.ip))
+        self._wait_flusher_empty(self.dest_main, dest_nodes)
 
         mutations_replicated = True
         data_verified = False
         try:
             # Source validations
-            mutations_replicated &= self.__wait_for_outbound_mutations_zero(self.dest_master)
-            self._verify_item_count(self.src_master, src_nodes, timeout=timeout)
-            self._verify_data_all_buckets(self.src_master, max_verify=self.max_verify)
+            mutations_replicated &= self.__wait_for_outbound_mutations_zero(self.dest_main)
+            self._verify_item_count(self.src_main, src_nodes, timeout=timeout)
+            self._verify_data_all_buckets(self.src_main, max_verify=self.max_verify)
             # Dest validations
-            mutations_replicated &= self.__wait_for_outbound_mutations_zero(self.src_master)
-            self._verify_item_count(self.dest_master, dest_nodes, timeout=timeout)
-            self._verify_data_all_buckets(self.dest_master, max_verify=self.max_verify)
+            mutations_replicated &= self.__wait_for_outbound_mutations_zero(self.src_main)
+            self._verify_item_count(self.dest_main, dest_nodes, timeout=timeout)
+            self._verify_data_all_buckets(self.dest_main, max_verify=self.max_verify)
             data_verified = True
         finally:
             errors_caught = 0
             bidirection = self._replication_direction_str == XDCRConstants.REPLICATION_DIRECTION_BIDIRECTION
             if self._doc_ops is not None and ("update" in self._doc_ops or "delete" in self._doc_ops):
-                errors_caught += self._verify_revIds(self.src_master, self.dest_master)
+                errors_caught += self._verify_revIds(self.src_main, self.dest_main)
             if bidirection and self._doc_ops_dest is not None and ("update" in self._doc_ops_dest or "delete" in self._doc_ops_dest):
-                errors_caught += self._verify_revIds(self.dest_master, self.src_master)
+                errors_caught += self._verify_revIds(self.dest_main, self.src_main)
             if errors_caught > 0:
                 self.fail("Mismatches on Meta Information on xdcr-replicated items!")
             if data_verified:
@@ -1517,8 +1517,8 @@ class XDCRReplicationBaseTest(XDCRBaseTest):
     def verify_results(self):
         dest_key_index = 1
         if len(self.ord_keys) == 2:
-            src_nodes = self.get_servers_in_cluster(self.src_master)
-            dest_nodes = self.get_servers_in_cluster(self.dest_master)
+            src_nodes = self.get_servers_in_cluster(self.src_main)
+            dest_nodes = self.get_servers_in_cluster(self.dest_main)
             self.verify_xdcr_stats(src_nodes, dest_nodes)
         else:
             # Checking replication at destination clusters when more then 2 clusters defined

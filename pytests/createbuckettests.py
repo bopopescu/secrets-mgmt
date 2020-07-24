@@ -23,7 +23,7 @@ class CreateMembaseBucketsTests(unittest.TestCase):
         self.assertTrue(self.input, msg="input parameters missing...")
         self.servers = self.input.servers
         BucketOperationHelper.delete_all_buckets_or_assert(servers=self.servers, test_case=self)
-        self.master = self.servers[0]
+        self.main = self.servers[0]
         self._log_start()
 
     def tearDown(self):
@@ -159,11 +159,11 @@ class CreateMembaseBucketsTests(unittest.TestCase):
     def test_non_default_case_sensitive_same_port(self):
         postfix = uuid.uuid4()
         name = 'uppercase_{0}'.format(postfix)
-        master = self.servers[0]
-        rest = RestConnection(master)
+        main = self.servers[0]
+        rest = RestConnection(main)
         proxyPort = rest.get_nodes_self().moxi + 100
-        shell = RemoteMachineShellConnection(master)
-        url = "http://%s:8091/pools/default/buckets" % master.ip
+        shell = RemoteMachineShellConnection(main)
+        url = "http://%s:8091/pools/default/buckets" % main.ip
         params = "name=%s&ramQuotaMB=200&authType=none&replicaNumber=1&proxyPort=%s" \
                                                                    % (name, proxyPort)
         cmd = "curl -X POST -u Administrator:password  -d '%s' %s" % (params, url)
@@ -356,7 +356,7 @@ class CreateMembaseBucketsTests(unittest.TestCase):
     def test_max_buckets(self):
         log = logger.Logger.get_logger()
         serverInfo = self.servers[0]
-        log.info('picking server : {0} as the master'.format(serverInfo))
+        log.info('picking server : {0} as the main'.format(serverInfo))
         rest = RestConnection(serverInfo)
         proxyPort = rest.get_nodes_self().moxi
         info = rest.get_nodes_self()
@@ -369,8 +369,8 @@ class CreateMembaseBucketsTests(unittest.TestCase):
                                                 'password': 'password'}]
         rolelist = [{'id': 'cbadminbucket', 'name': 'cbadminbucket',
                                                       'roles': 'admin'}]
-        RbacBase().create_user_source(testuser, 'builtin', self.master)
-        RbacBase().add_user_role(rolelist, RestConnection(self.master), 'builtin')
+        RbacBase().create_user_source(testuser, 'builtin', self.main)
+        RbacBase().add_user_role(rolelist, RestConnection(self.main), 'builtin')
 
 
 
@@ -405,8 +405,8 @@ class CreateMembaseBucketsTests(unittest.TestCase):
         max_len = 100
         name_len = self.input.param('name_length', 100)
         name = 'a' * name_len
-        master = self.servers[0]
-        rest = RestConnection(master)
+        main = self.servers[0]
+        rest = RestConnection(main)
         proxyPort = rest.get_nodes_self().moxi
         try:
             rest.create_bucket(bucket=name, ramQuotaMB=200,

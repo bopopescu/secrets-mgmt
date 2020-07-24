@@ -14,7 +14,7 @@ DISTINCT_AGGREGATE_FUNCTIONS = ["SUM", "COUNT", "AVG"]
 class AggregatePushdownClass(QueryTests):
     def setUp(self):
         super(AggregatePushdownClass, self).setUp()
-        self.n1ql_helper = N1QLHelper(master=self.master)
+        self.n1ql_helper = N1QLHelper(main=self.main)
         self.n1ql_node = self.get_nodes_from_services_map(service_type="n1ql")
         self.aggr_distinct = self.input.param("aggr_distinct", False)
         self.order_by = self.input.param("order_by", False)

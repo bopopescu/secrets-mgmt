@@ -2201,7 +2201,7 @@ class GSIReplicaIndexesTests(BaseSecondaryIndexingTests, QueryHelperTests):
                                                     index_map,
                                                     self.num_index_replicas)
 
-        self.cluster.bucket_flush(self.master)
+        self.cluster.bucket_flush(self.main)
         self.sleep(60)
 
         index_stats = self.get_index_stats(perNode=True)
@@ -2280,9 +2280,9 @@ class GSIReplicaIndexesTests(BaseSecondaryIndexingTests, QueryHelperTests):
             self.log.info("# Before Rollback Docs processed by %s = %s" % (
                 index_name, num_docs_processed_before_rollback[index_name]))
 
-        # Kill memcached on Node A so that Node B becomes master
+        # Kill memcached on Node A so that Node B becomes main
         self.log.info("Kill Memcached process on NodeA")
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         shell.kill_memcached()
 
         # Start persistence on Node B

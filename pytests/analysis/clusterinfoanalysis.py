@@ -31,11 +31,11 @@ class DataAnalysisTests(BaseTestCase):
         """
             Test to check http access log
         """
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         log_path = rest.get_data_path().replace("data","logs")
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         output = remote_client.read_remote_file(log_path, "http_access.log")
-        logic = self.verify_http_acesslog(output,[self.master.ip])
+        logic = self.verify_http_acesslog(output,[self.main.ip])
         self.assertTrue(logic, "search string not present in http_access.log")
 
     def test_node_services(self):
@@ -57,12 +57,12 @@ class DataAnalysisTests(BaseTestCase):
         """
         self.std = self.input.param("std", 1.0)
         self.gen_create = BlobGenerator('loadOne', 'loadOne_', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, self.gen_create, "create", 0,
+        self._load_all_buckets(self.main, self.gen_create, "create", 0,
                                batch_size=10000, pause_secs=10, timeout_secs=60)
         self._wait_for_stats_all_buckets(self.servers)
-        meta_data_store = self.get_meta_data_set_all(self.master)
-        self.data_meta_data_analysis(self.master, meta_data_store)
-        self.data_active_and_replica_analysis(self.master)
+        meta_data_store = self.get_meta_data_set_all(self.main)
+        self.data_meta_data_analysis(self.main, meta_data_store)
+        self.data_active_and_replica_analysis(self.main)
 
     def test_data_distribution(self):
         """
@@ -70,7 +70,7 @@ class DataAnalysisTests(BaseTestCase):
         """
         self.std = self.input.param("std", 1.0)
         self.gen_create = BlobGenerator('loadOne', 'loadOne_', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, self.gen_create, "create", 0,
+        self._load_all_buckets(self.main, self.gen_create, "create", 0,
                                batch_size=10000, pause_secs=10, timeout_secs=60)
         self._wait_for_stats_all_buckets(self.servers)
         self.data_distribution_analysis(self.num_items,self.std)
@@ -82,7 +82,7 @@ class DataAnalysisTests(BaseTestCase):
         self.std = self.input.param("std", 1.0)
         self.total_vbuckets = self.input.param("total_vbuckets", 1.0)
         self.gen_create = BlobGenerator('loadOne', 'loadOne_', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, self.gen_create, "create", 0,
+        self._load_all_buckets(self.main, self.gen_create, "create", 0,
                                batch_size=10000, pause_secs=10, timeout_secs=60)
         self._wait_for_stats_all_buckets(self.servers)
         self.vb_distribution_check(self.total_vbuckets,self.std)
@@ -94,12 +94,12 @@ class DataAnalysisTests(BaseTestCase):
         """
         create = BlobGenerator('loadOne', 'loadOne_', self.value_size, end=self.num_items)
         update = BlobGenerator('loadOne', 'loadOne-', self.value_size, end=(self.num_items / 2 - 1))
-        self._load_all_buckets(self.master, create, "create", 0,
+        self._load_all_buckets(self.main, create, "create", 0,
                                batch_size=10000, pause_secs=10, timeout_secs=60)
         self.num_items=self.num_items - self.num_items / 2
         self._verify_stats_all_buckets(self.servers, timeout=120)
         self._wait_for_stats_all_buckets(self.servers)
-        self._async_load_all_buckets(self.master, update, "update", 0)
+        self._async_load_all_buckets(self.main, update, "update", 0)
         self._verify_stats_all_buckets(self.servers, timeout=120)
         self._wait_for_stats_all_buckets(self.servers)
         self.sleep(60)
@@ -112,7 +112,7 @@ class DataAnalysisTests(BaseTestCase):
             This will be done cluster level comparison
         """
         self.gen_create = BlobGenerator('loadOne', 'loadOne_', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, self.gen_create, "create", 0,
+        self._load_all_buckets(self.main, self.gen_create, "create", 0,
                                batch_size=10000, pause_secs=10, timeout_secs=60)
         self._wait_for_stats_all_buckets(self.servers)
         self.data_analysis_all_replica_active()
@@ -124,7 +124,7 @@ class DataAnalysisTests(BaseTestCase):
             This is done for cluster and node level as well
         """
         self.gen_create = BlobGenerator('loadOne', 'loadOne_', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, self.gen_create, "create", 0,
+        self._load_all_buckets(self.main, self.gen_create, "create", 0,
                                batch_size=10000, pause_secs=10, timeout_secs=60)
         self._wait_for_stats_all_buckets(self.servers)
         RebalanceHelper.wait_for_replication(self.servers, self.cluster)
@@ -140,7 +140,7 @@ class DataAnalysisTests(BaseTestCase):
             This is done for cluster and node level as well
         """
         self.gen_create = BlobGenerator('loadOne', 'loadOne_', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, self.gen_create, "create", 0,
+        self._load_all_buckets(self.main, self.gen_create, "create", 0,
                                batch_size=10000, pause_secs=10, timeout_secs=60)
         self._wait_for_stats_all_buckets(self.servers)
         RebalanceHelper.wait_for_replication(self.servers, self.cluster)
@@ -156,7 +156,7 @@ class DataAnalysisTests(BaseTestCase):
             This is done for cluster and node level as well
         """
         self.gen_create = BlobGenerator('loadOne', 'loadOne_', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, self.gen_create, "create", 0,
+        self._load_all_buckets(self.main, self.gen_create, "create", 0,
                                batch_size=10000, pause_secs=10, timeout_secs=60)
         self._wait_for_stats_all_buckets(self.servers)
         RebalanceHelper.wait_for_replication(self.servers, self.cluster)

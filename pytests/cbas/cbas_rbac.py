@@ -13,7 +13,7 @@ class CBASRBACTests(CBASBaseTest):
         super(CBASRBACTests, self).tearDown()
 
     def test_cbas_rbac(self):
-        self.load_sample_buckets(servers=[self.master],
+        self.load_sample_buckets(servers=[self.main],
                                  bucketName=self.cb_bucket_name,
                                  total_items=self.travel_sample_docs_count)
 
@@ -293,7 +293,7 @@ class CBASRBACTests(CBASBaseTest):
 
     def test_rest_api_authorization_version_api_no_authentication(self):
         api_url = "http://{0}:8095/analytics/version".format(self.cbas_node.ip)
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
 
         roles = ["analytics_manager[*]", "analytics_reader", "ro_admin",
                  "cluster_admin", "admin"]
@@ -411,7 +411,7 @@ class CBASRBACTests(CBASBaseTest):
 
         ]
 
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
 
         for api in api_authentication:
             for role in api["roles"]:

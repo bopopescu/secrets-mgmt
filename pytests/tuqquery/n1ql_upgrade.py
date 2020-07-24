@@ -38,7 +38,7 @@ class QueriesUpgradeTests(QueryTests, NewUpgradeBaseTest):
         self._kill_all_processes_cbq()
         self._start_command_line_query(self.servers[1])
         self.shell.execute_command("ps -aef| grep cbq-engine")
-        self.master = self.servers[1]
+        self.main = self.servers[1]
         getattr(self, method_name)()
 
     def test_upgrade(self):
@@ -52,6 +52,6 @@ class QueriesUpgradeTests(QueryTests, NewUpgradeBaseTest):
         for upgrade_thread in upgrade_threads:
             upgrade_thread.join()
         self._kill_all_processes_cbq()
-        self._start_command_line_query(self.master)
+        self._start_command_line_query(self.main)
         self.create_primary_index_for_3_0_and_greater()
         getattr(self, method_name)()

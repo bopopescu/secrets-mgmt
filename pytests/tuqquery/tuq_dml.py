@@ -15,7 +15,7 @@ class DMLQueryTests(QueryTests):
         self.log.info(self.shell.execute_command("ps aux | grep cbq"))
         self.log.info(self.shell.execute_command("ps aux | grep indexer"))
         for bucket in self.buckets:
-            self.cluster.bucket_flush(self.master, bucket=bucket,
+            self.cluster.bucket_flush(self.main, bucket=bucket,
                                   timeout=self.wait_timeout * 5)
         self.shell.execute_command("killall -9 cbq-engine")
         self.shell.execute_command("killall -9 indexer")

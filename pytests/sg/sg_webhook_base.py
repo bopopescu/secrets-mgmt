@@ -19,7 +19,7 @@ class GatewayWebhookBaseTest(GatewayBaseTest):
         self.doc_content = self.input.param("doc_content", "{'a':1}")
         self.expected_error = self.input.param("expected_error", "")
         self.servers = self.input.servers
-        self.master = self.servers[0]
+        self.main = self.servers[0]
         for server in self.servers:
             shell = RemoteMachineShellConnection(server)
             if self.case_number == 1:

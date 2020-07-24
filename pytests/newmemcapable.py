@@ -62,7 +62,7 @@ class GetrTests(BaseTestCase):
                                       start=self.num_items/2, end=self.num_items)
         self.log.info("LOAD PHASE")
         if not self.skipload:
-            self.perform_docs_ops(self.master, [gen_1, gen_2], self.data_ops)
+            self.perform_docs_ops(self.main, [gen_1, gen_2], self.data_ops)
 
         self.log.info("CLUSTER OPS PHASE")
         if self.rebalance == GetrTests.AFTER_REBALANCE:
@@ -98,7 +98,7 @@ class GetrTests(BaseTestCase):
 
             self.log.info("Checking replica read")
             if self.failover == GetrTests.FAILOVER_NO_REBALANCE:
-                self._verify_all_buckets(self.master, only_store_hash=False,
+                self._verify_all_buckets(self.main, only_store_hash=False,
                                          replica_to_read=self.replica_to_read,
                                          batch_size=1)
             else:
@@ -121,16 +121,16 @@ class GetrTests(BaseTestCase):
                                       start=self.num_items/2, end=self.num_items)
         self.log.info("LOAD PHASE")
         if not self.skipload:
-            self.perform_docs_ops(self.master, [gen_1, gen_2], self.data_ops)
+            self.perform_docs_ops(self.main, [gen_1, gen_2], self.data_ops)
 
         if self.wait_expiration:
             self.sleep(self.expiration)
 
         self.log.info("READ REPLICA PHASE")
         self.log.info("Checking replica read")
-        self.expire_pager([self.master])
+        self.expire_pager([self.main])
         try:
-            self._load_all_buckets(self.master, gen_1, 'read_replica', self.expiration, batch_size=1)
+            self._load_all_buckets(self.main, gen_1, 'read_replica', self.expiration, batch_size=1)
         except Exception, ex:
             if self.error and str(ex).find(self.error) != -1:
                 self.log.info("Expected error %s appeared as expected" % self.error)
@@ -144,9 +144,9 @@ class GetrTests(BaseTestCase):
         key = self.input.param("key", '')
         gen = DocumentGenerator('test_docs', '{{"age": {0}}}', xrange(5),
                                       start=0, end=self.num_items)
-        self.perform_docs_ops(self.master, [gen], 'create')
+        self.perform_docs_ops(self.main, [gen], 'create')
         self.log.info("Checking replica read")
-        client = VBucketAwareMemcached(RestConnection(self.master), self.default_bucket_name)
+        client = VBucketAwareMemcached(RestConnection(self.main), self.default_bucket_name)
         try:
             o, c, d = client.getr(key)
         except Exception, ex:
@@ -163,7 +163,7 @@ class GetrTests(BaseTestCase):
         gen_1 = DocumentGenerator('test_docs', '{{"age": {0}}}', xrange(5),
                                       start=0, end=self.num_items)
         self.log.info("LOAD PHASE")
-        self.perform_docs_ops(self.master, [gen_1], self.data_ops)
+        self.perform_docs_ops(self.main, [gen_1], self.data_ops)
 
         self.log.info("Start bucket ops")
         bucket_read = self.buckets[0]
@@ -171,12 +171,12 @@ class GetrTests(BaseTestCase):
         try:
             self.log.info("READ REPLICA PHASE")
             self.log.info("Checking replica read")
-            task_verify = self.cluster.async_verify_data(self.master, bucket_read,
+            task_verify = self.cluster.async_verify_data(self.main, bucket_read,
                                                          bucket_read.kvs[1],
                                                          only_store_hash=False,
                                                          replica_to_read=self.replica_to_read,
                                                          compression=self.sdk_compression)
-            task_delete_bucket = self.cluster.async_bucket_delete(self.master, bucket_delete.name)
+            task_delete_bucket = self.cluster.async_bucket_delete(self.main, bucket_delete.name)
             task_verify.result()
             task_delete_bucket.result()
         except Exception, ex:
@@ -192,9 +192,9 @@ class GetrTests(BaseTestCase):
     def getr_rebalance_test(self):
         gen = DocumentGenerator('test_docs', '{{"age": {0}}}', xrange(5),
                                       start=0, end=self.num_items)
-        self.perform_docs_ops(self.master, [gen], 'create')
+        self.perform_docs_ops(self.main, [gen], 'create')
         self.log.info("Checking replica read")
-        client = VBucketAwareMemcached(RestConnection(self.master), self.default_bucket_name)
+        client = VBucketAwareMemcached(RestConnection(self.main), self.default_bucket_name)
         rebalance = self.cluster.async_rebalance(self.servers[:self.nodes_init],
                             self.servers[self.nodes_init : self.nodes_init + self.nodes_in],
                             [])
@@ -209,10 +209,10 @@ class GetrTests(BaseTestCase):
         vbucket_state = self.input.param("vbucket_state", '')
         gen = DocumentGenerator('test_docs', '{{"age": {0}}}', xrange(5),
                                 start=0, end=self.num_items)
-        self.perform_docs_ops(self.master, [gen], 'create')
+        self.perform_docs_ops(self.main, [gen], 'create')
         self.log.info("Checking replica read")
-        client = VBucketAwareMemcached(RestConnection(self.master), self.default_bucket_name)
-        vbuckets_num = RestConnection(self.master).get_vbuckets(self.buckets[0])
+        client = VBucketAwareMemcached(RestConnection(self.main), self.default_bucket_name)
+        vbuckets_num = RestConnection(self.main).get_vbuckets(self.buckets[0])
         while gen.has_next():
             try:
                 key, _ = gen.next()
@@ -246,7 +246,7 @@ class GetrTests(BaseTestCase):
         gens = []
         delta_items = 200000
         self.num_items = 0
-        mc = MemcachedClientHelper.direct_client(self.master, self.default_bucket_name)
+        mc = MemcachedClientHelper.direct_client(self.main, self.default_bucket_name)
 
         self.log.info("LOAD PHASE")
         end_time = time.time() + self.wait_timeout * 30
@@ -257,7 +257,7 @@ class GetrTests(BaseTestCase):
             gen = DocumentGenerator('test_docs', '{{"age": {0}}}', xrange(5),
                                     start=self.num_items, end=(self.num_items + delta_items))
             gens.append(copy.deepcopy(gen))
-            self._load_all_buckets(self.master, gen, 'create', self.expiration, kv_store=1,
+            self._load_all_buckets(self.main, gen, 'create', self.expiration, kv_store=1,
                                    flag=self.flags, only_store_hash=False, batch_size=1)
             self.num_items += delta_items
             self.log.info("Resident ratio is %s" % mc.stats()["vb_active_perc_mem_resident"])
@@ -304,7 +304,7 @@ class GetrTests(BaseTestCase):
         ClusterOperationHelper.wait_for_ns_servers_or_assert(warmup_nodes, self)
 
     def perform_failover(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         nodes = rest.node_statuses()
         failover_servers = self.servers[:self.nodes_init][-self.failover_factor:]
         failover_nodes = []

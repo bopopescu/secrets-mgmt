@@ -209,7 +209,7 @@ class RestHelper(object):
                 bucket_to_check = [bucket for bucket in buckets][0]
             vbuckets_servers[server] = {}
             vbs_active = [vb.id for vb in bucket_to_check.vbuckets
-                           if vb.master.startswith(str(server.ip))]
+                           if vb.main.startswith(str(server.ip))]
             vbs_replica = []
             for replica_num in xrange(0, bucket_to_check.numReplicas):
                 vbs_replica.extend([vb.id for vb in bucket_to_check.vbuckets
@@ -1488,10 +1488,10 @@ class RestConnection(object):
         status, content = self.diag_eval(code)
         return status, content
 
-    def diag_master_events(self):
-        api = '{0}{1}'.format(self.baseUrl, 'diag/masterEvents?o=1')
+    def diag_main_events(self):
+        api = '{0}{1}'.format(self.baseUrl, 'diag/mainEvents?o=1')
         status, content, header = self._http_request(api, "GET")
-        log.info("diag/masterEvents?o=1 status: {0} content: {1}".format(status, content))
+        log.info("diag/mainEvents?o=1 status: {0} content: {1}".format(status, content))
         return status, content
 
 
@@ -2407,7 +2407,7 @@ class RestConnection(object):
         if not status:
             log.error('''failed to change autofailover_settings!
                          See MB-7282. Workaround:
-                         wget --user=Administrator --password=asdasd --post-data='rpc:call(mb_master:master_node(), erlang, apply ,[fun () -> erlang:exit(erlang:whereis(mb_master), kill) end, []]).' http://localhost:8091/diag/eval''')
+                         wget --user=Administrator --password=asdasd --post-data='rpc:call(mb_main:main_node(), erlang, apply ,[fun () -> erlang:exit(erlang:whereis(mb_main), kill) end, []]).' http://localhost:8091/diag/eval''')
         return status
 
     # return AutoReprovisionSettings
@@ -3643,7 +3643,7 @@ class RestConnection(object):
         return True
 
     def _set_secrets_password(self, new_password):
-        api = self.baseUrl + "/node/controller/changeMasterPassword"
+        api = self.baseUrl + "/node/controller/changeMainPassword"
         params = urllib.urlencode({
             'newPassword': '{0}'.format(new_password.encode('utf-8').strip())
                                         })
@@ -4496,7 +4496,7 @@ class NodeDiskStorage(object):
 
 
 class Bucket(object):
-    def __init__(self, bucket_size='', name="", authType="sasl", saslPassword="", num_replicas=0, port=11211, master_id=None,
+    def __init__(self, bucket_size='', name="", authType="sasl", saslPassword="", num_replicas=0, port=11211, main_id=None,
                  type='', eviction_policy="valueOnly", bucket_priority=None, uuid="", lww=False, maxttl=None):
         self.name = name
         self.port = port
@@ -4512,7 +4512,7 @@ class Bucket(object):
         self.bucket_size = bucket_size
         self.kvs = {1:KVStore()}
         self.authType = authType
-        self.master_id = master_id
+        self.main_id = main_id
         self.eviction_policy = eviction_policy
         self.bucket_priority = bucket_priority
         self.uuid = uuid
@@ -4583,7 +4583,7 @@ class BucketStats(object):
 
 class vBucket(object):
     def __init__(self):
-        self.master = ''
+        self.main = ''
         self.replica = []
         self.id = -1
 
@@ -4733,7 +4733,7 @@ class RestParser(object):
                 for vbucket in vBucketMapForward:
                     # there will be n number of replicas
                     vbucketInfo = vBucket()
-                    vbucketInfo.master = serverList[vbucket[0]]
+                    vbucketInfo.main = serverList[vbucket[0]]
                     if vbucket:
                         for i in range(1, len(vbucket)):
                             if vbucket[i] != -1:
@@ -4746,7 +4746,7 @@ class RestParser(object):
             for vbucket in vBucketMap:
                 # there will be n number of replicas
                 vbucketInfo = vBucket()
-                vbucketInfo.master = serverList[vbucket[0]]
+                vbucketInfo.main = serverList[vbucket[0]]
                 if vbucket:
                     for i in range(1, len(vbucket)):
                         if vbucket[i] != -1:
@@ -4755,7 +4755,7 @@ class RestParser(object):
                 counter += 1
                 bucket.vbuckets.append(vbucketInfo)
                 # now go through each vbucket and populate the info
-            # who is master , who is replica
+            # who is main , who is replica
         # get the 'storageTotals'
         log.debug('read {0} vbuckets'.format(len(bucket.vbuckets)))
         stats = parsed['basicStats']

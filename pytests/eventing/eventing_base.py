@@ -28,8 +28,8 @@ class EventingBaseTest(QueryHelperTests, BaseTestCase):
         self.input = TestInputSingleton.input
         self.input.test_params.update({"default_bucket": False})
         super(EventingBaseTest, self).setUp()
-        self.master = self.servers[0]
-        self.server = self.master
+        self.main = self.servers[0]
+        self.server = self.main
         self.restServer = self.get_nodes_from_services_map(service_type="eventing")
         self.rest = RestConnection(self.restServer)
         self.log.info(
@@ -389,7 +389,7 @@ class EventingBaseTest(QueryHelperTests, BaseTestCase):
             gen_create = BlobGenerator('dgmkv', 'dgmkv-', doc_size, start=curr_items + 1, end=curr_items + 20000)
             total_items += batch_items
             try:
-                self.cluster.load_gen_docs(self.master, bucket, gen_create, self.buckets[0].kvs[1],
+                self.cluster.load_gen_docs(self.main, bucket, gen_create, self.buckets[0].kvs[1],
                                            'create', exp=0, flag=0, batch_size=1000, compression=self.sdk_compression)
             except:
                 pass
@@ -399,7 +399,7 @@ class EventingBaseTest(QueryHelperTests, BaseTestCase):
         return total_items
 
     def bucket_stat(self, key, bucket):
-        stats = StatsCommon.get_stats([self.master], bucket, "", key)
+        stats = StatsCommon.get_stats([self.main], bucket, "", key)
         val = stats.values()[0]
         if val.isdigit():
             val = int(val)

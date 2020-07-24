@@ -243,12 +243,12 @@ class RebalanceTask(Task):
             raise Exception("Bad State in RebalanceTask: {0}".format(self.state))
 
     def add_nodes(self, task_manager):
-        master = self.servers[0]
-        rest = RestConnection(master)
+        main = self.servers[0]
+        rest = RestConnection(main)
         try:
             for node in self.to_add:
                 self.log.info("adding node {0}:{1} to cluster".format(node.ip, node.port))
-                rest.add_node(master.rest_username, master.rest_password,
+                rest.add_node(main.rest_username, main.rest_password,
                     node.ip, node.port)
             self.state = "start_rebalance"
             task_manager.schedule(self)

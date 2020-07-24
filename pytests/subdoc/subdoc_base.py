@@ -186,10 +186,10 @@ class SubdocBaseTest(BaseTestCase):
             try:
                 from sdk_client import SDKClient
                 scheme = "couchbase"
-                host = self.master.ip
-                if self.master.ip == "127.0.0.1":
+                host = self.main.ip
+                if self.main.ip == "127.0.0.1":
                     scheme = "http"
-                    host="{0}:{1}".format(self.master.ip,self.master.port)
+                    host="{0}:{1}".format(self.main.ip,self.main.port)
                 return SDKClient(scheme=scheme,hosts = [host], bucket = bucket.name)
             except Exception, ex:
                 self.log.error("cannot load sdk client due to error {0}".format(str(ex)))

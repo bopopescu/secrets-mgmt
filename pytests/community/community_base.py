@@ -28,7 +28,7 @@ class CommunityBaseTest(BaseTestCase):
         self.backup_option = self.input.param("backup_option", '')
         #define the data that will be used to test
         self.blob_generator = self.input.param("blob_generator", True)
-        self.rest = RestConnection(self.master)
+        self.rest = RestConnection(self.main)
         if self.rest.is_enterprise_edition():
             raise Exception("This couchbase server is not Community Edition."
                   "Tests require Community Edition to test")
@@ -43,7 +43,7 @@ class CommunityBaseTest(BaseTestCase):
             self._load_all_buckets(self.servers[0], self.gen_load, "create", 0)
         else:
             self._load_doc_data_all_buckets()
-        self.remote = RemoteMachineShellConnection(self.master)
+        self.remote = RemoteMachineShellConnection(self.main)
         type = self.remote.extract_remote_info().distribution_type
         self.backup_location = LINUX_BACKUP_PATH
         self.backup_c_location = LINUX_BACKUP_PATH

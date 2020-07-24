@@ -28,7 +28,7 @@ class RebalanceBaseTest(unittest.TestCase):
         ClusterOperationHelper.wait_for_ns_servers_or_assert(servers, testcase)
         serverInfo = servers[0]
 
-        log.info('picking server : {0} as the master'.format(serverInfo))
+        log.info('picking server : {0} as the main'.format(serverInfo))
         #if all nodes are on the same machine let's have the bucket_ram_ratio as bucket_ram_ratio * 1/len(servers)
         node_ram_ratio = BucketOperationHelper.base_bucket_ratio(servers)
         rest = RestConnection(serverInfo)
@@ -56,9 +56,9 @@ class RebalanceBaseTest(unittest.TestCase):
         BucketOperationHelper.delete_all_buckets_or_assert(servers, testcase)
 
     @staticmethod
-    def replication_verification(master, bucket_data, replica, test, failed_over=False):
+    def replication_verification(main, bucket_data, replica, test, failed_over=False):
         asserts = []
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         buckets = rest.get_buckets()
         nodes = rest.node_statuses()
         test.log.info("expect {0} / {1} replication ? {2}".format(len(nodes),
@@ -68,13 +68,13 @@ class RebalanceBaseTest(unittest.TestCase):
                             msg="replication did not complete after 5 minutes")
             #run expiry_pager on all nodes before doing the replication verification
             for bucket in buckets:
-                ClusterOperationHelper.set_expiry_pager_sleep_time(master, bucket.name)
+                ClusterOperationHelper.set_expiry_pager_sleep_time(main, bucket.name)
                 test.log.info("wait for expiry pager to run on all these nodes")
                 time.sleep(30)
-                ClusterOperationHelper.set_expiry_pager_sleep_time(master, bucket.name, 3600)
-                ClusterOperationHelper.set_expiry_pager_sleep_time(master, bucket.name)
+                ClusterOperationHelper.set_expiry_pager_sleep_time(main, bucket.name, 3600)
+                ClusterOperationHelper.set_expiry_pager_sleep_time(main, bucket.name)
                 replica_match = RebalanceHelper.wait_till_total_numbers_match(bucket=bucket.name,
-                                                                              master=master,
+                                                                              main=main,
                                                                               timeout_in_seconds=300)
                 if not replica_match:
                     asserts.append("replication was completed but sum(curr_items) dont match the curr_items_total")
@@ -110,8 +110,8 @@ class RebalanceTestsUnderLoad(unittest.TestCase):
         RebalanceBaseTest.common_tearDown(self._servers, self)
 
     def _add_items(self, seed, bucket, num_of_docs, kv_store):
-        master = self._servers[0]
-        rest = RestConnection(master)
+        main = self._servers[0]
+        rest = RestConnection(main)
         params = {"sizes": [128], "count": num_of_docs,
                   "seed": seed}
         load_set_ops = {"ops": "set", "bucket": bucket.name}
@@ -126,13 +126,13 @@ class RebalanceTestsUnderLoad(unittest.TestCase):
     def test_rebalance_out(self):
         RebalanceBaseTest.common_setup(self._input, self, replica=1)
         log = logger.Logger().get_logger()
-        master = self._servers[0]
+        main = self._servers[0]
         num_of_docs = TestInputSingleton.input.param("num_of_docs", 100000)
         replica = TestInputSingleton.input.param("replica", 100000)
         add_items_count = TestInputSingleton.input.param("num_of_creates", 30000)
         size = TestInputSingleton.input.param("item_size", 256)
         params = {"sizes": [size], "count": num_of_docs, "seed": str(uuid.uuid4())[:7]}
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         buckets = rest.get_buckets()
         bucket_data = {}
         generators = {}
@@ -146,8 +146,8 @@ class RebalanceTestsUnderLoad(unittest.TestCase):
                         msg="rebalance operation failed after adding nodes {0}".format(
                             [node.id for node in rest.node_statuses()]))
         while len(rest.node_statuses()) > 1:
-            #pick a node that is not the master node
-            toBeEjectedNode = RebalanceHelper.pick_node(master)
+            #pick a node that is not the main node
+            toBeEjectedNode = RebalanceHelper.pick_node(main)
             rest.rebalance(otpNodes=[node.id for node in rest.node_statuses()], ejectedNodes=[toBeEjectedNode.id])
             self.assertTrue(rest.monitorRebalance(),
                             msg="rebalance operation failed after adding node {0}".format(toBeEjectedNode.id))
@@ -183,11 +183,11 @@ class RebalanceTestsUnderLoad(unittest.TestCase):
             for bucket in buckets:
                 kv_store = bucket_data[bucket.name]["kv_store"]
                 bucket_data[bucket.name]["items_inserted_count"] = len(kv_store.valid_items())
-                RebalanceBaseTest.replication_verification(master, bucket_data, replica, self)
+                RebalanceBaseTest.replication_verification(main, bucket_data, replica, self)
 
     def test_rebalance_in(self):
         log = logger.Logger().get_logger()
-        master = self._servers[0]
+        main = self._servers[0]
         num_of_docs = TestInputSingleton.input.param("num_of_docs", 100000)
         replica = TestInputSingleton.input.param("replica", 100000)
         add_items_count = TestInputSingleton.input.param("num_of_creates", 30000)
@@ -195,7 +195,7 @@ class RebalanceTestsUnderLoad(unittest.TestCase):
         size = TestInputSingleton.input.param("item_size", 256)
         params = {"sizes": [size], "count": num_of_docs, "seed": str(uuid.uuid4())[:7]}
         RebalanceBaseTest.common_setup(self._input, self, replica=1)
-        rest = RestConnection(master)
+        rest = RestConnection(main)
         buckets = rest.get_buckets()
         bucket_data = {}
         generators = {}
@@ -235,7 +235,7 @@ class RebalanceTestsUnderLoad(unittest.TestCase):
             for bucket in buckets:
                 kv_store = bucket_data[bucket.name]["kv_store"]
                 bucket_data[bucket.name]["items_inserted_count"] = len(kv_store.valid_items())
-                RebalanceBaseTest.replication_verification(master, bucket_data, replica, self)
+                RebalanceBaseTest.replication_verification(main, bucket_data, replica, self)
 
 
 class RebalanceDataGenerator(object):

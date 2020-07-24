@@ -45,8 +45,8 @@ class PerfBase(unittest.TestCase):
         if self.parami("tear_down_on_setup",
                        PerfDefaults.tear_down_on_setup) == 1:
             self.tearDown()  # Tear down in case previous run had unclean death
-        master = self.input.servers[0]
-        self.set_up_rest(master)
+        main = self.input.servers[0]
+        self.set_up_rest(main)
 
     def setUpBase1(self):
         if max(self.parami('num_buckets', 1),
@@ -70,10 +70,10 @@ class PerfBase(unittest.TestCase):
         if erlang_schedulers:
             ClusterOperationHelper.set_erlang_schedulers(self.input.servers,
                                                          erlang_schedulers)
-        master = self.input.servers[0]
+        main = self.input.servers[0]
 
         self.is_multi_node = False
-        self.data_path = master.data_path
+        self.data_path = main.data_path
 
         # Number of items loaded by load() method.
         # Does not include or count any items that came from set_up_dgm().
@@ -82,12 +82,12 @@ class PerfBase(unittest.TestCase):
 
         if self.input.clusters:
             for cluster in self.input.clusters.values():
-                master = cluster[0]
-                self.set_up_rest(master)
-                self.set_up_cluster(master)
+                main = cluster[0]
+                self.set_up_rest(main)
+                self.set_up_cluster(main)
         else:
-            master = self.input.servers[0]
-            self.set_up_cluster(master)
+            main = self.input.servers[0]
+            self.set_up_cluster(main)
 
         # Rebalance
         if self.input.clusters:
@@ -100,8 +100,8 @@ class PerfBase(unittest.TestCase):
 
         if self.input.clusters:
             for cluster in self.input.clusters.values():
-                master = cluster[0]
-                self.set_up_rest(master)
+                main = cluster[0]
+                self.set_up_rest(main)
                 self.set_up_buckets()
         else:
             self.set_up_buckets()
@@ -110,8 +110,8 @@ class PerfBase(unittest.TestCase):
 
         if self.input.clusters:
             for cluster in self.input.clusters.values():
-                master = cluster[0]
-                self.set_up_rest(master)
+                main = cluster[0]
+                self.set_up_rest(main)
                 self.reconfigure()
         else:
             self.reconfigure()
@@ -129,19 +129,19 @@ class PerfBase(unittest.TestCase):
             self.wait_until_warmed_up()
         ClusterOperationHelper.flush_os_caches(self.input.servers)
 
-    def set_up_rest(self, master):
-        self.rest = RestConnection(master)
+    def set_up_rest(self, main):
+        self.rest = RestConnection(main)
         self.rest_helper = RestHelper(self.rest)
 
-    def set_up_cluster(self, master):
+    def set_up_cluster(self, main):
         """Initialize cluster"""
         self.log.info("setting up cluster")
 
-        self.rest.init_cluster(master.rest_username, master.rest_password)
+        self.rest.init_cluster(main.rest_username, main.rest_password)
 
         memory_quota = self.parami('mem_quota', PerfDefaults.mem_quota)
-        self.rest.init_cluster_memoryQuota(master.rest_username,
-                                           master.rest_password,
+        self.rest.init_cluster_memoryQuota(main.rest_username,
+                                           main.rest_password,
                                            memoryQuota=memory_quota)
 
     def _get_bucket_names(self, num_buckets):
@@ -845,10 +845,10 @@ class PerfBase(unittest.TestCase):
                 retries += 1
                 time.sleep(delay_seconds)
         sc.reb_stats(start_time, end_time - start_time)
-        if self.parami("master_events", PerfDefaults.master_events):
-            filename = "master_events.log"
+        if self.parami("main_events", PerfDefaults.main_events):
+            filename = "main_events.log"
             with open(filename, "w") as f:
-                f.write(self.rest.diag_master_events()[1])
+                f.write(self.rest.diag_main_events()[1])
 
     def delayed_rebalance(self, num_nodes, delay_seconds=10,
                           max_retries=PerfDefaults.reb_max_retries,
@@ -1068,9 +1068,9 @@ class PerfBase(unittest.TestCase):
     def wait_until_drained(self):
         self.log.info("draining disk write queue")
 
-        master = self.input.servers[0]
+        main = self.input.servers[0]
         bucket = self.param("bucket", "default")
-        ready = RebalanceHelper.wait_for_persistence(master, bucket)
+        ready = RebalanceHelper.wait_for_persistence(main, bucket)
         self.assertTrue(ready, "not all items persisted. see logs")
 
         self.log.info("disk write queue has been drained")
@@ -1079,22 +1079,22 @@ class PerfBase(unittest.TestCase):
     def wait_until_repl(self):
         self.log.info("waiting for replication")
 
-        master = self.input.servers[0]
+        main = self.input.servers[0]
         bucket = self.param("bucket", "default")
 
-        RebalanceHelper.wait_for_stats_on_all(master, bucket,
+        RebalanceHelper.wait_for_stats_on_all(main, bucket,
             'vb_replica_queue_size', 0,
             fn=RebalanceHelper.wait_for_stats_no_timeout)
 
-        RebalanceHelper.wait_for_stats_on_all(master, bucket,
+        RebalanceHelper.wait_for_stats_on_all(main, bucket,
             'ep_tap_replica_queue_itemondisk', 0,
             fn=RebalanceHelper.wait_for_stats_no_timeout)
 
-        RebalanceHelper.wait_for_stats_on_all(master, bucket,
+        RebalanceHelper.wait_for_stats_on_all(main, bucket,
             'ep_tap_rebalance_queue_backfillremaining', 0,
             fn=RebalanceHelper.wait_for_stats_no_timeout)
 
-        RebalanceHelper.wait_for_stats_on_all(master, bucket,
+        RebalanceHelper.wait_for_stats_on_all(main, bucket,
             'ep_tap_replica_qlen', 0,
             fn=RebalanceHelper.wait_for_stats_no_timeout)
 
@@ -1103,7 +1103,7 @@ class PerfBase(unittest.TestCase):
     def warmup(self, collect_stats=True, flush_os_cache=False):
         """
         Restart cluster and wait for it to warm up.
-        In current version, affect the master node only.
+        In current version, affect the main node only.
         """
         if not self.input.servers:
             self.log.error("empty server list")
@@ -1151,15 +1151,15 @@ class PerfBase(unittest.TestCase):
         if collect_stats:
             self.end_stats(sc, ops, self.spec_reference + ".warmup")
 
-    def wait_until_warmed_up(self, master=None):
-        if not master:
-            master = self.input.servers[0]
+    def wait_until_warmed_up(self, main=None):
+        if not main:
+            main = self.input.servers[0]
 
         bucket = self.param("bucket", "default")
 
         fn = RebalanceHelper.wait_for_mc_stats_no_timeout
         for bucket in self.buckets:
-            RebalanceHelper.wait_for_stats_on_all(master, bucket,
+            RebalanceHelper.wait_for_stats_on_all(main, bucket,
                                                   'ep_warmup_thread',
                                                   'complete', fn=fn)
     def set_param(self, name, val):

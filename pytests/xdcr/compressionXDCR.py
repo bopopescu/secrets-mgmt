@@ -8,14 +8,14 @@ class compression(XDCRNewBaseTest):
     def setUp(self):
         super(compression, self).setUp()
         self.src_cluster = self.get_cb_cluster_by_name('C1')
-        self.src_master = self.src_cluster.get_master_node()
+        self.src_main = self.src_cluster.get_main_node()
         self.dest_cluster = self.get_cb_cluster_by_name('C2')
-        self.dest_master = self.dest_cluster.get_master_node()
+        self.dest_main = self.dest_cluster.get_main_node()
         self.chain_length = self._input.param("chain_length", 2)
         self.topology = self._input.param("ctopology", "chain")
         if self.chain_length > 2:
             self.c3_cluster = self.get_cb_cluster_by_name('C3')
-            self.c3_master = self.c3_cluster.get_master_node()
+            self.c3_main = self.c3_cluster.get_main_node()
         self.cluster = Cluster()
 
     def tearDown(self):
@@ -26,9 +26,9 @@ class compression(XDCRNewBaseTest):
         for repl in repls:
             if bucket_name in str(repl):
                 repl_id = repl.get_repl_id()
-        shell = RemoteMachineShellConnection(cluster.get_master_node())
+        shell = RemoteMachineShellConnection(cluster.get_main_node())
         repl_id = str(repl_id).replace('/','%2F')
-        base_url = "http://" + cluster.get_master_node().ip + ":8091/settings/replications/" + repl_id
+        base_url = "http://" + cluster.get_main_node().ip + ":8091/settings/replications/" + repl_id
         command = "curl -X POST -u Administrator:password " + base_url + " -d compressionType=" + str(compression_type)
         output, error = shell.execute_command(command)
         shell.log_command_output(output, error)
@@ -47,8 +47,8 @@ class compression(XDCRNewBaseTest):
         compr_repl_id = str(compr_repl_id).replace('/', '%2F')
         uncompr_repl_id = str(uncompr_repl_id).replace('/', '%2F')
 
-        base_url = "http://" + cluster.get_master_node().ip + ":8091/settings/replications/" + compr_repl_id
-        shell = RemoteMachineShellConnection(cluster.get_master_node())
+        base_url = "http://" + cluster.get_main_node().ip + ":8091/settings/replications/" + compr_repl_id
+        shell = RemoteMachineShellConnection(cluster.get_main_node())
         command = "curl -u Administrator:password " + base_url
         output, error = shell.execute_command(command)
         shell.log_command_output(output, error)
@@ -56,7 +56,7 @@ class compression(XDCRNewBaseTest):
                         "Compression Type for replication " + compr_repl_id + " is not Snappy")
         self.log.info("Compression Type for replication " + compr_repl_id + " is Snappy")
 
-        base_url = "http://" + cluster.get_master_node().ip + ":8091/pools/default/buckets/" + compr_bucket_name + \
+        base_url = "http://" + cluster.get_main_node().ip + ":8091/pools/default/buckets/" + compr_bucket_name + \
                    "/stats/replications%2F" + compr_repl_id + "%2Fdata_replicated?haveTStamp=" + str(repl_time)
         command = "curl -u Administrator:password " + base_url
         output, error = shell.execute_command(command)
@@ -69,7 +69,7 @@ class compression(XDCRNewBaseTest):
                 compressed_data_replicated += item
         self.log.info("Compressed data for replication {0} is {1}".format(compr_repl_id, compressed_data_replicated))
 
-        base_url = "http://" + cluster.get_master_node().ip + ":8091/pools/default/buckets/" + uncompr_bucket_name + \
+        base_url = "http://" + cluster.get_main_node().ip + ":8091/pools/default/buckets/" + uncompr_bucket_name + \
                    "/stats/replications%2F" + uncompr_repl_id + "%2Fdata_replicated?haveTStamp=" + str(repl_time)
         command = "curl -u Administrator:password " + base_url
         output, error = shell.execute_command(command)
@@ -255,7 +255,7 @@ class compression(XDCRNewBaseTest):
         compression_type = self._input.param("compression_type", "Snappy")
         self._set_compression_type(self.src_cluster, "standard_bucket_1", compression_type)
 
-        src_conn = RestConnection(self.src_cluster.get_master_node())
+        src_conn = RestConnection(self.src_cluster.get_main_node())
         src_conn.set_xdcr_param('standard_bucket_1', 'standard_bucket_1', 'optimisticReplicationThreshold',
                                 self._optimistic_threshold)
         src_conn.set_xdcr_param('standard_bucket_2', 'standard_bucket_2', 'optimisticReplicationThreshold',
@@ -291,7 +291,7 @@ class compression(XDCRNewBaseTest):
         compression_type = self._input.param("compression_type", "Snappy")
         self._set_compression_type(self.src_cluster, "standard_bucket_1", compression_type)
 
-        src_conn = RestConnection(self.src_cluster.get_master_node())
+        src_conn = RestConnection(self.src_cluster.get_main_node())
         src_conn.set_xdcr_param('standard_bucket_1', 'standard_bucket_1', 'workerBatchSize', batch_count)
         src_conn.set_xdcr_param('standard_bucket_1', 'standard_bucket_1', 'docBatchSizeKb', batch_size)
         src_conn.set_xdcr_param('standard_bucket_1', 'standard_bucket_1', 'sourceNozzlePerNode', source_nozzle)
@@ -424,7 +424,7 @@ class compression(XDCRNewBaseTest):
 
         self.async_perform_update_delete()
 
-        src_conn = RestConnection(self.src_cluster.get_master_node())
+        src_conn = RestConnection(self.src_cluster.get_main_node())
         graceful = self._input.param("graceful", False)
         self.recoveryType = self._input.param("recoveryType", None)
         self.src_cluster.failover(graceful=graceful)
@@ -460,7 +460,7 @@ class compression(XDCRNewBaseTest):
 
         self.async_perform_update_delete()
 
-        rest_conn = RestConnection(self.src_master)
+        rest_conn = RestConnection(self.src_main)
         rest_conn.remove_all_replications()
         rest_conn.remove_all_remote_clusters()
 

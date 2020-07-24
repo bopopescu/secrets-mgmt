@@ -37,7 +37,7 @@ class rbac_upgrade(UpgradeTests):
         return action_list.split(",")
 
     def enable_ldap(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         api = rest.baseUrl + 'settings/saslauthdAuth'
         params = urllib.urlencode({"enabled": 'true', "admins": [], "roAdmins": []})
         status, content, header = rest._http_request(api, 'POST', params)
@@ -65,7 +65,7 @@ class rbac_upgrade(UpgradeTests):
         self.assertTrue(final_result, "Error after upgrade for ")
 
     def setup_4_5_users(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         self.enable_ldap()
 
         self.pre_upgrade_user = [{'id': 'pre_admin', 'name': 'pre_admin', 'password': 'p@ssword'}, \
@@ -87,7 +87,7 @@ class rbac_upgrade(UpgradeTests):
                                  {'id': 'bucket_admin_04', 'name': 'bucket_admin_04', 'password': 'p@ssword'}, \
                                  {'id': 'bucket_admin_05', 'name': 'bucket_admin_05', 'password': 'p@ssword'}]
 
-        RbacBase().create_user_source(self.pre_upgrade_user, 'ldap', self.master)
+        RbacBase().create_user_source(self.pre_upgrade_user, 'ldap', self.main)
 
         self.pre_upgrade_user_role = [{'id': 'pre_admin', 'name': 'pre_admin', 'roles': 'admin',
                                        'action_list': 'admin', 'bucket': 'beforeupgadesasl', 'admin': 'yes'}, \
@@ -129,7 +129,7 @@ class rbac_upgrade(UpgradeTests):
                                        'roles': 'bucket_admin[beforeupgadesimple]',
                                        'action_list': 'bucket_admin', 'bucket': 'beforeupgadesimple'}]
 
-        RbacBase().add_user_role(self.pre_upgrade_user_role, RestConnection(self.master), 'ldap')
+        RbacBase().add_user_role(self.pre_upgrade_user_role, RestConnection(self.main), 'ldap')
 
     def change_role_pre_upg_data(self):
 
@@ -152,7 +152,7 @@ class rbac_upgrade(UpgradeTests):
             {'id': 'bucket_admin_05', 'name': 'bucket_admin_05', 'roles': 'data_backup[afterupgrade01]',
              'action_list': 'data_backup', 'bucket': 'afterupgrade01'}]
 
-        RbacBase().add_user_role(change_role_pre_upgrade_data, RestConnection(self.master), 'ldap')
+        RbacBase().add_user_role(change_role_pre_upgrade_data, RestConnection(self.main), 'ldap')
 
         return change_role_pre_upg_user, change_role_pre_upgrade_data
 
@@ -178,12 +178,12 @@ class rbac_upgrade(UpgradeTests):
 
         for i in range(0,len(change_role_pre_upg_user)):
             payload = "name=" + change_role_pre_upgrade_data[i]['id'] + "&roles=" + change_role_pre_upgrade_data[i]['roles'] + "&password=" + change_role_pre_upg_user[i]['password']
-            RestConnection(self.master).add_set_builtin_user(change_role_pre_upgrade_data[i]['id'],payload)
+            RestConnection(self.main).add_set_builtin_user(change_role_pre_upgrade_data[i]['id'],payload)
 
         return change_role_pre_upg_user, change_role_pre_upgrade_data
 
     def post_upgrade_new_users_new_bucket(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         self.enable_ldap()
 
         self.post_upgrade_user = [{'id': 'data_reader', 'name': 'data_reader', 'password': 'p@ssword'}, \
@@ -214,7 +214,7 @@ class rbac_upgrade(UpgradeTests):
                                   {'id': 'afterupgrade02', 'name': 'afterupgrade02', 'password': 'p@ssword'}, \
                                   ]
 
-        RbacBase().create_user_source(self.post_upgrade_user, 'builtin', self.master)
+        RbacBase().create_user_source(self.post_upgrade_user, 'builtin', self.main)
 
         self.post_upgrade_user_role = [{'id': 'post_admin', 'name': 'post_admin', 'roles': 'admin',
                                         'action_list': 'admin', 'bucket': 'afterupgrade01', 'admin': 'yes'}, \
@@ -272,20 +272,20 @@ class rbac_upgrade(UpgradeTests):
                                         'action_list': 'data_monitoring', 'bucket': 'afterupgrade02'}
                                        ]
 
-        RbacBase().add_user_role(self.post_upgrade_user_role, RestConnection(self.master), 'builtin')
+        RbacBase().add_user_role(self.post_upgrade_user_role, RestConnection(self.main), 'builtin')
         #for i in range(0,len(self.post_upgrade_user_role)):
         #    payload = "name=" + self.post_upgrade_user_role[i]['id'] + "&roles=" + self.post_upgrade_user_role[i]['roles'] + "&password=p@ssword"
-        #    RestConnection(self.master).add_set_builtin_user(self.post_upgrade_user_role[i]['id'],payload)
+        #    RestConnection(self.main).add_set_builtin_user(self.post_upgrade_user_role[i]['id'],payload)
 
     def change_pass_new_user(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         for user in self.post_upgrade_user:
             rest.change_password_builtin_user(user['id'], 'password')
 
         for i in range(0, len(self.post_upgrade_user)):
             self.post_upgrade_user[i]['password'] = 'password'
 
-    def test_memcached_connection(self, master_ip, user_list, role_list):
+    def test_memcached_connection(self, main_ip, user_list, role_list):
         for user in user_list:
             for temp_user in role_list:
                 if str(temp_user['id']) in str(user['id']):
@@ -293,7 +293,7 @@ class rbac_upgrade(UpgradeTests):
                     bucket_name = temp_user['bucket']
             action_list = self._return_actions(user_action)
             print "-------- Action List - {0} -- and user is {1}".format(action_list,user['id'])
-            sdk_conn, result = TestSDK().connection(self.master.ip, bucket_name, user['id'], user['password'])
+            sdk_conn, result = TestSDK().connection(self.main.ip, bucket_name, user['id'], user['password'])
             for action in action_list:
                 temp_action = action.split("!")
                 if (result):
@@ -302,11 +302,11 @@ class rbac_upgrade(UpgradeTests):
                     if temp_action[0] == 'write':
                         result_action = TestSDK().write_data(sdk_conn)
                     elif temp_action[0] == 'read':
-                        result_action = TestSDK().get_xattr(self.master.ip, sdk_conn, bucket_name)
+                        result_action = TestSDK().get_xattr(self.main.ip, sdk_conn, bucket_name)
                     elif temp_action[0] == 'WriteXattr':
                         result_action = TestSDK().set_xattr(sdk_conn)
                     elif temp_action[0] == 'ReadXattr':
-                        result_action = TestSDK().get_xattr(self.master.ip, sdk_conn, bucket_name)
+                        result_action = TestSDK().get_xattr(self.main.ip, sdk_conn, bucket_name)
                     elif temp_action[0] == 'statsRead':
                         result_action = temp_action[1]
                     elif temp_action[0] == 'ReadMeta':
@@ -404,7 +404,7 @@ class rbac_upgrade(UpgradeTests):
 
     def pre_upgrade(self, offline=None):
         thread_list = []
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         rest.create_bucket(bucket='beforeupgadesasl', ramQuotaMB=100, authType='sasl', saslPassword='p@ssword')
         rest.create_bucket(bucket='beforeupgadesimple', ramQuotaMB=100, proxyPort=11212)
         self.create_ddocs_and_views()
@@ -440,11 +440,11 @@ class rbac_upgrade(UpgradeTests):
                 thread.join()
 
     def setup_4_1_settings(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         self._setupLDAPAuth(rest, self.authRole, self.authState, self.fullAdmin, self.ROAdmin)
 
     def post_upgrade_buckets(self):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         rest.create_bucket(bucket='afterupgrade01', ramQuotaMB=100, lww=True)
         rest.create_bucket(bucket='afterupgrade02', ramQuotaMB=100, lww=True)
 
@@ -515,7 +515,7 @@ class rbac_upgrade(UpgradeTests):
         #1. Create new bucket and new users in the system
         self.post_upgrade_buckets()
         self.post_upgrade_new_users_new_bucket()
-        current_roles = RestConnection(self.master).retrieve_user_roles()
+        current_roles = RestConnection(self.main).retrieve_user_roles()
         self.check_roles(self.post_upgrade_user_role, current_roles)
 
         #2 Check for SDK connections post upgrade
@@ -529,12 +529,12 @@ class rbac_upgrade(UpgradeTests):
 
         #3 check memcached for new users
         self.log.info("-------------------- CHECK MEMCACHED FOR NEW USERS -----------------------------")
-        self.test_memcached_connection(self.master.ip, self.post_upgrade_user, self.post_upgrade_user_role)
+        self.test_memcached_connection(self.main.ip, self.post_upgrade_user, self.post_upgrade_user_role)
 
         #4 check memcached for old users
         if simple is None:
             self.log.info("-------------------- CHECK MEMCACHED FOR OLD USERS -----------------------------")
-            self.test_memcached_connection(self.master.ip, self.pre_upgrade_user, self.pre_upgrade_user_role)
+            self.test_memcached_connection(self.main.ip, self.pre_upgrade_user, self.pre_upgrade_user_role)
             self.log.info("-------------------- CHECK ROLES FOR OLD USERS -----------------------------")
             self.check_roles(self.pre_upgrade_user_role, current_roles)
             self.sleep(30)
@@ -543,7 +543,7 @@ class rbac_upgrade(UpgradeTests):
             user_list, role_list = self.change_role_pre_upg_data()
             self.sleep(30)
             self.log.info("-------------------- CHECK MEMCACHED AFTER CHANGE ROLES OLD USERS -----------------------------")
-            self.test_memcached_connection(self.master.ip, user_list, role_list)
+            self.test_memcached_connection(self.main.ip, user_list, role_list)
 
         #6 check for views
         self.log.info("-------------------- VERIFY QUERIES POST UPGRADE -----------------------------")
@@ -554,7 +554,7 @@ class rbac_upgrade(UpgradeTests):
         user_list, role_list = self.upgrade_pass_old_bucket()
         self.sleep(30)
         self.log.info("-------------------- CHECK MEMCACHED FOR UPGRADED BUCKET USERS -----------------------------")
-        self.test_memcached_connection(self.master.ip, user_list, role_list)
+        self.test_memcached_connection(self.main.ip, user_list, role_list)
         self.log.info("-------------------- CHECK SDK FOR UPGRADED BUCKET USERS -----------------------------")
         self.check_sdk_connection_post_upgrade(pass_updated=True,online=online)
 
@@ -568,14 +568,14 @@ class rbac_upgrade(UpgradeTests):
         self.pre_upgrade()
         self.setup_4_5_users()
         self.online_upgrade()
-        self.check_cluster_compatiblity(self.master)
+        self.check_cluster_compatiblity(self.main)
         self.post_upgrade(online=True)
 
 
     def upgrade_all_nodes_online_pre_4(self):
         self.pre_upgrade()
         self.online_upgrade()
-        self.check_cluster_compatiblity(self.master)
+        self.check_cluster_compatiblity(self.main)
         self.post_upgrade(online=True, simple=True)
 
     def upgrade_all_nodes_offline(self):
@@ -584,7 +584,7 @@ class rbac_upgrade(UpgradeTests):
         upgrade_threads = self._async_update(upgrade_version=self.upgrade_version, servers=self.servers)
         for threads in upgrade_threads:
             threads.join()
-        self.check_cluster_compatiblity(self.master)
+        self.check_cluster_compatiblity(self.main)
         self.post_upgrade()
 
 
@@ -593,5 +593,5 @@ class rbac_upgrade(UpgradeTests):
         upgrade_threads = self._async_update(upgrade_version=self.upgrade_version, servers=self.servers)
         for threads in upgrade_threads:
             threads.join()
-        self.check_cluster_compatiblity(self.master)
+        self.check_cluster_compatiblity(self.main)
         self.post_upgrade(simple=True)

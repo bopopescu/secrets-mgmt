@@ -48,7 +48,7 @@ class basic_ops(BaseTestCase):
         self.log.info('Starting basic ops')
 
 
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         client = VBucketAwareMemcached(rest, 'default')
         mcd = client.memcached(KEY_NAME)
 

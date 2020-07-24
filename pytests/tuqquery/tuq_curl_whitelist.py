@@ -15,7 +15,7 @@ from security.rbac_base import RbacBase
 class QueryWhitelistTests(QueryTests):
     def setUp(self):
         super(QueryWhitelistTests, self).setUp()
-        self.shell = RemoteMachineShellConnection(self.master)
+        self.shell = RemoteMachineShellConnection(self.main)
         self.info = self.shell.extract_remote_info()
         if self.info.type.lower() == 'windows':
             self.curl_path = "%scurl" % self.path
@@ -25,18 +25,18 @@ class QueryWhitelistTests(QueryTests):
             self.curl_path = "curl"
             self.file_path = "File/opt/couchbase/bin/../var/lib/couchbase/n1qlcerts/curl_whitelist"
             self.lowercase_file_path = "file/opt/couchbase/bin/../var/lib/couchbase/n1qlcerts/curl_whitelist"
-        self.rest = RestConnection(self.master)
+        self.rest = RestConnection(self.main)
         self.cbqpath = '%scbq' % self.path + " -e %s:%s -q -u %s -p %s"\
-                                             % (self.master.ip, self.n1ql_port, self.rest.username, self.rest.password)
+                                             % (self.main.ip, self.n1ql_port, self.rest.username, self.rest.password)
         #Whitelist error messages
         self.query_error_msg = "Errorevaluatingprojection.-cause:URLendpointisn'twhitelistedhttp://%s:%s/query/service." \
-                "PleasemakesuretowhitelisttheURLontheUI." % (self.master.ip, self.n1ql_port)
+                "PleasemakesuretowhitelisttheURLontheUI." % (self.main.ip, self.n1ql_port)
         self.jira_error_msg ="Errorevaluatingprojection.-cause:URLendpointisn'twhitelistedhttps://jira.atlassian." \
                              "com/rest/api/latest/issue/JRA-9.PleasemakesuretowhitelisttheURLontheUI."
         self.google_error_msg = "Errorevaluatingprojection.-cause:URLendpointisn'twhitelisted" \
                                 "https://maps.googleapis.com/maps/api/geocode/json."
         #End of whitelist error messages
-        self.query_service_url = "'http://%s:%s/query/service'" % (self.master.ip,self.n1ql_port)
+        self.query_service_url = "'http://%s:%s/query/service'" % (self.main.ip,self.n1ql_port)
         self.api_port = self.input.param("api_port", 8094)
         self.load_sample = self.input.param("load_sample", False)
         self.create_users = self.input.param("create_users", False)
@@ -50,7 +50,7 @@ class QueryWhitelistTests(QueryTests):
             testuser = [{'id': 'no_curl', 'name': 'no_curl', 'password': 'password'},
                         {'id': 'curl', 'name': 'curl', 'password': 'password'},
                         {'id': 'curl_no_insert', 'name': 'curl_no_insert', 'password': 'password'}]
-            RbacBase().create_user_source(testuser, 'builtin', self.master)
+            RbacBase().create_user_source(testuser, 'builtin', self.main)
 
             noncurl_permissions = 'bucket_full_access[*]:query_select[*]:query_update[*]:' \
                                   'query_insert[*]:query_delete[*]:query_manage_index[*]:' \
@@ -85,7 +85,7 @@ class QueryWhitelistTests(QueryTests):
 
     '''Test running a curl command with an empty whitelist'''
     def test_empty_whitelist(self):
-        response, content = self.rest.create_whitelist(self.master, {})
+        response, content = self.rest.create_whitelist(self.main, {})
         result = json.loads(content)
         self.assertEqual(result['errors']['all_access'], 'The value must be supplied')
         n1ql_query = 'select * from default limit 5'
@@ -100,7 +100,7 @@ class QueryWhitelistTests(QueryTests):
                         "Error message is %s this is incorrect it should be %s"
                         % (json_curl['errors'][0]['msg'], self.query_error_msg))
 
-        self.rest.create_whitelist(self.master, {"all_access": None, "allowed_urls": None, "disallowed_urls": None})
+        self.rest.create_whitelist(self.main, {"all_access": None, "allowed_urls": None, "disallowed_urls": None})
         curl = self.shell.execute_commands_inside(self.cbqpath, query, '', '', '', '', '')
         json_curl = self.convert_to_json(curl)
         self.assertTrue(self.query_error_msg in json_curl['errors'][0]['msg'],
@@ -109,7 +109,7 @@ class QueryWhitelistTests(QueryTests):
 
     '''Test running a curl command with whitelists that are invalid'''
     def test_invalid_whitelist(self):
-        response, content = self.rest.create_whitelist(self.master, "thisisnotvalid")
+        response, content = self.rest.create_whitelist(self.main, "thisisnotvalid")
         result = json.loads(content)
         self.assertEqual(result['errors']['_'], 'Unexpected Json')
         n1ql_query = 'select * from default limit 5'
@@ -123,7 +123,7 @@ class QueryWhitelistTests(QueryTests):
                         "Error message is %s this is incorrect it should be %s"
                         % (json_curl['errors'][0]['msg'], self.query_error_msg))
 
-        self.rest.create_whitelist(self.master, {"all_access": "hello", "allowed_urls": ["goodbye"],
+        self.rest.create_whitelist(self.main, {"all_access": "hello", "allowed_urls": ["goodbye"],
                                                  "disallowed_urls": ["invalid"]})
         curl = self.shell.execute_commands_inside(self.cbqpath, query, '', '', '', '', '')
         json_curl = self.convert_to_json(curl)
@@ -135,7 +135,7 @@ class QueryWhitelistTests(QueryTests):
        inavlid/fake fields'''
     def test_basic_all_access_true(self):
         n1ql_query = 'select * from default limit 5'
-        self.rest.create_whitelist(self.master, {"all_access": True})
+        self.rest.create_whitelist(self.main, {"all_access": True})
         query = "select curl(" + self.query_service_url + \
                 ", {'data' : 'statement=%s','user':'%s:%s'})" % (
                 n1ql_query, self.username, self.password)
@@ -153,7 +153,7 @@ class QueryWhitelistTests(QueryTests):
         actual_curl = self.convert_to_json(curl)
         self.assertEqual(actual_curl['results'][0]['$1'], expected_curl)
 
-        self.rest.create_whitelist(self.master, {"all_access": True,
+        self.rest.create_whitelist(self.main, {"all_access": True,
                                                            "fake_field":"blahahahahaha",
                                                            "fake_url": "fake"})
 
@@ -161,7 +161,7 @@ class QueryWhitelistTests(QueryTests):
         actual_curl = self.convert_to_json(curl)
         self.assertEqual(actual_curl['results'][0]['$1'],expected_curl)
 
-        self.rest.create_whitelist(self.master, {"fake_field":"blahahahahaha",
+        self.rest.create_whitelist(self.main, {"fake_field":"blahahahahaha",
                                                            "all_access": True,
                                                            "fake_url": "fake"})
 
@@ -172,7 +172,7 @@ class QueryWhitelistTests(QueryTests):
     '''Test all_access: True with nonsense in the allowed/disallowed fields as well as nothing
        in the allowed/disallowed fields'''
     def test_all_access_true(self):
-        self.rest.create_whitelist(self.master, {"all_access": True,
+        self.rest.create_whitelist(self.main, {"all_access": True,
                                                  "allowed_urls":["blahahahahaha"], "disallowed_urls": ["fake"]})
         curl_output = self.shell.execute_command("%s https://jira.atlassian.com/rest/api/latest/issue/JRA-9"
                                                  % self.curl_path)
@@ -183,7 +183,7 @@ class QueryWhitelistTests(QueryTests):
         actual_curl = self.convert_to_json(curl)
         self.assertEqual(actual_curl['results'][0]['$1'], expected_curl)
 
-        self.rest.create_whitelist(self.master, {"all_access": True,
+        self.rest.create_whitelist(self.main, {"all_access": True,
                                                            "allowed_urls": None,
                                                            "disallowed_urls": None})
         curl = self.shell.execute_commands_inside(self.cbqpath,query,'', '', '', '', '')
@@ -193,7 +193,7 @@ class QueryWhitelistTests(QueryTests):
     '''Test what happens if you give an disallowed_url field as well as an all_access field, all_access
        should get precedence over disallowed_urls field'''
     def test_all_access_true_disallowed_url(self):
-        self.rest.create_whitelist(self.master, {"all_access": True, "disallowed_urls": ["https://maps.googleapis.com"]})
+        self.rest.create_whitelist(self.main, {"all_access": True, "disallowed_urls": ["https://maps.googleapis.com"]})
         curl_output = self.shell.execute_command("%s --get https://maps.googleapis.com/maps/api/geocode/json "
                                                  "-d 'address=santa+cruz&components=country:ES&key=AIzaSyCT6niGCMsgegJkQSYSqpoLZ4_rSO59XQQ'"
                                                  % self.curl_path)
@@ -208,7 +208,7 @@ class QueryWhitelistTests(QueryTests):
     '''Test what happens if you give an allowed_url field as well as an all_access field, all_access
        should get precedence over allowed_urls field'''
     def test_all_access_true_allowed_url(self):
-        self.rest.create_whitelist(self.master, {"all_access": True, "allowed_urls": ["https://maps.googleapis.com"]})
+        self.rest.create_whitelist(self.main, {"all_access": True, "allowed_urls": ["https://maps.googleapis.com"]})
         curl_output = self.shell.execute_command("%s https://jira.atlassian.com/rest/api/latest/issue/JRA-9"
                                                  %self.curl_path)
         expected_curl = self.convert_list_to_json(curl_output[0])
@@ -221,7 +221,7 @@ class QueryWhitelistTests(QueryTests):
     '''Test what happens when you set the all_access field multiple times, or try and give it multiple
        values'''
     def test_multiple_all_access(self):
-        self.rest.create_whitelist(self.master, {"all_access": True, "all_access": False})
+        self.rest.create_whitelist(self.main, {"all_access": True, "all_access": False})
 
         curl_output = self.shell.execute_command("%s https://jira.atlassian.com/rest/api/latest/issue/JRA-9"
                                                  %self.curl_path)
@@ -234,21 +234,21 @@ class QueryWhitelistTests(QueryTests):
                         "Error message is %s this is incorrect it should be %s"
                         % (actual_curl['errors'][0]['msg'],self.jira_error_msg))
 
-        self.rest.create_whitelist(self.master, {"all_access": False, "all_access": True})
+        self.rest.create_whitelist(self.main, {"all_access": False, "all_access": True})
         curl = self.shell.execute_commands_inside(self.cbqpath,query,'', '', '', '', '')
         actual_curl = self.convert_to_json(curl)
         self.assertEqual(actual_curl['results'][0]['$1'], expected_curl)
 
-        self.rest.create_whitelist(self.master, {"all_access": [True, False]})
+        self.rest.create_whitelist(self.main, {"all_access": [True, False]})
         curl = self.shell.execute_commands_inside(self.cbqpath,query,'', '', '', '', '')
         actual_curl = self.convert_to_json(curl)
         self.assertEqual(actual_curl['results'][0]['$1'], expected_curl)
 
     '''Test to make sure that whitelist enforces that allowed_urls field must be given as a list'''
     def test_invalid_allowed_url(self):
-        self.rest.create_whitelist(self.master, {"all_access": False})
+        self.rest.create_whitelist(self.main, {"all_access": False})
         # Whitelist should not accept this setting and thus leave the above settting of all_access = False intact
-        response, content = self.rest.create_whitelist(self.master, {"all_access": False, "allowed_urls": "blahblahblah"})
+        response, content = self.rest.create_whitelist(self.main, {"all_access": False, "allowed_urls": "blahblahblah"})
         result = json.loads(content)
         self.assertEqual(result['errors']['allowed_urls'], "Invalid array")
         n1ql_query = 'select * from default limit 5'
@@ -265,7 +265,7 @@ class QueryWhitelistTests(QueryTests):
     '''Test the allowed_urls field, try to run curl against an endpoint not in allowed_urls and then
        try to run curl against an endpoint in allowed_urls'''
     def test_allowed_url(self):
-        self.rest.create_whitelist(self.master, {"all_access": False, "allowed_urls": ["https://maps.googleapis.com"]})
+        self.rest.create_whitelist(self.main, {"all_access": False, "allowed_urls": ["https://maps.googleapis.com"]})
 
         url = "'https://jira.atlassian.com/rest/api/latest/issue/JRA-9'"
         query="select curl("+ url +")"
@@ -289,7 +289,7 @@ class QueryWhitelistTests(QueryTests):
     '''Test the allowed_urls field, try to run curl against an endpoint not in disallowed_urls and then
        try to run curl against an endpoint in disallowed_urls, both should fail'''
     def test_disallowed_url(self):
-        self.rest.create_whitelist(self.master, {"all_access": False, "disallowed_urls": ["https://maps.googleapis.com"]})
+        self.rest.create_whitelist(self.main, {"all_access": False, "disallowed_urls": ["https://maps.googleapis.com"]})
 
         url = "'https://jira.atlassian.com/rest/api/latest/issue/JRA-9'"
         query="select curl("+ url +")"
@@ -310,7 +310,7 @@ class QueryWhitelistTests(QueryTests):
 
     '''Test that disallowed_urls field has precedence over allowed_urls'''
     def test_disallowed_precedence(self):
-        self.rest.create_whitelist(self.master, {"all_access": False,
+        self.rest.create_whitelist(self.main, {"all_access": False,
                                                  "allowed_urls": ["https://maps.googleapis.com/maps/api/geocode/json"],
                                                  "disallowed_urls": ["https://maps.googleapis.com"]})
 
@@ -323,7 +323,7 @@ class QueryWhitelistTests(QueryTests):
                         "Error message is %s this is incorrect it should be %s"
                         % (actual_curl['errors'][0]['msg'], self.google_error_msg))
 
-        self.rest.create_whitelist(self.master, {"all_access": False,
+        self.rest.create_whitelist(self.main, {"all_access": False,
                                                            "allowed_urls":
                                                                ["https://maps.googleapis.com/maps/api/geocode/json"],
                                                            "disallowed_urls":
@@ -336,7 +336,7 @@ class QueryWhitelistTests(QueryTests):
 
     '''Test valid allowed with an invalid disallowed'''
     def test_allowed_invalid_disallowed(self):
-        self.rest.create_whitelist(self.master, {"all_access": False,
+        self.rest.create_whitelist(self.main, {"all_access": False,
                                                  "allowed_urls": ["https://maps.googleapis.com"],
                                                  "disallowed_urls":["blahblahblah"]})
 
@@ -364,7 +364,7 @@ class QueryWhitelistTests(QueryTests):
 
     '''Test a valid disallowed with an invalid allowed'''
     def test_disallowed_invalid_allowed(self):
-        self.rest.create_whitelist(self.master, {"all_access": False,
+        self.rest.create_whitelist(self.main, {"all_access": False,
                                                            "allowed_urls":
                                                                ["blahblahblah"],
                                                            "disallowed_urls":["https://maps.googleapis.com"]})
@@ -377,7 +377,7 @@ class QueryWhitelistTests(QueryTests):
                         "Error message is %s this is incorrect it should be %s"
                         % (actual_curl['errors'][0]['msg'], self.google_error_msg))
 
-        response, content = self.rest.create_whitelist(self.master, {"all_access": False,
+        response, content = self.rest.create_whitelist(self.main, {"all_access": False,
                                                            "allowed_urls": "blahblahblah",
                                                            "disallowed_urls":["https://maps.googleapis.com"]})
         result = json.loads(content)
@@ -389,14 +389,14 @@ class QueryWhitelistTests(QueryTests):
                         % (actual_curl['errors'][0]['msg'], self.google_error_msg))
 
     def test_invalid_disallowed_url_validation(self):
-        response, content = self.rest.create_whitelist(self.master, {"all_access": False,
+        response, content = self.rest.create_whitelist(self.main, {"all_access": False,
                                                            "disallowed_urls":"blahblahblahblahblah"})
         result = json.loads(content)
         self.assertEqual(result['errors']['disallowed_urls'], "Invalid array")
 
     '''Should not be able to curl localhost even if you are on the localhost unless whitelisted'''
     def test_localhost(self):
-        self.rest.create_whitelist(self.master, {"all_access": False})
+        self.rest.create_whitelist(self.main, {"all_access": False})
         error_msg ="Errorevaluatingprojection.-cause:URLendpointisn'twhitelistedhttp://localhost:8093/query/service." \
                    "PleasemakesuretowhitelisttheURLontheUI."
 

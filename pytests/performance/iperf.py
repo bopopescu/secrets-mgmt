@@ -162,10 +162,10 @@ class PerfWrapper(object):
                 # phase)
                 if self.parami('load_phase', 0) and \
                         not self.parami('hot_load_phase', 0):
-                    master = self.input.clusters[0][0]
-                    slave = self.input.clusters[1][0]
+                    main = self.input.clusters[0][0]
+                    subordinate = self.input.clusters[1][0]
                     try:
-                        self.start_replication(master, slave, bidir=bidir)
+                        self.start_replication(main, subordinate, bidir=bidir)
                     except Exception, error:
                         self.log.warn(error)
                     self.wait_for_xdc_replication()
@@ -230,16 +230,16 @@ class XPerfTests(EPerfClient):
     """XDCR large-scale performance tests
     """
 
-    def start_replication(self, master, slave, replication_type='continuous',
+    def start_replication(self, main, subordinate, replication_type='continuous',
                           buckets=None, bidir=False, suffix='A'):
         """Add remote cluster and start replication"""
 
-        master_rest_conn = RestConnection(master)
+        main_rest_conn = RestConnection(main)
         remote_reference = 'remote_cluster_' + suffix
 
-        master_rest_conn.add_remote_cluster(slave.ip, slave.port,
-                                            slave.rest_username,
-                                            slave.rest_password,
+        main_rest_conn.add_remote_cluster(subordinate.ip, subordinate.port,
+                                            subordinate.rest_username,
+                                            subordinate.rest_password,
                                             remote_reference)
 
         if not buckets:
@@ -248,15 +248,15 @@ class XPerfTests(EPerfClient):
             buckets = self.get_buckets(reversed=True)
 
         for bucket in buckets:
-            master_rest_conn.start_replication(replication_type, bucket,
+            main_rest_conn.start_replication(replication_type, bucket,
                                                remote_reference)
 
         if self.parami('xdcr_num_buckets', 1) > 1 and suffix == 'A':
-            self.start_replication(slave, master, replication_type, buckets,
+            self.start_replication(subordinate, main, replication_type, buckets,
                                    suffix='B')
 
         if bidir:
-            self.start_replication(slave, master, replication_type, buckets,
+            self.start_replication(subordinate, main, replication_type, buckets,
                                    suffix='B')
 
     def get_buckets(self, reversed=False):
@@ -318,14 +318,14 @@ class XPerfTests(EPerfClient):
     def collect_stats(self):
         # TODO: fix hardcoded cluster names
 
-        # Initialize rest connection to master and slave servers
-        master_rest_conn = RestConnection(self.input.clusters[0][0])
-        slave_rest_conn = RestConnection(self.input.clusters[1][0])
+        # Initialize rest connection to main and subordinate servers
+        main_rest_conn = RestConnection(self.input.clusters[0][0])
+        subordinate_rest_conn = RestConnection(self.input.clusters[1][0])
 
         # Define list of metrics and stats containers
         metrics = ('mem_used', 'curr_items', 'vb_active_ops_create',
                    'ep_bg_fetched', 'cpu_utilization_rate')
-        stats = {'slave': defaultdict(list), 'master': defaultdict(list)}
+        stats = {'subordinate': defaultdict(list), 'main': defaultdict(list)}
 
         # Calculate approximate number of relicated items per node
         num_nodes = self.parami('num_nodes', 1) / 2
@@ -333,35 +333,35 @@ class XPerfTests(EPerfClient):
         items = 0.99 * total_items / num_nodes
 
         # Get number of relicated items
-        curr_items = self.get_samples(slave_rest_conn)['curr_items']
+        curr_items = self.get_samples(subordinate_rest_conn)['curr_items']
 
         # Collect stats until all items are replicated
         while curr_items[-1] < items:
             # Collect stats every 20 seconds
             time.sleep(19)
 
-            # Slave stats
-            samples = self.get_samples(slave_rest_conn)
+            # Subordinate stats
+            samples = self.get_samples(subordinate_rest_conn)
             for metric in metrics:
-                stats['slave'][metric].extend(samples[metric][:20])
+                stats['subordinate'][metric].extend(samples[metric][:20])
 
-            # Master stats
-            samples = self.get_samples(master_rest_conn, 'nirvana')
+            # Main stats
+            samples = self.get_samples(main_rest_conn, 'nirvana')
             for metric in metrics:
-                stats['master'][metric].extend(samples[metric][:20])
+                stats['main'][metric].extend(samples[metric][:20])
 
             # Update number of replicated items
-            curr_items = stats['slave']['curr_items']
+            curr_items = stats['subordinate']['curr_items']
 
         # Aggregate and display stats
-        vb_active_ops_create = sum(stats['slave']['vb_active_ops_create']) /\
-            len(stats['slave']['vb_active_ops_create'])
-        print "slave> AVG vb_active_ops_create: {0}, items/sec"\
+        vb_active_ops_create = sum(stats['subordinate']['vb_active_ops_create']) /\
+            len(stats['subordinate']['vb_active_ops_create'])
+        print "subordinate> AVG vb_active_ops_create: {0}, items/sec"\
             .format(vb_active_ops_create)
 
-        ep_bg_fetched = sum(stats['slave']['ep_bg_fetched']) /\
-            len(stats['slave']['ep_bg_fetched'])
-        print "slave> AVG ep_bg_fetched: {0}, reads/sec".format(ep_bg_fetched)
+        ep_bg_fetched = sum(stats['subordinate']['ep_bg_fetched']) /\
+            len(stats['subordinate']['ep_bg_fetched'])
+        print "subordinate> AVG ep_bg_fetched: {0}, reads/sec".format(ep_bg_fetched)
 
         for server in stats:
             mem_used = max(stats[server]['mem_used'])

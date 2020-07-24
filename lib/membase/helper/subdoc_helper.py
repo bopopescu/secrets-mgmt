@@ -25,10 +25,10 @@ class SubdocHelper:
         self.bucket = bucket
         self.input = TestInputSingleton.input
         self.servers = self.input.servers
-        self.master = self.servers[0]
-        self.rest = RestConnection(self.master)
+        self.main = self.servers[0]
+        self.rest = RestConnection(self.main)
         self.log = logger.Logger.get_logger()
-        self.client = MemcachedClient(host=self.master.ip)
+        self.client = MemcachedClient(host=self.main.ip)
         self.jsonSchema = {
             "id" : "0",
             "number" : 0,
@@ -53,15 +53,15 @@ class SubdocHelper:
         node_ram_ratio = BucketOperationHelper.base_bucket_ratio(self.servers)
         mem_quota = int(self.rest.get_nodes_self().mcdMemoryReserved *
                         node_ram_ratio)
-        self.rest.init_cluster(self.master.rest_username,
-                               self.master.rest_password)
-        self.rest.init_cluster_memoryQuota(self.master.rest_username,
-                                      self.master.rest_password,
+        self.rest.init_cluster(self.main.rest_username,
+                               self.main.rest_password)
+        self.rest.init_cluster_memoryQuota(self.main.rest_username,
+                                      self.main.rest_password,
                                       memoryQuota=mem_quota)
         for server in self.servers:
             ClusterOperationHelper.cleanup_cluster([server])
         ClusterOperationHelper.wait_for_ns_servers_or_assert(
-            [self.master], self.testcase)
+            [self.main], self.testcase)
 
         rebalanced = ClusterOperationHelper.add_and_rebalance(
                 self.servers)
@@ -136,7 +136,7 @@ class SubdocHelper:
 
 
     def insert_nested_docs(self, num_of_docs, prefix='doc', levels=16, size=512, return_docs=False, long_path=False):
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         smart = VBucketAwareMemcached(rest, self.bucket)
         doc_names = []
 
@@ -183,7 +183,7 @@ class SubdocHelper:
     def insert_nested_specific_docs(self, num_of_docs, prefix='doc', extra_values={},
                     return_docs=False):
         random.seed(12345)
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         smart = VBucketAwareMemcached(rest, self.bucket)
         doc_names = []
         for i in range(0, num_of_docs):
@@ -257,7 +257,7 @@ class SubdocHelper:
     def insert_docs(self, num_of_docs, prefix='doc', extra_values={},
                     return_docs=False):
         random.seed(12345)
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         smart = VBucketAwareMemcached(rest, self.bucket)
         doc_names = []
         for i in range(0, num_of_docs):
@@ -324,7 +324,7 @@ class SubdocHelper:
                 available_ram = 256
             self.rest.create_bucket(bucket=self.bucket,
                                     ramQuotaMB=available_ram)
-            ready = BucketOperationHelper.wait_for_memcached(self.master,
+            ready = BucketOperationHelper.wait_for_memcached(self.main,
                                                              self.bucket)
             self.testcase.assertTrue(ready, "wait_for_memcached failed")
         self.testcase.assertTrue(

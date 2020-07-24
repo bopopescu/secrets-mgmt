@@ -22,7 +22,7 @@ class cbstatsTests(CliBaseTest):
 
     def cbstats_test(self):
         """We use cbstas to check the various stats of server"""
-        cluster_len = RestConnection(self.master).get_cluster_size()
+        cluster_len = RestConnection(self.main).get_cluster_size()
         if self.command == "kvstore":
             self.verify_cluster_stats()
         if self.command != "key":
@@ -46,8 +46,8 @@ class cbstatsTests(CliBaseTest):
                     else:
                         self._verify_direct_client_stats(bucket, self.command, output)
         else:
-            mc_conn = MemcachedClientHelper.direct_client(self.master, self.buckets[0].name, self.timeout)
-            bucket_info = RestConnection(self.master).get_bucket(self.buckets[0])
+            mc_conn = MemcachedClientHelper.direct_client(self.main, self.buckets[0].name, self.timeout)
+            bucket_info = RestConnection(self.main).get_bucket(self.buckets[0])
             keys_map = {}
             for i in range(self.num_items):
                 vb_id = i - len(bucket_info.vbuckets) * int(i / len(bucket_info.vbuckets))
@@ -69,7 +69,7 @@ class cbstatsTests(CliBaseTest):
                 raise Exception("Command does not throw out error message but the output is empty. Please check the output of remote_util")
 
     def _verify_direct_client_stats(self, bucket, command, output):
-        mc_conn = MemcachedClientHelper.direct_client(self.master, bucket.name, self.timeout)
+        mc_conn = MemcachedClientHelper.direct_client(self.main, bucket.name, self.timeout)
         for line in output:
             stats = line.rsplit(":", 1)
             collect_stats = ""

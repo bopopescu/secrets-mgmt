@@ -38,7 +38,7 @@ class NegativeTests1(BaseTestCase):
             self.input = TestUnputSingleton.input
             self.servers = self.input.servers
             self.buckets = []
-            self.master = self.servers[0]
+            self.main = self.servers[0]
             self.cluster = Cluster()
             self.case_number = self.input.param("case_number", 0)
             # special setup for this test ?
@@ -71,7 +71,7 @@ class NegativeTests1(BaseTestCase):
     """
     def test_utf_16_keys(self):
         gen_create = UTF_16_Generator('load', 'load_', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, gen_create, "create", 0)
+        self._load_all_buckets(self.main, gen_create, "create", 0)
 
         self._wait_for_stats_all_buckets(self.servers)
         rest = RestConnection(self.servers[0])
@@ -101,33 +101,33 @@ class NegativeTests2(XDCRReplicationBaseTest):
     """
     def test_utf_16_keys_with_xdcr(self):
         gen_create = UTF_16_Generator('loadOne', 'loadOne_', self._value_size, end=self.num_items)
-        self._load_all_buckets(self.src_master, gen_create, "create", 0)
+        self._load_all_buckets(self.src_main, gen_create, "create", 0)
         if "update" in self._doc_ops:
             gen_update = UTF_16_Generator('loadOne', 'loadOne_', self._value_size, start=0,
                     end=int(self.num_items * (float)(self._percent_update) / 100))
-            self._load_all_buckets(self.src_master, gen_update, "update", self._expires)
+            self._load_all_buckets(self.src_main, gen_update, "update", self._expires)
         if "delete" in self._doc_ops:
             gen_delete = UTF_16_Generator('loadOne', 'loadOne_', self._value_size,
                     start=int((self.num_items) * (float)(100 - self._percent_delete) / 100),
                     end=self.num_items)
-            self._load_all_buckets(self.src_master, gen_delete, "delete", 0)
-        self._verify_item_count(self.src_master, self.src_nodes, timeout=120)
+            self._load_all_buckets(self.src_main, gen_delete, "delete", 0)
+        self._verify_item_count(self.src_main, self.src_nodes, timeout=120)
 
         if self._replication_direction_str == "bidirection":
             gen_create = UTF_16_Generator('loadTwo', 'loadTwo_', self._value_size, end=self.num_items)
-            self._load_all_buckets(self.dest_master, gen_create, "create", 0)
+            self._load_all_buckets(self.dest_main, gen_create, "create", 0)
             if "update" in self._doc_ops_dest:
                 gen_update = UTF_16_Generator('loadTwo', 'loadTwo_', self._value_size, start=0,
                         end=int(self.num_items * (float)(self._percent_update) / 100))
-                self._load_all_buckets(self.dest_master, gen_update, "update", self._expires)
+                self._load_all_buckets(self.dest_main, gen_update, "update", self._expires)
             if "delete" in self._doc_ops_dest:
                 gen_delete = UTF_16_Generator('loadTwo', 'loadTwo_', self._value_size,
                         start=int((self.num_items) * (float)(100 - self._percent_delete) / 100),
                         end=self.num_items)
-                self._load_all_buckets(self.dest_master, gen_delete, "delete", 0)
-            self._verify_item_count(self.dest_master, self.dest_nodes, timeout=120)
+                self._load_all_buckets(self.dest_main, gen_delete, "delete", 0)
+            self._verify_item_count(self.dest_main, self.dest_nodes, timeout=120)
 
-        self.merge_buckets(self.src_master, self.dest_master, bidirection=True)
+        self.merge_buckets(self.src_main, self.dest_main, bidirection=True)
         self.sleep(self.wait_timeout)
         self.verify_results()
 

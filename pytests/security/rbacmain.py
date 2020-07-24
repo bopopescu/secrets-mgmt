@@ -19,14 +19,14 @@ class rbacmain:
     FILE_SASLAUTHD_LOCAL = 'saslauth'
 
     def __init__(self,
-                master_ip=None,
+                main_ip=None,
                 auth_type=None,
                 bucket_name=None,
                 servers=None,
                 cluster=None
             ):
 
-        self.master_ip = master_ip
+        self.main_ip = main_ip
         self.bucket_name = bucket_name
         self.servers = servers
         self.cluster = cluster
@@ -43,7 +43,7 @@ class rbacmain:
 
 
     def _retrive_all_user_role(self, user_list=None ):
-        server = self.master_ip
+        server = self.main_ip
         rest = RestConnection(server)
         url = "/settings/rbac/roles"
         api = rest.baseUrl + url
@@ -52,7 +52,7 @@ class rbacmain:
         return status, content, header
 
     def _retrieve_user_roles(self):
-        rest = RestConnection(self.master_ip)
+        rest = RestConnection(self.main_ip)
         url = "/settings/rbac/users"
         api = rest.baseUrl + url
         status, content, header = rest._http_request(api, 'GET')
@@ -60,7 +60,7 @@ class rbacmain:
         return status, content, header
 
     def _set_user_roles(self,user_name,payload):
-        rest = RestConnection(self.master_ip)
+        rest = RestConnection(self.main_ip)
         if self.auth_type == "ldap" or self.auth_type == "pam":
             url = "settings/rbac/users/" + user_name
         elif self.auth_type == 'builtin':
@@ -71,7 +71,7 @@ class rbacmain:
         return status, content, header
 
     def _delete_user(self,user_name):
-        rest = RestConnection(self.master_ip)
+        rest = RestConnection(self.main_ip)
         if self.auth_type == 'ldap' or self.auth_type == "pam":
             url = "/settings/rbac/users/" + user_name
         else:
@@ -82,7 +82,7 @@ class rbacmain:
         return status, content, header
 
     def _check_user_permission(self,user_name,password,permission_set):
-        rest = RestConnection(self.master_ip)
+        rest = RestConnection(self.main_ip)
         url = "pools/default/checkPermissions/"
         param = permission_set
         api = rest.baseUrl + url
@@ -120,9 +120,9 @@ class rbacmain:
         user_details = user_id.split(":")
         final_roles = self._return_roles(user_role)
         payload = "name=" + user_details[0] + "&roles=" + final_roles
-        rbacmain(self.master_ip,self.auth_type)._set_user_roles(user_name=user_details[0],payload=payload)
+        rbacmain(self.main_ip,self.auth_type)._set_user_roles(user_name=user_details[0],payload=payload)
 
-        master, expected, expected_neg = rbacRoles()._return_permission_set(final_user_role)
+        main, expected, expected_neg = rbacRoles()._return_permission_set(final_user_role)
 
         if no_bucket_access:
             temp_dict =  expected_neg['permissionSet']
@@ -134,13 +134,13 @@ class rbacmain:
             if "[<bucket_name>]" in permission:
                 new_key = permission.replace("<bucket_name>",bucket_name)
                 temp_dict[new_key] = temp_dict.pop(permission)
-        permission_set = master['permissionSet'].split(',')
+        permission_set = main['permissionSet'].split(',')
         for idx, permission in enumerate(permission_set):
             if "[<bucket_name>]" in permission:
                 permission = permission.replace("<bucket_name>",bucket_name)
                 permission_set[idx] = permission
         permission_str = ','.join(permission_set)
-        status, content, header = rbacmain(self.master_ip)._check_user_permission(user_details[0],user_details[1],permission_str)
+        status, content, header = rbacmain(self.main_ip)._check_user_permission(user_details[0],user_details[1],permission_str)
         content = json.loads(content)
         log.info ("Value of content is {0}".format(content))
         for item in temp_dict.iterkeys():
@@ -246,12 +246,12 @@ class rbacmain:
 
     def test_perm_rest_api(self,permission,user,password,user_role):
         func_name,http_code = self.get_role_permission(permission)
-        rest = RestConnection(self.master_ip)
+        rest = RestConnection(self.main_ip)
         try:
             rest.create_bucket(bucket='default',ramQuotaMB=100)
         except:
             log.info("Default Bucket already exists")
-        final_func = "rbacPermissionList()."+ func_name + "('" + user + "','" + password + "',host=self.master_ip,servers=self.servers,cluster=self.cluster,httpCode=" + str(http_code) +",user_role="+"'" + str(user_role)+"'" + ")"
+        final_func = "rbacPermissionList()."+ func_name + "('" + user + "','" + password + "',host=self.main_ip,servers=self.servers,cluster=self.cluster,httpCode=" + str(http_code) +",user_role="+"'" + str(user_role)+"'" + ")"
         flag = eval(final_func)
         return flag
 
@@ -261,8 +261,8 @@ class rbacmain:
         user_details = user_id.split(":")
         final_roles = self._return_roles(user_role)
         payload = "name=" + user_details[0] + "&roles=" + final_roles
-        status, content, header =  rbacmain(self.master_ip, self.auth_type)._set_user_roles(user_name=user_details[0],payload=payload)
-        master, expected, expected_neg = rbacRoles()._return_permission_set(final_user_role)
+        status, content, header =  rbacmain(self.main_ip, self.auth_type)._set_user_roles(user_name=user_details[0],payload=payload)
+        main, expected, expected_neg = rbacRoles()._return_permission_set(final_user_role)
 
 
         if no_bucket_access:

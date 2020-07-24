@@ -103,7 +103,7 @@ class SecondaryIndexingClusterOpsTests(BaseSecondaryIndexingTests):
         self._verify_bucket_count_with_index_count()
         try:
             servr_out = self.servers[1:self.nodes_init]
-            failover_task = self.cluster.async_failover([self.master],
+            failover_task = self.cluster.async_failover([self.main],
                         failover_nodes = servr_out, graceful=False)
             failover_task.result()
             rebalance = self.cluster.async_rebalance(self.servers[:1],
@@ -133,7 +133,7 @@ class SecondaryIndexingClusterOpsTests(BaseSecondaryIndexingTests):
             tasks = []
             # Run auto-compaction to remove the tomb stones
             for bucket in self.buckets:
-                tasks.append(self.cluster.async_compact_bucket(self.master,bucket))
+                tasks.append(self.cluster.async_compact_bucket(self.main,bucket))
             for task in tasks:
                 task.result()
             self.sleep(10)
@@ -164,10 +164,10 @@ class SecondaryIndexingClusterOpsTests(BaseSecondaryIndexingTests):
         self.sleep(20)
         self._verify_bucket_count_with_index_count()
         self.sleep(maxttl, "waiting for docs to be expired automatically per maxttl rule")
-        self._expiry_pager(self.master)
+        self._expiry_pager(self.main)
         self.sleep(60, "wait for expiry pager to run on all nodes...")
         for bucket in self.buckets:
-            items = RestConnection(self.master).get_active_key_count(bucket)
+            items = RestConnection(self.main).get_active_key_count(bucket)
             self.log.info("Docs in source bucket is {0} after maxttl has elapsed".format(items))
             if items != 0:
                 self.fail("Docs in source bucket is not 0 after maxttl has elapsed")

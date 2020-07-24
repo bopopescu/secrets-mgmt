@@ -31,11 +31,11 @@ Example:
 class DocLoader():
     def __init__(self, servers):
         self.servers = servers
-        self.master = self.servers[0]
+        self.main = self.servers[0]
         self.log = logger.Logger.get_logger()
 
     def load(self, path, bucket, prefix='test'):
-        client = VBucketAwareMemcached(RestConnection(self.master), bucket)
+        client = VBucketAwareMemcached(RestConnection(self.main), bucket)
         for file in os.listdir(path):
             f = open(path + '/' + file, 'r')
             rq_s = f.read()

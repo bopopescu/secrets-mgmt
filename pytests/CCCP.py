@@ -21,7 +21,7 @@ class CCCP(BaseTestCase):
         try:
             for bucket in self.buckets:
                 self.clients[bucket.name] =\
-                  MemcachedClientHelper.direct_client(self.master, bucket.name)
+                  MemcachedClientHelper.direct_client(self.main, bucket.name)
         except:
             self.tearDown()
 
@@ -48,7 +48,7 @@ class CCCP(BaseTestCase):
             else:
                 task.result()
         for bucket in self.buckets:
-            config = RestConnection(self.master).get_bucket_CCCP(bucket)
+            config = RestConnection(self.main).get_bucket_CCCP(bucket)
             self.verify_config(config, bucket)
 
     def test_set_config(self):
@@ -69,7 +69,7 @@ class CCCP(BaseTestCase):
 
     def test_not_my_vbucket_config(self):
         self.gen_load = BlobGenerator('cccp', 'cccp-', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, self.gen_load, "create", 0)
+        self._load_all_buckets(self.main, self.gen_load, "create", 0)
         self.cluster.rebalance(self.servers[:self.nodes_init],
                                self.servers[self.nodes_init:self.nodes_init + 1], [])
         self.nodes_init = self.nodes_init + 1
@@ -142,9 +142,9 @@ class CCCP(BaseTestCase):
         if self.ops == 'create_views':
             views_num = 10
             views = self.make_default_views(self.view_name, views_num, different_map=True)
-            tasks.extend(self.async_create_views(self.master, self.ddoc_name, views))
+            tasks.extend(self.async_create_views(self.main, self.ddoc_name, views))
         if self.ops == 'restart':
-            servers_to_choose = [serv for serv in self.servers if self.master.ip != serv.ip]
+            servers_to_choose = [serv for serv in self.servers if self.main.ip != serv.ip]
             self.assertTrue(servers_to_choose, "There is only one node in cluster")
             shell = RemoteMachineShellConnection(servers_to_choose[0])
             try:

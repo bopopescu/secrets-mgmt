@@ -337,7 +337,7 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
 
     def testHelp(self):
         command_with_error = {}
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         if self.cb_version[:5] in COUCHBASE_FROM_SPOCK:
             self.log.info("skip moxi because it is removed in spock ")
             for x in CLI_COMMANDS:
@@ -372,7 +372,7 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
         shell.disconnect()
 
     def testInfoCommands(self):
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
 
         cli_command = "server-list"
         output, error = remote_client.execute_couchbase_cli(cli_command=cli_command,
@@ -419,7 +419,7 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
 
             self.shell.execute_command("reboot")
             self.sleep(240, "sleep while rebooting")
-            shell = RemoteMachineShellConnection(self.master)
+            shell = RemoteMachineShellConnection(self.main)
             shell.disable_firewall()
             output, error = shell.execute_command('find /etc/rc3.d/ '\
                                                   '| egrep "saslauthd|couchbase"')
@@ -446,7 +446,7 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
         nodes_rem = self.input.param("nodes_rem", 1)
         nodes_failover = self.input.param("nodes_failover", 0)
         nodes_readd = self.input.param("nodes_readd", 0)
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         cli_command = "server-add"
         if int(nodes_add) < len(self.servers):
             for num in xrange(nodes_add):
@@ -549,7 +549,7 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
         nodes_failover = self.input.param("nodes_failover", 0)
         nodes_recovery = self.input.param("nodes_recovery", 0)
         nodes_readd = self.input.param("nodes_readd", 0)
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         cli_command = "server-add"
         if int(nodes_add) < len(self.servers):
             for num in xrange(nodes_add):
@@ -658,7 +658,7 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
     def testStartStopRebalance(self):
         nodes_add = self.input.param("nodes_add", 1)
         nodes_rem = self.input.param("nodes_rem", 1)
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
 
         cli_command = "rebalance-status"
         output, error = remote_client.execute_couchbase_cli(cli_command=cli_command, \
@@ -798,16 +798,16 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
         """
         cluster_name = self.input.param("cluster-name", None)
         if cluster_name is None:
-            cluster_name = self.master.ip
+            cluster_name = self.main.ip
         self.log.info("Reset node back to initial page")
-        rest = RestConnection(self.master)
+        rest = RestConnection(self.main)
         rest.force_eject_node()
         options = "--cluster-username Administrator --cluster-password password " \
                   "--cluster-port 8091 --cluster-name '%s' " % cluster_name
-        output, error = self.shell.couchbase_cli("cluster-init", self.master.ip,
+        output, error = self.shell.couchbase_cli("cluster-init", self.main.ip,
                                                                         options)
         if "SUCCESS: Cluster initialized" not in output[0]:
-            self.fail("Failed to initialize node '%s' " % self.master.ip)
+            self.fail("Failed to initialize node '%s' " % self.main.ip)
 
         self.log.info("Verify hostname is set in cluster")
         settings = rest.get_pools_default()
@@ -820,13 +820,13 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
         change_hostname = self.input.param("change-hostname", None)
         if change_hostname is not None:
             if change_hostname == "ip":
-                change_hostname = self.master.ip
+                change_hostname = self.main.ip
 
             self.log.info("Rename hostname in cluster.")
             options = "-u Administrator -p password --cluster-name '%s' " \
                                                         % change_hostname
             output, error = self.shell.couchbase_cli("setting-cluster",
-                                                     self.master.ip, options)
+                                                     self.main.ip, options)
             settings = rest.get_pools_default()
             if change_hostname not in settings["clusterName"]:
                 self.fail("Fail to set new hostname in cluster. "
@@ -1028,10 +1028,10 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
 
         """ reset node to setup services """
         self.rest.force_eject_node()
-        cli = CouchbaseCLI(self.master, username, password, self.cb_version)
+        cli = CouchbaseCLI(self.main, username, password, self.cb_version)
         _, _, success = cli.cluster_init(256, 512, None, "data,index,query", None, None,
-                                                 self.master.rest_username,
-                                                 self.master.rest_password, None)
+                                                 self.main.rest_username,
+                                                 self.main.rest_password, None)
         self.assertTrue(success, "Cluster initialization failed during test setup")
 
         if compact_interval is not None and "-" in compact_interval:
@@ -1998,8 +1998,8 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
         username = "data_monitoring"
         bucket_names = []
         bucket_name = ""
-        rest = RestConnection(self.master)
-        shell = RemoteMachineShellConnection(self.master)
+        rest = RestConnection(self.main)
+        shell = RemoteMachineShellConnection(self.main)
         for bucket in self.buckets:
             bucket_names.append(bucket.name)
         if permission == "all":
@@ -2018,7 +2018,7 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
                          "name": username,
                          "roles": "data_monitoring[{0}]".format(role)}]
         kv_gen = BlobGenerator('create', 'create', self.value_size, end=self.num_items)
-        self._load_all_buckets(self.master, kv_gen, "create",
+        self._load_all_buckets(self.main, kv_gen, "create",
                                self.expire_time, flag=self.item_flag)
         try:
             status = self.add_built_in_server_user(testuser, rolelist)
@@ -2026,7 +2026,7 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
                 self.fail("Failed to add user: {0} with role: {1} "\
                                              .format(username, role))
             cmd = self.cli_command_path + "mctimings" + self.cmd_ext
-            cmd += " -h " + self.master.ip + ":11210 -u " + username
+            cmd += " -h " + self.main.ip + ":11210 -u " + username
             cmd += " -P password -b " + bucket_name + " --verbose "
             output, _ = shell.execute_command(cmd)
             if not self.should_fail:
@@ -2052,15 +2052,15 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
         cmd_set: 10011
         """
 
-        shell = RemoteMachineShellConnection(self.master)
+        shell = RemoteMachineShellConnection(self.main)
         cmd = self.cli_command_path + "cbstats" + self.cmd_ext + " "
-        cmd += self.master.ip + ":11210 all -u Administrator -p password "
+        cmd += self.main.ip + ":11210 all -u Administrator -p password "
         cmd += "-b bucket0 | grep cmd_set"
 
         output, _ = shell.execute_command(cmd)
         self.assertTrue(self._check_output("0", output))
         kv_gen = BlobGenerator('create', 'create', self.value_size, end=1000)
-        self._load_all_buckets(self.master, kv_gen, "create",
+        self._load_all_buckets(self.main, kv_gen, "create",
                                self.expire_time, flag=self.item_flag)
 
         output, _ = shell.execute_command(cmd)
@@ -2402,13 +2402,13 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
         num_backup_bucket = self.input.param("num_backup_bucket", "all")
         num_sasl_buckets = self.input.param("num_sasl_buckets", 1)
         self.bucket_size = 200
-        bucket_params=self._create_bucket_params(server=self.master, size=self.bucket_size,
+        bucket_params=self._create_bucket_params(server=self.main, size=self.bucket_size,
                                                         replicas=self.num_replicas,
                                                         enable_replica_index=self.enable_replica_index,
                                                         eviction_policy=self.eviction_policy)
         self.cluster.create_default_bucket(bucket_params)
-        self._create_sasl_buckets(self.master, num_sasl_buckets)
-        self.buckets = RestConnection(self.master).get_buckets()
+        self._create_sasl_buckets(self.main, num_sasl_buckets)
+        self.buckets = RestConnection(self.main).get_buckets()
         if load_all is None:
             self.shell.execute_cbworkloadgen("Administrator", "password", 10000,
                                               0.95, "default", 125, " -j")
@@ -2576,7 +2576,7 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
         self.shell.disconnect()
 
     def test_reset_admin_password(self):
-        remote_client = RemoteMachineShellConnection(self.master)
+        remote_client = RemoteMachineShellConnection(self.main)
         cli_command = "reset-admin-password"
 
         options = ''
@@ -2715,7 +2715,7 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
             Start install old version with param initial_version
         """
         self._install(self.servers[:self.nodes_init])
-        self.cluster.rebalance([self.master], self.servers[1:self.nodes_init], [])
+        self.cluster.rebalance([self.main], self.servers[1:self.nodes_init], [])
 
         """
             During upgrade operations
@@ -2742,7 +2742,7 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
                     self.fail("Failed to add user: %s with role: %s "
                                                  % (new_users, new_roles))
                 self.log.info("Verify rbac user added after upgrade ")
-                found = self._verify_rbac_users(self.master, username, password,
+                found = self._verify_rbac_users(self.main, username, password,
                                                             new_users, new_roles)
                 if not found:
                     self.fail("Failed to add rbac user in")
@@ -2750,10 +2750,10 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
                 cmd = "%s%s%s " % (self.cli_command_path, command, self.cmd_ext)
                 if sub_command:
                     cmd += "%s --cluster %s --user %s --password %s " \
-                           % (sub_command, self.master.ip, username, password)
+                           % (sub_command, self.main.ip, username, password)
                 if command and sub_command:
                     self.shell.execute_command(cmd)
-                rest = RestConnection(self.master)
+                rest = RestConnection(self.main)
                 cb_version = rest.get_nodes_version()
                 if cb_version[:5] in COUCHBASE_FROM_WATSON:
                     if self.debug_logs:
@@ -2764,7 +2764,7 @@ class CouchbaseCliTest(CliBaseTest, NewUpgradeBaseTest):
 
             self.log.info("Operation after upgrade")
             if ops_after_upgrade == "bucket-ops":
-                self._bucket_ops(self.master, new_users, password, new_roles)
+                self._bucket_ops(self.main, new_users, password, new_roles)
 
             self.shell.disconnect()
 
@@ -2945,7 +2945,7 @@ class XdcrCLITest(CliBaseTest):
                                                 password=self.__password)
 
     def __xdcr_setup_create(self):
-        # xdcr_hostname=the number of server in ini file to add to master as replication
+        # xdcr_hostname=the number of server in ini file to add to main as replication
         xdcr_cluster_name = self.input.param("xdcr-cluster-name", None)
         xdcr_hostname = self.input.param("xdcr-hostname", None)
         xdcr_username = self.input.param("xdcr-username", None)
@@ -2968,7 +2968,7 @@ class XdcrCLITest(CliBaseTest):
             if wrong_cert:
                 cluster_host = "localhost"
             else:
-                cluster_host = self.dest_master.ip
+                cluster_host = self.dest_main.ip
             cert_info = "--retrieve-cert"
             if self.cb_version[:5] in COUCHBASE_FROM_SPOCK:
                 cert_info = "--cluster-cert-info"
@@ -3210,7 +3210,7 @@ class XdcrCLITest(CliBaseTest):
 
         self.bucket_size = self._get_bucket_size(self.quota, 1)
         if from_bucket:
-            bucket_params = self._create_bucket_params(server=self.master, size=self.bucket_size,
+            bucket_params = self._create_bucket_params(server=self.main, size=self.bucket_size,
                                                               replicas=self.num_replicas,
                                                               enable_replica_index=self.enable_replica_index)
             self.cluster.create_default_bucket(bucket_params)

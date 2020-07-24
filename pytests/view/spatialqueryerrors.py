@@ -25,7 +25,7 @@ class SpatialQueryErrorsTests(BaseTestCase):
             if 'first_case' in TestInputSingleton.input.test_params:
                 self.cluster.rebalance(self.servers[:], self.servers[1:], [])
             # We use only one bucket in this test suite
-            self.rest = RestConnection(self.master)
+            self.rest = RestConnection(self.main)
             self.bucket = self.rest.get_bucket(Bucket(name=self.default_bucket_name))
             # num_docs must be a multiple of the number of vbuckets
             self.num_docs = self.input.param("num_docs", 2000)

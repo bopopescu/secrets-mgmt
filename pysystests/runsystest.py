@@ -181,7 +181,7 @@ def fix_sample_cfg(ssh_client):
     cfg_file_path = os.path.join(cfg.CBMONITOR_HOME_DIR, "sample.cfg")
     ssh_client.exec_command("sed -i 's/.*host_port.*/host_port = {0}:8000/' {1}".format(cfg.SERIESLY_IP, cfg_file_path))
     ssh_client.exec_command("sed -i 's/.*host .*/host = {0}/' {1}".format(cfg.SERIESLY_IP, cfg_file_path))
-    ssh_client.exec_command("sed -i 's/.*master_node.*/master_node = {0}/' {1}".format(cfg.COUCHBASE_IP, cfg_file_path))
+    ssh_client.exec_command("sed -i 's/.*main_node.*/main_node = {0}/' {1}".format(cfg.COUCHBASE_IP, cfg_file_path))
 
     if cfg.COUCHBASE_OS == "windows":
         ssh_client.exec_command("sed -i 's/.*ssh_username.*/ssh_username = {0}/' {1}".format(cfg.COUCHBASE_SSH_USER, cfg_file_path))

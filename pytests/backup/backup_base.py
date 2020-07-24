@@ -12,7 +12,7 @@ class BackupBaseTest(BaseTestCase):
     def setUp(self):
         self.times_teardown_called = 1
         super(BackupBaseTest, self).setUp()
-        self.shell = RemoteMachineShellConnection(self.master)
+        self.shell = RemoteMachineShellConnection(self.main)
         info = self.shell.extract_remote_info()
         self.os = info.type.lower()
         self.value_size = self.input.param("value_size", 256)
@@ -88,12 +88,12 @@ class BackupBaseTest(BaseTestCase):
         """This is the verification function for test cases of backup/restore.
 
         Args:
-          server: the master server in the cluster as self.master.
+          server: the main server in the cluster as self.main.
           kv_store: default value is 1. This is the key of the kv_store of each bucket.
 
         if the command line assign command options -k and/or -b and/or --single-node, in the verification function
         key_name indicates which keys we need to verify and bucket_name indicates which bucket we need to verify.
-        If single node flag is true, the we only need to verify all the buckets at the master node"""
+        If single node flag is true, the we only need to verify all the buckets at the main node"""
 
         key_name = None
         bucket_name = None
@@ -129,13 +129,13 @@ class BackupBaseTest(BaseTestCase):
         """This is the verification function for single node backup.
 
         Args:
-          server: the master server in the cluster as self.master.
+          server: the main server in the cluster as self.main.
           kv_store: default value is 1. This is the key of the kv_store of each bucket.
 
         If --single-node flag appears in backup commad line, we just backup all the items
-        from a single node (the master node in this case). For each bucket, we request for the vBucketMap. For every key
+        from a single node (the main node in this case). For each bucket, we request for the vBucketMap. For every key
         in the kvstore of that bucket, we use hash function to get the vBucketId corresponding to that
-        key. By using the vBucketMap, we can know whether that key is in master node or not.
+        key. By using the vBucketMap, we can know whether that key is in main node or not.
         If yes, keep it. Otherwise delete it."""
 
         rest = RestConnection(server)
